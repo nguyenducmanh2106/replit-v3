@@ -997,17 +997,44 @@ export default function AssignmentDetailPage() {
                     </label>
                   </div>
                 </div>
-                <div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settingsDraft.autoGrade}
-                      onChange={e => setSettingsDraft(d => ({ ...d, autoGrade: e.target.checked }))}
-                      className="rounded"
-                    />
-                    <span className="text-sm text-gray-700">Tự động chấm bài</span>
-                  </label>
-                </div>
+                {(() => {
+                  const blockedEssays = (assignment.questions ?? []).filter(aq => {
+                    if (aq.question.type !== "essay") return false;
+                    try {
+                      const meta = aq.question.metadata ? JSON.parse(aq.question.metadata) : {};
+                      return meta.autoGrade === false;
+                    } catch { return false; }
+                  });
+                  const isBlocked = blockedEssays.length > 0;
+                  return (
+                    <div className="space-y-1.5">
+                      <label className={`flex items-center gap-2 ${isBlocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
+                        <input
+                          type="checkbox"
+                          checked={settingsDraft.autoGrade}
+                          disabled={isBlocked}
+                          onChange={e => {
+                            if (isBlocked) return;
+                            setSettingsDraft(d => ({ ...d, autoGrade: e.target.checked }));
+                          }}
+                          className="rounded disabled:cursor-not-allowed"
+                        />
+                        <span className="text-sm text-gray-700">Tự động chấm bài</span>
+                      </label>
+                      {isBlocked && (
+                        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                          <span>
+                            {blockedEssays.length === 1
+                              ? "Có 1 câu bài luận đang tắt tự động chấm điểm."
+                              : `Có ${blockedEssays.length} câu bài luận đang tắt tự động chấm điểm.`}
+                            {" "}Hãy bật lại trong từng câu trước khi kích hoạt cài đặt này.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="flex gap-2">
                   <Button size="sm" onClick={() => {
                     updateAssignment({
