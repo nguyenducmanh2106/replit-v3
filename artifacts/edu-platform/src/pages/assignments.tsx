@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useListAssignments, useCreateAssignment, useListCourses, getListAssignmentsQueryKey, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, PenSquare, Calendar, Clock, Users } from "lucide-react";
+import { Plus, PenSquare, Calendar, Clock, Users, AlertTriangle, Ban } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { format, parseISO } from "date-fns";
 
@@ -29,6 +29,8 @@ function StatusBadge({ status }: { status: string }) {
 export default function AssignmentsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
+  const [retakeWarning, setRetakeWarning] = useState<{ id: number; title: string; myAttemptCount: number; maxAttempts: number } | null>(null);
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { data: me } = useGetMe();
   const isTeacher = me?.role && ["teacher", "center_admin", "school_admin", "system_admin", "enterprise_admin"].includes(me.role);
@@ -98,45 +100,73 @@ export default function AssignmentsPage() {
         </div>
       ) : assignments && assignments.length > 0 ? (
         <div className="space-y-3">
-          {assignments.map((a) => (
-            <Link key={a.id} href={isTeacher ? `/assignments/${a.id}` : `/assignments/${a.id}/take`}>
-              <Card className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all">
-                <CardContent className="py-4 px-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <PenSquare className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{a.title}</p>
-                        {a.courseName && <p className="text-sm text-muted-foreground">{a.courseName}</p>}
-                        <div className="flex flex-wrap items-center gap-3 mt-1">
-                          {a.dueDate && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {formatDate(a.dueDate)}
-                            </span>
+          {assignments.map((a) => {
+            const myAttempts = a.myAttemptCount ?? 0;
+            const maxAttempts = a.maxAttempts ?? 0;
+            const exceededLimit = !isTeacher && maxAttempts > 0 && myAttempts >= maxAttempts;
+            const isRetake = !isTeacher && myAttempts > 0 && !exceededLimit;
+
+            function handleStudentClick(e: React.MouseEvent) {
+              if (isTeacher) return;
+              if (exceededLimit) { e.preventDefault(); return; }
+              if (isRetake) {
+                e.preventDefault();
+                setRetakeWarning({ id: a.id, title: a.title, myAttemptCount: myAttempts, maxAttempts });
+              }
+            }
+
+            return (
+              <div key={a.id} onClick={handleStudentClick}>
+                <Link href={isTeacher ? `/assignments/${a.id}` : (exceededLimit ? "#" : `/assignments/${a.id}/take`)}
+                  onClick={(e: React.MouseEvent) => { if (exceededLimit) e.preventDefault(); }}>
+                  <Card className={`cursor-pointer hover:shadow-md hover:border-primary/30 transition-all ${exceededLimit ? "opacity-60 cursor-not-allowed" : ""}`}>
+                    <CardContent className="py-4 px-5">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <PenSquare className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{a.title}</p>
+                            {a.courseName && <p className="text-sm text-muted-foreground">{a.courseName}</p>}
+                            <div className="flex flex-wrap items-center gap-3 mt-1">
+                              {a.dueDate && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                  {formatDate(a.dueDate)}
+                                </span>
+                              )}
+                              {a.timeLimitMinutes && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {a.timeLimitMinutes} phút
+                                </span>
+                              )}
+                              {!isTeacher && maxAttempts > 0 && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Users className="w-3.5 h-3.5" />
+                                  {myAttempts}/{maxAttempts} lượt
+                                </span>
+                              )}
+                              <span className="text-xs text-muted-foreground">{a.questionCount} câu — {a.totalPoints} điểm</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {exceededLimit && (
+                            <Badge className="bg-red-100 text-red-600 border-0 flex items-center gap-1">
+                              <Ban className="w-3 h-3" />Đã hết lượt
+                            </Badge>
                           )}
-                          {a.timeLimitMinutes && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="w-3.5 h-3.5" />
-                              {a.timeLimitMinutes} phút
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Users className="w-3.5 h-3.5" />
-                            {a.submissionCount} bài nộp
-                          </span>
-                          <span className="text-xs text-muted-foreground">{a.questionCount} câu — {a.totalPoints} điểm</span>
+                          <StatusBadge status={a.status} />
                         </div>
                       </div>
-                    </div>
-                    <StatusBadge status={a.status} />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                    </CardContent>
+                  </Card>
+                </Link>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-20 border-2 border-dashed border-gray-200 rounded-2xl">
@@ -196,6 +226,45 @@ export default function AssignmentsPage() {
               <Button type="submit" disabled={isPending}>{isPending ? "Đang tạo..." : "Tạo bài tập"}</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!retakeWarning} onOpenChange={(v) => { if (!v) setRetakeWarning(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Xác nhận làm lại bài tập
+            </DialogTitle>
+          </DialogHeader>
+          {retakeWarning && (
+            <div className="space-y-3 pt-2">
+              <p className="font-medium text-gray-900">{retakeWarning.title}</p>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+                <p className="text-sm text-amber-800">
+                  Đây là lần làm thứ <span className="font-bold">{retakeWarning.myAttemptCount + 1}</span> trên giới hạn <span className="font-bold">{retakeWarning.maxAttempts}</span> lần cho phép.
+                </p>
+                <p className="text-sm text-amber-800">
+                  Làm lại sẽ xoá kết quả của bài nộp cũ và ghi nhận kết quả mới nhất.
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Còn lại: {retakeWarning.maxAttempts - retakeWarning.myAttemptCount} lượt
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRetakeWarning(null)}>Hủy</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (retakeWarning) navigate(`/assignments/${retakeWarning.id}/take`);
+                setRetakeWarning(null);
+              }}
+            >
+              Xác nhận làm lại
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

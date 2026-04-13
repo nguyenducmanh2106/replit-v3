@@ -1482,6 +1482,27 @@ export default function AssignmentTakePage() {
     );
   }
 
+  const myAttempts = assignment?.myAttemptCount ?? 0;
+  const maxAttempts = assignment?.maxAttempts ?? 0;
+  const exceededLimit = !isPreview && maxAttempts > 0 && myAttempts >= maxAttempts;
+
+  if (!isLoading && assignment && exceededLimit) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center p-8 bg-white rounded-3xl shadow-lg border border-red-100 max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8 text-red-400" />
+          </div>
+          <p className="text-xl font-semibold text-gray-700">Đã hết lượt làm bài</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Bạn đã sử dụng hết {maxAttempts}/{maxAttempts} lượt cho phép của bài tập này.
+          </p>
+          <Button className="mt-6 rounded-xl" onClick={() => navigate("/assignments")}>Quay lại danh sách</Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!assignment || !assignment.questions || assignment.questions.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">

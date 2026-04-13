@@ -182,6 +182,7 @@ export interface Assignment {
   /** draft | published | closed */
   status: string;
   submissionCount: number;
+  myAttemptCount?: number;
   createdAt: string;
   /** @nullable */
   startTime?: string | null;
@@ -242,6 +243,7 @@ export interface AssignmentWithQuestions {
   totalPoints: number;
   status: string;
   submissionCount: number;
+  myAttemptCount?: number;
   createdAt: string;
   /** @nullable */
   startTime?: string | null;

@@ -87,7 +87,23 @@ router.get("/assignments", requireAuth, async (req, res): Promise<void> => {
   }
 
   const result = await Promise.all(assignments.map(a => getAssignmentSummary(a.id)));
-  res.json(ListAssignmentsResponse.parse(result.filter(Boolean)));
+  const summaries = result.filter(Boolean);
+
+  if (!isTeacherOrAdmin(dbUser.role) && summaries.length > 0) {
+    const assignmentIds = summaries.map((s: any) => s.id);
+    const myCounts = await db.select({
+      assignmentId: submissionsTable.assignmentId,
+      count: sql<number>`count(*)`,
+    }).from(submissionsTable).where(
+      and(eq(submissionsTable.studentId, dbUser.id), inArray(submissionsTable.assignmentId, assignmentIds))
+    ).groupBy(submissionsTable.assignmentId);
+    const countMap = new Map(myCounts.map(r => [r.assignmentId, Number(r.count)]));
+    for (const s of summaries as any[]) {
+      s.myAttemptCount = countMap.get(s.id) ?? 0;
+    }
+  }
+
+  res.json(ListAssignmentsResponse.parse(summaries));
 });
 
 router.post("/assignments", requireAuth, requireTeacherRole(), async (req, res): Promise<void> => {
@@ -150,6 +166,8 @@ router.get("/assignments/:id", requireAuth, async (req, res): Promise<void> => {
     .orderBy(assignmentQuestionsTable.orderIndex);
 
   const submissionCount = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(eq(submissionsTable.assignmentId, params.data.id));
+  const myAttemptCountRows = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(eq(submissionsTable.assignmentId, params.data.id), eq(submissionsTable.studentId, dbUser.id)));
+  const myAttemptCount = Number(myAttemptCountRows[0]?.count ?? 0);
   let courseName: string | null = null;
   if (assignment.courseId) {
     const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, assignment.courseId));
@@ -197,6 +215,7 @@ router.get("/assignments/:id", requireAuth, async (req, res): Promise<void> => {
     autoGrade: assignment.autoGrade,
     status: assignment.status,
     submissionCount: Number(submissionCount[0]?.count ?? 0),
+    myAttemptCount,
     createdAt: assignment.createdAt.toISOString(),
     questions,
   }));

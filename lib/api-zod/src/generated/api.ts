@@ -368,6 +368,7 @@ export const ListAssignmentsResponseItem = zod.object({
   autoGrade: zod.boolean(),
   status: zod.string().describe("draft | published | closed"),
   submissionCount: zod.number(),
+  myAttemptCount: zod.number().optional(),
   createdAt: zod.coerce.date(),
 });
 export const ListAssignmentsResponse = zod.array(ListAssignmentsResponseItem);
@@ -413,6 +414,7 @@ export const GetAssignmentResponse = zod.object({
   autoGrade: zod.boolean().optional(),
   status: zod.string(),
   submissionCount: zod.number(),
+  myAttemptCount: zod.number().optional(),
   createdAt: zod.coerce.date(),
   questions: zod.array(
     zod.object({
