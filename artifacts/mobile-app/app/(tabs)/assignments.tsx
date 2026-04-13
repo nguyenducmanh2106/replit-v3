@@ -2,8 +2,10 @@ import { Feather } from "@expo/vector-icons";
 import { useListAssignments } from "@workspace/api-client-react";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import * as Haptics from "expo-haptics";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -40,10 +42,33 @@ function AssignmentCard({ item }: { item: Assignment }) {
   const exceeded = maxAtt > 0 && myAttempts >= maxAtt;
   const isRetake = myAttempts > 0 && !exceeded;
 
+  const handlePress = () => {
+    if (exceeded) return;
+    if (isRetake) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const remaining = (item.maxAttempts ?? 0) > 0
+        ? `\nCòn lại: ${(item.maxAttempts ?? 0) - myAttempts} lượt.`
+        : "";
+      const attemptInfo = (item.maxAttempts ?? 0) > 0
+        ? `Đây là lần làm thứ ${myAttempts + 1} trên giới hạn ${item.maxAttempts} lần cho phép.`
+        : `Bạn đã làm bài này ${myAttempts} lần trước đó.`;
+      Alert.alert(
+        "Xác nhận làm lại",
+        `${attemptInfo}\n\nNếu đồng ý làm lại, kết quả cũ sẽ bị xoá vĩnh viễn và kết quả mới sẽ được ghi nhận.${remaining}`,
+        [
+          { text: "Hủy", style: "cancel" },
+          { text: "Làm lại", style: "destructive", onPress: () => router.push(`/assignment/${item.id}`) },
+        ]
+      );
+      return;
+    }
+    router.push(`/assignment/${item.id}`);
+  };
+
   return (
     <Pressable
       style={[card.wrap, { backgroundColor: colors.card, borderColor: exceeded ? "#FECACA" : colors.border }]}
-      onPress={() => !exceeded && router.push(`/assignment/${item.id}`)}
+      onPress={handlePress}
     >
       <View style={card.top}>
         <View style={[card.statusDot, { backgroundColor: exceeded ? "#EF4444" : status.color }]} />

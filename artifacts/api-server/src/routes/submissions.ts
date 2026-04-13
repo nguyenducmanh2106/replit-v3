@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { eq, and, or, sql } from "drizzle-orm";
-import { db, submissionsTable, submissionAnswersTable, assignmentsTable, usersTable, assignmentQuestionsTable, courseMembersTable } from "@workspace/db";
+import { eq, and, or, sql, inArray } from "drizzle-orm";
+import { db, submissionsTable, submissionAnswersTable, assignmentsTable, usersTable, assignmentQuestionsTable, courseMembersTable, answerAnnotationsTable, rubricGradesTable, fraudEventsTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { updateStreak, checkAndAwardBadges } from "./gamification";
 import {
@@ -424,8 +424,17 @@ router.post("/submissions", requireAuth, async (req, res): Promise<void> => {
   }
 
   if (!isTeacher) {
-    await db.update(submissionsTable).set({ isFinal: false })
+    const oldSubs = await db.select({ id: submissionsTable.id })
+      .from(submissionsTable)
       .where(and(eq(submissionsTable.assignmentId, assignment.id), eq(submissionsTable.studentId, dbUser.id)));
+    const oldIds = oldSubs.map(s => s.id);
+    if (oldIds.length > 0) {
+      await db.delete(answerAnnotationsTable).where(inArray(answerAnnotationsTable.submissionId, oldIds));
+      await db.delete(rubricGradesTable).where(inArray(rubricGradesTable.submissionId, oldIds));
+      await db.delete(fraudEventsTable).where(inArray(fraudEventsTable.submissionId, oldIds));
+      await db.delete(submissionAnswersTable).where(inArray(submissionAnswersTable.submissionId, oldIds));
+      await db.delete(submissionsTable).where(inArray(submissionsTable.id, oldIds));
+    }
   }
 
   const [submission] = await db.insert(submissionsTable).values({

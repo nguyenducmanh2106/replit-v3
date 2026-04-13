@@ -627,14 +627,22 @@ function AssignmentsTab({ courseId, canManage, assignments, loading }: { courseI
             <div className="space-y-3 pt-2">
               <p className="font-medium text-gray-900">{retakeWarning.title}</p>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
-                <p className="text-sm text-amber-800">
-                  Đây là lần làm thứ <span className="font-bold">{retakeWarning.myAttemptCount + 1}</span> trên giới hạn <span className="font-bold">{retakeWarning.maxAttempts}</span> lần cho phép.
-                </p>
-                <p className="text-sm text-amber-800">
-                  Làm lại sẽ xoá kết quả của bài nộp cũ và ghi nhận kết quả mới nhất.
+                {retakeWarning.maxAttempts > 0 ? (
+                  <p className="text-sm text-amber-800">
+                    Đây là lần làm thứ <span className="font-bold">{retakeWarning.myAttemptCount + 1}</span> trên giới hạn <span className="font-bold">{retakeWarning.maxAttempts}</span> lần cho phép.
+                  </p>
+                ) : (
+                  <p className="text-sm text-amber-800">
+                    Bạn đã làm bài này <span className="font-bold">{retakeWarning.myAttemptCount}</span> lần trước đó.
+                  </p>
+                )}
+                <p className="text-sm font-medium text-red-700">
+                  Nếu đồng ý làm lại, kết quả cũ sẽ bị xoá vĩnh viễn và kết quả mới sẽ được ghi nhận.
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground">Còn lại: {retakeWarning.maxAttempts - retakeWarning.myAttemptCount} lượt</p>
+              {retakeWarning.maxAttempts > 0 && (
+                <p className="text-xs text-muted-foreground">Còn lại: {retakeWarning.maxAttempts - retakeWarning.myAttemptCount} lượt</p>
+              )}
             </div>
           )}
           <DialogFooter>
