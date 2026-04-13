@@ -1,0 +1,46 @@
+import { Router, type IRouter } from "express";
+import healthRouter from "./health";
+import usersRouter from "./users";
+import coursesRouter from "./courses";
+import questionsRouter from "./questions";
+import assignmentsRouter from "./assignments";
+import submissionsRouter from "./submissions";
+import dashboardRouter from "./dashboard";
+import scheduleRouter from "./schedule";
+import documentsRouter from "./documents";
+import importRouter from "./import";
+import reportsRouter from "./reports";
+import rubricsRouter from "./rubrics";
+import systemRouter from "./system";
+import storageRouter from "./storage";
+import aiRouter from "./ai";
+import fraudRouter from "./fraud";
+import gamificationRouter from "./gamification";
+import enterpriseRouter from "./enterprise";
+import lmsRouter from "./lms";
+import quizTemplatesRouter from "./quiz-templates";
+
+const router: IRouter = Router();
+
+router.use(healthRouter);
+router.use(usersRouter);
+router.use(coursesRouter);
+router.use(questionsRouter);
+router.use(assignmentsRouter);
+router.use(submissionsRouter);
+router.use(dashboardRouter);
+router.use(scheduleRouter);
+router.use(documentsRouter);
+router.use(importRouter);
+router.use(reportsRouter);
+router.use(rubricsRouter);
+router.use(systemRouter);
+router.use(storageRouter);
+router.use(aiRouter);
+router.use(fraudRouter);
+router.use(gamificationRouter);
+router.use(enterpriseRouter);
+router.use(lmsRouter);
+router.use(quizTemplatesRouter);
+
+export default router;

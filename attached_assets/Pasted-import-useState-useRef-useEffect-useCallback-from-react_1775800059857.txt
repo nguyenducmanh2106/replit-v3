@@ -1,0 +1,882 @@
+import { useState, useRef, useEffect, useCallback } from "react";
+import type { ContentBlock, VideoTimestamp, VideoTimestampQuestion } from "@/data/lmsStore";
+import { StickyNote, HelpCircle, Play, Pause, CheckCircle2, X, ChevronRight, Trophy, SkipForward, RotateCcw, ListChecks } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+interface Props {
+  block: ContentBlock;
+  onScoreUpdate?: (earned: number, total: number) => void;
+}
+
+function formatTime(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+type PopupState =
+  | { type: "note"; timestamp: VideoTimestamp }
+  | { type: "question"; timestamp: VideoTimestamp; answered: boolean; selectedAnswer: unknown; correct: boolean | null };
+
+interface SkippedQuestion {
+  timestamp: VideoTimestamp;
+  skippedAt: number; // currentTime when skipped
+}
+
+// Extract YouTube video ID from various URL formats
+function getYoutubeVideoId(url: string): string | null {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+function buildEmbedUrl(videoId: string): string {
+  return `https://www.youtube.com/embed/${videoId}?enablejsapi=1&playsinline=1&rel=0`;
+}
+
+export default function VideoInteractivePlayer({ block, onScoreUpdate }: Props) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [popup, setPopup] = useState<PopupState | null>(null);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [answer, setAnswer] = useState<unknown>(null);
+  const [fillInput, setFillInput] = useState<string>("");
+
+  // Real playback state synced with YouTube
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playerReady, setPlayerReady] = useState(false);
+
+  // Skipped questions tracker
+  const [skippedQuestions, setSkippedQuestions] = useState<SkippedQuestion[]>([]);
+  const [showSkippedPanel, setShowSkippedPanel] = useState(false);
+
+  const timestamps = (block.videoTimestamps || []).slice().sort((a, b) => a.timeSeconds - b.timeSeconds);
+  const triggeredRef = useRef<Set<string>>(new Set());
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const videoId = getYoutubeVideoId(block.url || "");
+
+  // ── YouTube postMessage helpers ─────────────────────────────────────────────
+  const postToYT = useCallback((func: string, args?: unknown[]) => {
+    if (!iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage(
+      JSON.stringify({ event: "command", func, args: args ?? [] }),
+      "*"
+    );
+  }, []);
+
+  const ytPlay = useCallback(() => postToYT("playVideo"), [postToYT]);
+  const ytPause = useCallback(() => postToYT("pauseVideo"), [postToYT]);
+  const ytGetCurrentTime = useCallback(() => postToYT("getCurrentTime"), [postToYT]);
+
+  // ── Handle iframe load — register YouTube event listeners ───────────────────
+  const handleIframeLoad = useCallback(() => {
+    console.log("[YT] iframe onLoad fired, registering listeners in 1s...");
+    setTimeout(() => {
+      if (!iframeRef.current?.contentWindow) return;
+
+      // Step 1: Tell YouTube we want to listen
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({
+          event: "listening",
+          id: 1,
+          channel: "widget",
+        }),
+        "*"
+      );
+
+      // Step 2: Register onReady event
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({
+          event: "command",
+          func: "addEventListener",
+          args: ["onReady"],
+          id: 1,
+          channel: "widget",
+        }),
+        "*"
+      );
+
+      // Step 3: Register onStateChange event
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({
+          event: "command",
+          func: "addEventListener",
+          args: ["onStateChange"],
+          id: 1,
+          channel: "widget",
+        }),
+        "*"
+      );
+
+      console.log("[YT] Sent listening + addEventListener commands");
+    }, 1000); // wait 1s for YouTube to initialise
+  }, []);
+
+  // ── Listen to messages from YouTube iframe ──────────────────────────────────
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      // Only accept messages from YouTube
+      if (!event.origin.includes("youtube.com")) return;
+
+      let data: Record<string, unknown>;
+      try {
+        data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+      } catch {
+        return;
+      }
+
+      console.log("[YT raw]", data);
+
+      if (data.event === "onReady") {
+        setPlayerReady(true);
+        console.log("[YT] Player ready ✅");
+      }
+
+      if (data.event === "onStateChange") {
+        const state = data.info as number;
+        console.log("[YT] State:", state);
+        // 1 = playing, 2 = paused, 0 = ended
+        if (state === 1) setPlaying(true);
+        if (state === 2 || state === 0) setPlaying(false);
+      }
+
+      if (data.event === "infoDelivery" && data.info && typeof data.info === "object") {
+        const info = data.info as Record<string, unknown>;
+        if (typeof info.currentTime === "number") {
+          setCurrentTime(info.currentTime);
+          if (typeof info.duration === "number" && info.duration > 0) {
+            setDuration(info.duration);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  // ── Poll currentTime while playing ─────────────────────────────────────────
+  useEffect(() => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+
+    if (playing && playerReady) {
+      pollingRef.current = setInterval(() => {
+        ytGetCurrentTime();
+      }, 500);
+    }
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [playing, playerReady, ytGetCurrentTime]);
+
+  // ── Check timestamps whenever currentTime changes ───────────────────────────
+  useEffect(() => {
+    if (!playing) return;
+
+    for (const ts of timestamps) {
+      if (
+        !completedIds.has(ts.id) &&
+        !triggeredRef.current.has(ts.id) &&
+        currentTime >= ts.timeSeconds &&
+        currentTime < ts.timeSeconds + 2
+      ) {
+        console.log("[YT] Triggering timestamp at", ts.timeSeconds);
+        triggeredRef.current.add(ts.id);
+        ytPause();
+        setPlaying(false);
+        setAnswer(null);
+        setFillInput("");
+
+        if (ts.type === "note") {
+          setPopup({ type: "note", timestamp: ts });
+        } else {
+          setPopup({ type: "question", timestamp: ts, answered: false, selectedAnswer: null, correct: null });
+        }
+        break;
+      }
+    }
+  }, [currentTime, playing, timestamps, completedIds, ytPause]);
+
+  // ── User controls ───────────────────────────────────────────────────────────
+  const handleTogglePlay = () => {
+    if (popup) return;
+    if (playing) {
+      ytPause();
+      setPlaying(false);
+    } else {
+      ytPlay();
+      setPlaying(true);
+    }
+  };
+
+  const handleContinue = () => {
+    if (!popup) return;
+    const tsId = popup.timestamp.id;
+    setCompletedIds(prev => new Set([...prev, tsId]));
+    setPopup(null);
+    ytPlay();
+    setPlaying(true);
+  };
+
+  // Skip a question — add to skipped list so user can come back
+  const handleSkip = () => {
+    if (!popup || popup.type !== "question") return;
+    const ts = popup.timestamp;
+
+    // Only add to skipped if not already there
+    setSkippedQuestions(prev => {
+      const alreadySkipped = prev.some(sq => sq.timestamp.id === ts.id);
+      if (alreadySkipped) return prev;
+      return [...prev, { timestamp: ts, skippedAt: currentTime }];
+    });
+
+    toast.info(`Đã bỏ qua câu hỏi tại ${formatTime(ts.timeSeconds)}. Bạn có thể quay lại sau.`);
+
+    // Mark as completed so it doesn't re-trigger automatically, but keep in skipped list
+    setCompletedIds(prev => new Set([...prev, ts.id]));
+    setPopup(null);
+    ytPlay();
+    setPlaying(true);
+  };
+
+  // Return to a skipped question by seeking to its timestamp
+  const handleReturnToSkipped = (sq: SkippedQuestion) => {
+    // Remove from skipped list
+    setSkippedQuestions(prev => prev.filter(s => s.timestamp.id !== sq.timestamp.id));
+    // Un-complete it so it can trigger again
+    setCompletedIds(prev => {
+      const next = new Set(prev);
+      next.delete(sq.timestamp.id);
+      return next;
+    });
+    // Remove from triggered so it fires again
+    triggeredRef.current.delete(sq.timestamp.id);
+
+    // Seek to 2s before the timestamp so the trigger window catches it
+    const seekTo = Math.max(0, sq.timestamp.timeSeconds - 2);
+    postToYT("seekTo", [seekTo, true]);
+    setCurrentTime(seekTo);
+    setShowSkippedPanel(false);
+
+    // Small delay then play
+    setTimeout(() => {
+      ytPlay();
+      setPlaying(true);
+    }, 300);
+  };
+
+  const handleSubmitAnswer = () => {
+    if (!popup || popup.type !== "question") return;
+    const q = popup.timestamp.question;
+    if (!q) return;
+
+    let correct = false;
+    if (q.type === "multiple-choice") {
+      const choice = (q.choices || []).find(c => c.id === answer);
+      correct = choice?.isCorrect ?? false;
+    } else if (q.type === "true-false") {
+      correct = String(answer) === String(q.answer);
+    } else if (q.type === "fill-blank") {
+      const expected = (q.answer || "").split(",").map(s => s.trim().toLowerCase());
+      correct = expected.includes(fillInput.trim().toLowerCase());
+    }
+
+    setPopup({ ...popup, answered: true, correct, selectedAnswer: answer });
+
+    if (correct) {
+      toast.success(`Đúng rồi! +${q.points} điểm`);
+      onScoreUpdate?.(q.points, q.points);
+    } else {
+      toast.error("Chưa đúng. Hãy ghi nhớ đáp án đúng nhé!");
+      onScoreUpdate?.(0, q.points);
+    }
+  };
+
+  const progressPct = timestamps.length > 0
+    ? (completedIds.size / timestamps.length) * 100
+    : 0;
+
+  const timelineMax = duration > 0
+    ? duration
+    : timestamps.length > 0
+      ? Math.max(...timestamps.map(t => t.timeSeconds)) + 30
+      : 120;
+
+  // Question timestamps only (for skipped panel)
+  const questionTimestamps = timestamps.filter(ts => ts.type === "question");
+  const answeredQuestionIds = new Set(
+    [...completedIds].filter(id => {
+      const ts = timestamps.find(t => t.id === id);
+      return ts?.type === "question";
+    })
+  );
+  const skippedIds = new Set(skippedQuestions.map(sq => sq.timestamp.id));
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-border bg-card shadow-sm">
+      {/* Video container */}
+      <div className="relative bg-black aspect-video group/video">
+        {videoId ? (
+          <>
+            <iframe
+              ref={iframeRef}
+              src={buildEmbedUrl(videoId)}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              onLoad={handleIframeLoad}
+            />
+
+            {/* Dim overlay when popup is showing */}
+            {popup && (
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
+                <div className="flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full text-white text-sm">
+                  <Pause className="w-4 h-4" />
+                  Video đã tạm dừng
+                </div>
+              </div>
+            )}
+
+            {/* Click-to-play overlay (only when not showing popup) */}
+            {!popup && !playing && playerReady && (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer bg-black/20 opacity-0 group-hover/video:opacity-100 transition-opacity"
+                onClick={handleTogglePlay}
+              >
+                <div className="w-16 h-16 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:scale-110 transition-transform">
+                  <Play className="w-7 h-7 text-gray-800 ml-1" />
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-white/40 gap-3">
+            <Play className="w-16 h-16" />
+            <p className="text-sm">Chưa có URL video</p>
+          </div>
+        )}
+      </div>
+
+      {/* Controls bar */}
+      <div className="px-4 py-3 bg-muted/40 border-t border-border">
+        <div className="flex items-center gap-3 mb-2">
+          {/* Play/Pause button */}
+          <button
+            onClick={handleTogglePlay}
+            disabled={!!popup || !playerReady || !videoId}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+              "border shadow-sm",
+              popup || !playerReady || !videoId
+                ? "opacity-40 cursor-not-allowed bg-muted border-border text-muted-foreground"
+                : playing
+                  ? "bg-orange-500 hover:bg-orange-600 border-orange-600 text-white"
+                  : "bg-primary hover:bg-primary/90 border-primary/80 text-primary-foreground"
+            )}
+          >
+            {playing
+              ? <><Pause className="w-3.5 h-3.5" /> Tạm dừng</>
+              : <><Play className="w-3.5 h-3.5" /> Phát</>
+            }
+          </button>
+
+          {/* Time display */}
+          <span className="text-xs font-mono text-muted-foreground tabular-nums">
+            {formatTime(Math.floor(currentTime))}
+            {duration > 0 && <span className="text-muted-foreground/60"> / {formatTime(Math.floor(duration))}</span>}
+          </span>
+
+          {/* Skipped questions button */}
+          {skippedQuestions.length > 0 && (
+            <button
+              onClick={() => setShowSkippedPanel(v => !v)}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                showSkippedPanel
+                  ? "bg-amber-100 border-amber-400 text-amber-800"
+                  : "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 animate-pulse"
+              )}
+            >
+              <ListChecks className="w-3.5 h-3.5" />
+              {skippedQuestions.length} câu bỏ qua
+            </button>
+          )}
+
+          {/* Player status indicator */}
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className={cn(
+              "w-2 h-2 rounded-full transition-all",
+              !playerReady || !videoId ? "bg-muted-foreground/40"
+                : playing ? "bg-green-500 animate-pulse"
+                  : "bg-muted-foreground/60"
+            )} />
+            <span className="text-xs text-muted-foreground">
+              {!videoId ? "Chưa có video" : !playerReady ? "Đang tải..." : playing ? "Đang phát" : "Đã dừng"}
+            </span>
+          </div>
+        </div>
+
+        {/* Timeline with timestamp markers */}
+        <div className="relative h-5">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 bg-border rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-500"
+              style={{ width: `${duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0}%` }}
+            />
+          </div>
+          {timestamps.map(ts => {
+            const pct = Math.min((ts.timeSeconds / timelineMax) * 100, 98);
+            const done = completedIds.has(ts.id);
+            const isSkipped = skippedIds.has(ts.id);
+            return (
+              <div
+                key={ts.id}
+                style={{ left: `${pct}%` }}
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10"
+                title={`${formatTime(ts.timeSeconds)} – ${ts.type === "note" ? "Ghi chú" : isSkipped ? "Câu hỏi (đã bỏ qua)" : "Câu hỏi"}`}
+              >
+                <div className={cn(
+                  "w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm transition-all",
+                  done && !isSkipped
+                    ? "bg-green-500 scale-90"
+                    : isSkipped
+                      ? "bg-amber-500 animate-pulse"
+                      : ts.type === "note"
+                        ? "bg-amber-400 animate-pulse"
+                        : "bg-blue-500 animate-pulse"
+                )} />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        {timestamps.length > 0 && (
+          <div className="flex items-center gap-4 mt-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-400" /> Ghi chú
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Câu hỏi
+            </div>
+            {skippedQuestions.length > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-600 font-medium">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Đã bỏ qua
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500" /> Hoàn thành
+            </div>
+            <div className="ml-auto text-xs text-muted-foreground">
+              {completedIds.size - skippedIds.size}/{timestamps.length} điểm dừng
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Checkpoint progress bar */}
+      {timestamps.length > 0 && (
+        <div className="px-4 py-2 border-t border-border bg-muted/20">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-muted-foreground">Tiến độ điểm dừng</span>
+            <span className="text-xs font-medium text-foreground">{Math.round(progressPct)}%</span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className={cn("h-full rounded-full transition-all duration-500", progressPct === 100 ? "bg-green-500" : "bg-primary")}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Skipped Questions Panel */}
+      {showSkippedPanel && skippedQuestions.length > 0 && (
+        <SkippedQuestionsPanel
+          skippedQuestions={skippedQuestions}
+          onReturn={handleReturnToSkipped}
+          onClose={() => setShowSkippedPanel(false)}
+        />
+      )}
+
+      {/* Questions overview panel (when no popup) */}
+      {!popup && !showSkippedPanel && questionTimestamps.length > 0 && (
+        <QuestionsOverviewBar
+          questionTimestamps={questionTimestamps}
+          answeredIds={answeredQuestionIds}
+          skippedIds={skippedIds}
+          skippedQuestions={skippedQuestions}
+          onShowSkipped={() => setShowSkippedPanel(true)}
+        />
+      )}
+
+      {/* Popup panel */}
+      {popup && (
+        <PopupPanel
+          popup={popup}
+          answer={answer}
+          fillInput={fillInput}
+          onSetAnswer={setAnswer}
+          onSetFill={setFillInput}
+          onContinue={handleContinue}
+          onSkip={handleSkip}
+          onSubmit={handleSubmitAnswer}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Skipped Questions Panel ───────────────────────────────────────────────────
+
+function SkippedQuestionsPanel({ skippedQuestions, onReturn, onClose }: {
+  skippedQuestions: SkippedQuestion[];
+  onReturn: (sq: SkippedQuestion) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="border-t border-amber-200 bg-amber-50 animate-in slide-in-from-bottom-2 duration-200">
+      <div className="px-5 py-3 flex items-center justify-between border-b border-amber-200">
+        <div className="flex items-center gap-2">
+          <ListChecks className="w-4 h-4 text-amber-600" />
+          <span className="text-sm font-semibold text-amber-800">Câu hỏi đã bỏ qua</span>
+          <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-medium">
+            {skippedQuestions.length}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-amber-600 hover:text-amber-800 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="px-5 py-3 space-y-2 max-h-48 overflow-y-auto">
+        <p className="text-xs text-amber-700 mb-3">
+          Nhấn "Quay lại" để video tua về câu hỏi đó và bạn có thể trả lời.
+        </p>
+        {skippedQuestions.map((sq) => {
+          const q = sq.timestamp.question;
+          return (
+            <div
+              key={sq.timestamp.id}
+              className="flex items-center gap-3 bg-white border border-amber-200 rounded-xl px-4 py-3"
+            >
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <HelpCircle className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {q?.prompt || "(Câu hỏi không có nội dung)"}
+                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {formatTime(sq.timestamp.timeSeconds)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <span className="text-xs text-amber-600 capitalize">{q?.type?.replace("-", " ") || "câu hỏi"}</span>
+                  {q?.points && (
+                    <>
+                      <span className="text-xs text-muted-foreground">•</span>
+                      <span className="text-xs text-muted-foreground">{q.points} điểm</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 h-8 text-xs border-amber-300 text-amber-700 hover:bg-amber-100 flex-shrink-0"
+                onClick={() => onReturn(sq)}
+              >
+                <RotateCcw className="w-3 h-3" />
+                Quay lại
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Questions Overview Bar (compact status) ───────────────────────────────────
+
+function QuestionsOverviewBar({ questionTimestamps, answeredIds, skippedIds, skippedQuestions, onShowSkipped }: {
+  questionTimestamps: VideoTimestamp[];
+  answeredIds: Set<string>;
+  skippedIds: Set<string>;
+  skippedQuestions: SkippedQuestion[];
+  onShowSkipped: () => void;
+}) {
+  if (questionTimestamps.length === 0) return null;
+  const answeredCount = [...answeredIds].filter(id => !skippedIds.has(id)).length;
+  const skippedCount = skippedQuestions.length;
+
+  return (
+    <div className="px-4 py-2.5 border-t border-border bg-muted/10 flex items-center gap-3 flex-wrap">
+      <span className="text-xs text-muted-foreground font-medium">Câu hỏi:</span>
+      {questionTimestamps.map((ts) => {
+        const isAnswered = answeredIds.has(ts.id) && !skippedIds.has(ts.id);
+        const isSkipped = skippedIds.has(ts.id);
+        return (
+          <div
+            key={ts.id}
+            title={`${formatTime(ts.timeSeconds)} – ${isAnswered ? "Đã trả lời" : isSkipped ? "Đã bỏ qua" : "Chưa làm"}`}
+            className={cn(
+              "w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all",
+              isAnswered
+                ? "bg-green-500 border-green-600 text-white"
+                : isSkipped
+                  ? "bg-amber-400 border-amber-500 text-white"
+                  : "bg-muted border-border text-muted-foreground"
+            )}
+          >
+            {isAnswered ? "✓" : isSkipped ? "!" : "?"}
+          </div>
+        );
+      })}
+      <div className="ml-auto flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">
+          {answeredCount}/{questionTimestamps.length} đã trả lời
+        </span>
+        {skippedCount > 0 && (
+          <button
+            onClick={onShowSkipped}
+            className="text-xs text-amber-600 font-medium hover:text-amber-800 flex items-center gap-1 transition-colors underline underline-offset-2"
+          >
+            <SkipForward className="w-3 h-3" />
+            {skippedCount} câu bỏ qua
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Popup Panel ───────────────────────────────────────────────────────────────
+
+function PopupPanel({ popup, answer, fillInput, onSetAnswer, onSetFill, onContinue, onSkip, onSubmit }: {
+  popup: PopupState;
+  answer: unknown;
+  fillInput: string;
+  onSetAnswer: (a: unknown) => void;
+  onSetFill: (s: string) => void;
+  onContinue: () => void;
+  onSkip: () => void;
+  onSubmit: () => void;
+}) {
+  const isNote = popup.type === "note";
+  const isQuestion = popup.type === "question";
+  const q: VideoTimestampQuestion | undefined = isQuestion ? popup.timestamp.question : undefined;
+  const answered = isQuestion && popup.answered;
+
+  return (
+    <div className="border-t border-border animate-in slide-in-from-bottom-2 duration-200">
+      <div className={cn(
+        "px-5 py-4",
+        isNote ? "bg-amber-50 border-b border-amber-200" : "bg-blue-50 border-b border-blue-200"
+      )}>
+        <div className="flex items-start gap-3">
+          <div className={cn(
+            "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5",
+            isNote ? "bg-amber-100" : "bg-blue-100"
+          )}>
+            {isNote
+              ? <StickyNote className="w-4 h-4 text-amber-600" />
+              : <HelpCircle className="w-4 h-4 text-blue-600" />
+            }
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={cn(
+                "text-xs font-semibold uppercase tracking-wider",
+                isNote ? "text-amber-700" : "text-blue-700"
+              )}>
+                {isNote ? "📝 Ghi chú" : "❓ Câu hỏi"}
+              </span>
+              <span className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                {formatTime(popup.timestamp.timeSeconds)}
+              </span>
+              {isQuestion && q?.points && (
+                <span className="text-xs font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
+                  {q.points} điểm
+                </span>
+              )}
+            </div>
+
+            {/* Note content */}
+            {isNote && (
+              <p className="text-sm text-amber-900 leading-relaxed whitespace-pre-wrap">
+                {popup.timestamp.noteText || "(Ghi chú trống)"}
+              </p>
+            )}
+
+            {/* Question content */}
+            {isQuestion && q && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-foreground leading-relaxed">{q.prompt}</p>
+
+                {/* Multiple choice */}
+                {q.type === "multiple-choice" && (
+                  <div className="space-y-2">
+                    {(q.choices || []).map(c => {
+                      const isSelected = answer === c.id;
+                      const isCorrect = c.isCorrect;
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => !answered && onSetAnswer(c.id)}
+                          disabled={answered}
+                          className={cn(
+                            "w-full text-left px-3 py-2 rounded-lg text-sm border transition-all",
+                            answered
+                              ? isCorrect
+                                ? "bg-green-100 border-green-400 text-green-800"
+                                : isSelected && !isCorrect
+                                  ? "bg-red-100 border-red-400 text-red-800"
+                                  : "bg-white/50 border-border text-muted-foreground"
+                              : isSelected
+                                ? "bg-blue-100 border-blue-400 text-blue-800"
+                                : "bg-white hover:bg-blue-50 border-border"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            {answered && isCorrect && <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />}
+                            {answered && isSelected && !isCorrect && <X className="w-4 h-4 text-red-600 flex-shrink-0" />}
+                            {c.text}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* True/False */}
+                {q.type === "true-false" && (
+                  <div className="flex gap-3">
+                    {["true", "false"].map(val => {
+                      const isSelected = answer === val;
+                      const isCorrect = val === q.answer;
+                      return (
+                        <button
+                          key={val}
+                          onClick={() => !answered && onSetAnswer(val)}
+                          disabled={answered}
+                          className={cn(
+                            "flex-1 py-2 rounded-lg text-sm font-medium border transition-all",
+                            answered
+                              ? isCorrect ? "bg-green-100 border-green-400 text-green-800"
+                                : isSelected ? "bg-red-100 border-red-400 text-red-800"
+                                  : "bg-white/50 border-border text-muted-foreground"
+                              : isSelected ? "bg-blue-100 border-blue-400 text-blue-800"
+                                : "bg-white hover:bg-blue-50 border-border"
+                          )}
+                        >
+                          {val === "true" ? "✅ Đúng" : "❌ Sai"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Fill blank */}
+                {q.type === "fill-blank" && (
+                  <div>
+                    <Input
+                      className={cn(
+                        "h-9 text-sm",
+                        answered && popup.correct ? "border-green-400 bg-green-50"
+                          : answered ? "border-red-400 bg-red-50" : ""
+                      )}
+                      value={fillInput}
+                      onChange={e => onSetFill(e.target.value)}
+                      disabled={answered}
+                      placeholder="Nhập câu trả lời..."
+                      onKeyDown={e => e.key === "Enter" && !answered && onSubmit()}
+                    />
+                    {answered && !popup.correct && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Đáp án đúng: <span className="font-semibold text-green-700">{q.answer}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Result banner */}
+                {answered && (
+                  <div className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium",
+                    popup.correct ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  )}>
+                    {popup.correct
+                      ? <><Trophy className="w-4 h-4" /> Chính xác! +{q.points} điểm</>
+                      : <><X className="w-4 h-4" /> Chưa đúng. Hãy ghi nhớ đáp án đúng nhé!</>
+                    }
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer buttons */}
+      <div className={cn("px-5 py-3 flex items-center justify-between gap-3", isNote ? "bg-amber-50" : "bg-blue-50")}>
+        {/* Skip button — only for unanswered questions */}
+        {isQuestion && !answered && (
+          <button
+            onClick={onSkip}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <SkipForward className="w-3.5 h-3.5" />
+            Bỏ qua (làm sau)
+          </button>
+        )}
+
+        {/* Spacer when no skip button */}
+        {(!isQuestion || answered) && <div />}
+
+        <div className="flex items-center gap-2">
+          {isQuestion && !answered && (
+            <Button
+              size="sm"
+              onClick={onSubmit}
+              disabled={
+                (q?.type === "multiple-choice" && !answer) ||
+                (q?.type === "true-false" && !answer) ||
+                (q?.type === "fill-blank" && !fillInput.trim())
+              }
+              className="gap-1.5"
+            >
+              Nộp câu trả lời
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant={isNote || answered ? "default" : "outline"}
+            onClick={onContinue}
+            className="gap-1.5"
+          >
+            <ChevronRight className="w-4 h-4" />
+            {isNote ? "Tiếp tục xem video" : answered ? "Tiếp tục xem video" : "Tiếp tục"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

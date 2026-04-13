@@ -1,0 +1,126 @@
+Kế hoạch thiết kế giao diện — Nền tảng giáo dục
+Nền tảng phục vụ 5 nhóm đối tượng, mỗi nhóm có dashboard riêng biệt nhưng dùng chung core modules: bài tập, chấm điểm, theo dõi tiến độ, quản lý khoá học.
+
+1 · Nhóm người dùng & quyền truy cập
+👩‍🏫
+Giáo viên cá nhân
+Giao bài, chấm tự động, theo dõi từng học sinh
+🏫
+Trung tâm ngoại ngữ
+Quản lý lớp, 4 kỹ năng, thống kê theo khoá
+🏛️
+Trường K-12
+Thi đồng loạt, điểm số tập trung, báo cáo toàn trường
+📚
+Trung tâm (admin)
+Giao bài online, kiểm tra định kỳ toàn hệ thống
+🏢
+Doanh nghiệp
+Đào tạo nội bộ, đánh giá năng lực, báo cáo HR
+2 · Các màn hình chính cần thiết kế
+Màn hình đăng nhập / Onboarding
+Logo + tên nền tảng
+Chọn loại tài khoản (5 role)
+Form đăng nhập / đăng ký
+SSO (Google, Microsoft)
+Màn hình chào khi login lần đầu
+Dashboard tổng quan
+×5 role
+Số liệu nhanh (cards): học viên, bài nộp, tỉ lệ hoàn thành
+Biểu đồ tiến độ theo tuần/tháng
+Danh sách việc cần làm hôm nay
+Thông báo & nhắc nhở
+Truy cập nhanh khoá học / lớp học
+Tạo & quản lý bài tập
+Thư viện câu hỏi (filter theo kỹ năng, cấp độ)
+Trình soạn bài tập (drag & drop câu hỏi)
+Loại câu: trắc nghiệm, điền từ, tự luận, nghe, đọc
+Cài thời hạn nộp, thời gian làm bài
+Giao cho lớp / nhóm / cá nhân
+Preview bài trước khi giao
+Giao diện làm bài (học viên)
+Layout thi: sidebar câu hỏi + vùng trả lời
+Countdown timer
+Player audio (kỹ năng nghe)
+Rich text editor (kỹ năng viết)
+Nộp bài + xác nhận
+Xem kết quả ngay sau khi nộp (nếu có)
+Chấm điểm & phản hồi
+Danh sách bài nộp (lọc: chờ chấm / đã chấm)
+Giao diện chấm tay (highlight, comment inline)
+Chấm tự động + chỉnh sửa điểm thủ công
+Rubric chấm điểm (kỹ năng viết/nói)
+Gửi nhận xét cho học sinh
+Báo cáo & thống kê
+key
+Bảng điểm theo lớp / khoá / cá nhân
+Biểu đồ phân bố điểm (histogram)
+Tiến độ 4 kỹ năng (radar chart)
+So sánh lớp / khoa
+Export Excel / PDF
+Báo cáo theo phòng ban (doanh nghiệp)
+Quản lý khoá học
+Tạo khoá / lớp học
+Thêm / mời học viên (import CSV)
+Gán giáo viên cho lớp
+Lịch học & lịch thi
+Thư viện tài liệu khoá học
+Trang cá nhân học viên
+Danh sách bài tập (hạn nộp, trạng thái)
+Lịch sử điểm & nhận xét
+Tiến độ học theo từng kỹ năng
+Huy hiệu / gamification (tuỳ chọn)
+Thông báo cá nhân
+Cài đặt hệ thống (Admin)
+Quản lý người dùng & phân quyền
+Cài thang điểm, quy tắc thi
+Cấu hình thông báo (email, push)
+Tích hợp LMS bên ngoài (Moodle, Google Classroom)
+Audit log / nhật ký hệ thống
+3 · Luồng người dùng chính (User flow)
+01
+Đăng nhập
+Chọn role → xác thực → redirect đúng dashboard
+02
+Tạo bài tập
+Soạn hoặc chọn từ ngân hàng → cấu hình → giao lớp
+03
+Học viên làm bài
+Nhận thông báo → vào phòng thi → nộp bài
+04
+Chấm & phản hồi
+Auto-grade → GV review → gửi nhận xét
+05
+Xem báo cáo
+Dashboard → drill-down → export
+4 · Gợi ý công nghệ & design system
+Frontend
+React / Next.js
+Tailwind CSS
+Recharts / Nivo
+TipTap editor
+Design system
+Primary: Blue #378ADD
+Success: Green #1D9E75
+Warning: Amber #BA7517
+Font: Inter / Be Vietnam
+Backend API
+REST + WebSocket
+Auto-grading engine
+Storage: S3 (audio/file)
+Auth: JWT + OAuth2
+AI features
+Chấm writing tự động
+Gợi ý câu hỏi
+Nhận xét cá nhân hoá
+Phát hiện gian lận
+5 · Thứ tự ưu tiên thiết kế (MVP → Full)
+Phase 1 · MVP
+Lõi chức năng
+Đăng nhập, dashboard GV + HS, tạo bài tập cơ bản, làm bài, chấm tự động, xem điểm
+Phase 2 · Growth
+Quản lý & báo cáo
+Quản lý khoá học, báo cáo thống kê, chấm tay + rubric, phân quyền đa cấp, import CSV
+Phase 3 · Scale
+Nâng cao & AI
+AI chấm writing, dashboard doanh nghiệp, tích hợp LMS, gamification, mobile app
