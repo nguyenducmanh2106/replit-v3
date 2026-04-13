@@ -298,6 +298,29 @@ export interface SubmissionAnswerResult {
   pointsEarned: number;
   /** @nullable */
   feedback?: string | null;
+  /** @nullable */
+  teacherComment?: string | null;
+}
+
+export interface GradeQuestionBody {
+  pointsEarned?: number;
+  teacherComment?: string;
+}
+
+export interface GradeQuestionResult {
+  success: boolean;
+  questionId: number;
+  pointsEarned: number;
+  /** @nullable */
+  teacherComment?: string | null;
+  /** @nullable */
+  submissionScore?: number | null;
+}
+
+export interface PublishGradesResult {
+  success: boolean;
+  publishedCount: number;
+  message: string;
 }
 
 export interface SubmissionResult {

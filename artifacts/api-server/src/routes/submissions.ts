@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, or, sql } from "drizzle-orm";
+import { eq, and, or, sql, inArray } from "drizzle-orm";
 import { db, submissionsTable, submissionAnswersTable, assignmentsTable, usersTable, assignmentQuestionsTable, courseMembersTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { updateStreak, checkAndAwardBadges } from "./gamification";
@@ -12,6 +12,11 @@ import {
   GradeSubmissionParams,
   GradeSubmissionBody,
   GradeSubmissionResponse,
+  GradeQuestionParams,
+  GradeQuestionBody,
+  GradeQuestionResponse,
+  PublishGradesParams,
+  PublishGradesResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -49,6 +54,7 @@ async function getSubmissionResult(id: number) {
       isCorrect: a.isCorrect === "true" ? true : a.isCorrect === "false" ? false : null,
       pointsEarned: a.pointsEarned,
       feedback: a.feedback ?? null,
+      teacherComment: a.teacherComment ?? null,
     })),
   };
 }
@@ -409,7 +415,7 @@ router.post("/submissions", requireAuth, async (req, res): Promise<void> => {
       score: autoGraded ? totalScore : null,
       totalPoints: assignment.totalPoints,
       percentage,
-      status: autoGraded ? "graded" : "pending",
+      status: autoGraded ? "graded" : "pending_review",
       submittedAt: new Date().toISOString(),
       gradedAt: autoGraded ? new Date().toISOString() : null,
       feedback: null,
@@ -420,6 +426,7 @@ router.post("/submissions", requireAuth, async (req, res): Promise<void> => {
         isCorrect: ar.isCorrect === "true" ? true : ar.isCorrect === "false" ? false : null,
         pointsEarned: ar.pointsEarned,
         feedback: null,
+        teacherComment: null,
       })),
       isPreview: true,
     });
@@ -436,7 +443,7 @@ router.post("/submissions", requireAuth, async (req, res): Promise<void> => {
     studentId: dbUser.id,
     score: autoGraded ? totalScore : null,
     totalPoints: assignment.totalPoints,
-    status: autoGraded ? "graded" : "pending",
+    status: autoGraded ? "graded" : "pending_review",
     gradedAt: autoGraded ? new Date() : null,
     isFinal: !isTeacher,
   }).returning();
@@ -486,9 +493,20 @@ router.get("/submissions/:id", requireAuth, async (req, res): Promise<void> => {
   }
 
   if (isStudent) {
-    const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, result.assignmentId));
-    if (assignment && !assignment.allowReview) {
-      res.status(403).json({ error: "Giáo viên chưa cho phép xem lại bài làm" }); return;
+    if (result.status === "pending_review") {
+      res.json(GetSubmissionResponse.parse({
+        ...result,
+        score: null,
+        percentage: null,
+        answers: result.answers.map(a => ({ ...a, correctAnswer: null, feedback: null, teacherComment: null, pointsEarned: null, isCorrect: null })),
+      }));
+      return;
+    }
+    if (result.status !== "published") {
+      const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, result.assignmentId));
+      if (assignment && !assignment.allowReview) {
+        res.status(403).json({ error: "Giáo viên chưa cho phép xem lại bài làm" }); return;
+      }
     }
   }
 
@@ -536,6 +554,118 @@ router.patch("/submissions/:id/grade", requireAuth, async (req, res): Promise<vo
   const result = await getSubmissionResult(params.data.id);
   if (!result) { res.status(404).json({ error: "Submission not found" }); return; }
   res.json(GradeSubmissionResponse.parse(result));
+});
+
+router.patch("/submissions/:id/answers/:questionId", requireAuth, async (req, res): Promise<void> => {
+  const dbUser = req.dbUser;
+  if (!dbUser) { res.status(401).json({ error: "User not found" }); return; }
+
+  if (!TEACHER_ROLES.includes(dbUser.role)) {
+    res.status(403).json({ error: "Only teachers can grade questions" }); return;
+  }
+
+  const idRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const qidRaw = Array.isArray(req.params.questionId) ? req.params.questionId[0] : req.params.questionId;
+  const params = GradeQuestionParams.safeParse({ id: parseInt(idRaw!, 10), questionId: parseInt(qidRaw!, 10) });
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const parsed = GradeQuestionBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  const [existing] = await db.select().from(submissionsTable).where(eq(submissionsTable.id, params.data.id));
+  if (!existing) { res.status(404).json({ error: "Submission not found" }); return; }
+
+  if (dbUser.role !== "system_admin") {
+    const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, existing.assignmentId));
+    if (!assignment || assignment.teacherId !== dbUser.id) {
+      res.status(403).json({ error: "Forbidden: not your assignment" }); return;
+    }
+  }
+
+  const [answerRow] = await db.select().from(submissionAnswersTable)
+    .where(and(eq(submissionAnswersTable.submissionId, params.data.id), eq(submissionAnswersTable.questionId, params.data.questionId)));
+  if (!answerRow) { res.status(404).json({ error: "Answer not found" }); return; }
+
+  const questions = await db.select().from(assignmentQuestionsTable)
+    .where(eq(assignmentQuestionsTable.assignmentId, existing.assignmentId));
+  const question = questions.find(q => q.questionId === params.data.questionId);
+  const isEssay = question?.type === "essay";
+
+  const updateData: Record<string, unknown> = {};
+  if (parsed.data.teacherComment !== undefined) {
+    updateData.teacherComment = parsed.data.teacherComment;
+  }
+  if (parsed.data.pointsEarned !== undefined && isEssay) {
+    updateData.pointsEarned = parsed.data.pointsEarned;
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await db.update(submissionAnswersTable).set(updateData)
+      .where(and(eq(submissionAnswersTable.submissionId, params.data.id), eq(submissionAnswersTable.questionId, params.data.questionId)));
+  }
+
+  const allAnswers = await db.select().from(submissionAnswersTable)
+    .where(eq(submissionAnswersTable.submissionId, params.data.id));
+  const newTotal = allAnswers.reduce((sum, a) => sum + a.pointsEarned, 0);
+
+  await db.update(submissionsTable).set({ score: newTotal }).where(eq(submissionsTable.id, params.data.id));
+
+  const [updatedAnswer] = await db.select().from(submissionAnswersTable)
+    .where(and(eq(submissionAnswersTable.submissionId, params.data.id), eq(submissionAnswersTable.questionId, params.data.questionId)));
+
+  res.json(GradeQuestionResponse.parse({
+    success: true,
+    questionId: params.data.questionId,
+    pointsEarned: updatedAnswer?.pointsEarned ?? 0,
+    teacherComment: updatedAnswer?.teacherComment ?? null,
+    submissionScore: newTotal,
+  }));
+});
+
+router.post("/assignments/:id/publish-grades", requireAuth, async (req, res): Promise<void> => {
+  const dbUser = req.dbUser;
+  if (!dbUser) { res.status(401).json({ error: "User not found" }); return; }
+
+  if (!TEACHER_ROLES.includes(dbUser.role)) {
+    res.status(403).json({ error: "Only teachers can publish grades" }); return;
+  }
+
+  const idRaw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const params = PublishGradesParams.safeParse({ id: parseInt(idRaw!, 10) });
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+
+  const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, params.data.id));
+  if (!assignment) { res.status(404).json({ error: "Assignment not found" }); return; }
+
+  if (dbUser.role !== "system_admin" && assignment.teacherId !== dbUser.id) {
+    res.status(403).json({ error: "Forbidden: not your assignment" }); return;
+  }
+
+  const pendingSubs = await db.select().from(submissionsTable)
+    .where(and(eq(submissionsTable.assignmentId, params.data.id), eq(submissionsTable.status, "pending_review"), eq(submissionsTable.isFinal, true)));
+
+  if (pendingSubs.length === 0) {
+    res.json(PublishGradesResponse.parse({ success: true, publishedCount: 0, message: "Không có bài nộp nào cần publish" }));
+    return;
+  }
+
+  const subIds = pendingSubs.map(s => s.id);
+  const now = new Date();
+
+  await db.update(submissionsTable).set({ status: "published", gradedAt: now })
+    .where(inArray(submissionsTable.id, subIds));
+
+  for (const sub of pendingSubs) {
+    try {
+      await updateStreak(sub.studentId);
+      await checkAndAwardBadges(sub.studentId);
+    } catch {}
+  }
+
+  res.json(PublishGradesResponse.parse({
+    success: true,
+    publishedCount: subIds.length,
+    message: `Đã publish kết quả cho ${subIds.length} bài nộp`,
+  }));
 });
 
 export default router;

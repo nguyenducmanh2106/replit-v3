@@ -5,7 +5,9 @@ import {
   useGetSubmissionAnnotations, getGetSubmissionAnnotationsQueryKey, useCreateAnnotation, useDeleteAnnotation,
   useGetSubmissionRubricGrades, useSaveRubricGrades, useListRubrics,
   useGetPersonalizedFeedback,
-  getGetSubmissionQueryKey
+  getGetSubmissionQueryKey,
+  useGradeQuestion,
+  usePublishGrades,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -409,11 +411,15 @@ export default function SubmissionDetailPage() {
   const { mutateAsync: createAnnotation } = useCreateAnnotation();
   const { mutateAsync: deleteAnnotation } = useDeleteAnnotation();
   const { mutateAsync: gradeSubmission } = useGradeSubmission();
+  const { mutateAsync: gradeQuestionMutate } = useGradeQuestion();
+  const { mutateAsync: publishGradesMutate } = usePublishGrades();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const [gradeScore, setGradeScore] = useState<string>("");
   const [gradeFeedback, setGradeFeedback] = useState<string>("");
+  const [questionGrades, setQuestionGrades] = useState<Record<number, { points: string; comment: string }>>({});
+  const [savingQuestion, setSavingQuestion] = useState<number | null>(null);
 
   const isTeacher = me?.role && ["teacher", "center_admin", "school_admin", "system_admin", "enterprise_admin"].includes(me.role);
 
@@ -494,11 +500,15 @@ export default function SubmissionDetailPage() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">
-                  {submission.status === "graded" ? `${percentage.toFixed(1)}%` : "Chờ chấm điểm"}
+                  {(submission.status === "graded" || submission.status === "published") ? `${percentage.toFixed(1)}%` : "Chờ chấm điểm"}
                 </span>
                 {submission.status === "graded" ? (
                   <Badge className={percentage >= 80 ? "bg-green-100 text-success border-0" : percentage >= 50 ? "bg-amber-100 text-warning border-0" : "bg-red-100 text-red-600 border-0"}>
                     {percentage >= 80 ? "Đạt" : percentage >= 50 ? "Trung bình" : "Chưa đạt"}
+                  </Badge>
+                ) : submission.status === "published" ? (
+                  <Badge className="bg-blue-100 text-blue-700 border-0">
+                    Đã công bố
                   </Badge>
                 ) : (
                   <Badge className="bg-amber-100 text-warning border-0">
@@ -507,7 +517,7 @@ export default function SubmissionDetailPage() {
                   </Badge>
                 )}
               </div>
-              {submission.status === "graded" && (
+              {(submission.status === "graded" || submission.status === "published") && (
                 <Progress value={percentage} className="h-3" />
               )}
               {submission.feedback && (
@@ -520,8 +530,23 @@ export default function SubmissionDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Student pending_review notice */}
+      {!isTeacher && submission.status === "pending_review" && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Clock className="w-6 h-6 text-amber-600" />
+              <div>
+                <p className="font-semibold text-amber-900">Đã ghi nhận bài nộp</p>
+                <p className="text-sm text-amber-700">Bài làm đang chờ giáo viên chấm điểm. Kết quả sẽ được công bố sau khi giáo viên hoàn tất chấm điểm.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* AI Personalized Feedback */}
-      {submission.status === "graded" && (
+      {(submission.status === "graded" || submission.status === "published") && (
         <AIFeedbackPanel submissionId={submission.id} />
       )}
 
@@ -623,6 +648,12 @@ export default function SubmissionDetailPage() {
                               {answer.feedback && (
                                 <p className="text-xs text-muted-foreground mt-1 italic">{answer.feedback}</p>
                               )}
+                              {answer.teacherComment && (
+                                <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-lg">
+                                  <p className="text-xs font-medium text-blue-700 mb-0.5">Nhận xét giáo viên:</p>
+                                  <p className="text-sm text-blue-900">{answer.teacherComment}</p>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -643,35 +674,108 @@ export default function SubmissionDetailPage() {
           <TabsContent value="grade" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Chấm điểm thủ công</CardTitle>
+                <CardTitle className="text-base">Chấm điểm từng câu</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>Điểm (tối đa: {submission.totalPoints})</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={submission.totalPoints}
-                    step={0.5}
-                    value={gradeScore}
-                    onChange={e => setGradeScore(e.target.value)}
-                    placeholder={submission.score !== null ? String(submission.score) : "Nhập điểm..."}
-                    className="w-40"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Nhận xét tổng thể</Label>
+                {(submission.answers ?? []).map((answer, index) => {
+                  const isEssay = answer.isCorrect === undefined || answer.isCorrect === null;
+                  const qg = questionGrades[answer.questionId] ?? { points: String(answer.pointsEarned), comment: answer.teacherComment ?? "" };
+                  return (
+                    <div key={answer.questionId} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900">Câu {index + 1}</p>
+                        <div className="flex items-center gap-2">
+                          {isEssay ? (
+                            <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Bài luận</Badge>
+                          ) : (
+                            <Badge className={answer.isCorrect ? "bg-green-100 text-green-700 border-0 text-xs" : "bg-red-100 text-red-600 border-0 text-xs"}>
+                              {answer.isCorrect ? "Đúng" : "Sai"}
+                            </Badge>
+                          )}
+                          <span className="text-sm font-medium">{answer.pointsEarned} đ</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-700 line-clamp-3">{answer.answer || "(Bỏ trống)"}</p>
+                      {isEssay && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Điểm</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            step={0.5}
+                            value={qg.points}
+                            onChange={e => setQuestionGrades(g => ({ ...g, [answer.questionId]: { ...qg, points: e.target.value } }))}
+                            className="w-28 h-8 text-sm"
+                          />
+                        </div>
+                      )}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Nhận xét</Label>
+                        <Textarea
+                          value={qg.comment}
+                          onChange={e => setQuestionGrades(g => ({ ...g, [answer.questionId]: { ...qg, comment: e.target.value } }))}
+                          placeholder="Nhận xét cho câu này..."
+                          rows={2}
+                          className="text-sm"
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={savingQuestion === answer.questionId}
+                        onClick={async () => {
+                          setSavingQuestion(answer.questionId);
+                          try {
+                            const body: Record<string, unknown> = {};
+                            if (qg.comment) body.teacherComment = qg.comment;
+                            if (isEssay && qg.points) body.pointsEarned = parseFloat(qg.points);
+                            await gradeQuestionMutate({ id: submissionId, questionId: answer.questionId, data: body as any });
+                            await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
+                            toast({ title: `Đã lưu câu ${index + 1}` });
+                          } catch {
+                            toast({ title: "Lỗi", variant: "destructive" });
+                          } finally {
+                            setSavingQuestion(null);
+                          }
+                        }}
+                      >
+                        {savingQuestion === answer.questionId ? "Đang lưu..." : "Lưu câu này"}
+                      </Button>
+                    </div>
+                  );
+                })}
+
+                <div className="border-t pt-4 space-y-4">
+                  <p className="text-sm font-semibold">Nhận xét tổng thể (tuỳ chọn)</p>
                   <Textarea
                     value={gradeFeedback}
                     onChange={e => setGradeFeedback(e.target.value)}
-                    placeholder={submission.feedback ?? "Nhận xét cho học sinh..."}
-                    rows={4}
+                    placeholder={submission.feedback ?? "Nhận xét chung cho học sinh..."}
+                    rows={3}
                   />
+                  <div className="flex gap-3">
+                    <Button onClick={handleGrade} variant="outline">
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Lưu nhận xét tổng thể
+                    </Button>
+                    {submission.status === "pending_review" && (
+                      <Button
+                        onClick={async () => {
+                          try {
+                            const result = await publishGradesMutate({ id: submission.assignmentId });
+                            await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
+                            toast({ title: result.message || "Đã publish kết quả" });
+                          } catch {
+                            toast({ title: "Lỗi", description: "Không thể publish kết quả", variant: "destructive" });
+                          }
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Publish kết quả
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <Button onClick={handleGrade}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Lưu điểm
-                </Button>
               </CardContent>
             </Card>
           </TabsContent>

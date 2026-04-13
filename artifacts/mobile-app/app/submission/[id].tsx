@@ -46,8 +46,21 @@ export default function SubmissionScreen() {
     );
   }
 
+  const isPendingReview = submission.status === "pending_review";
+  const isPublished = submission.status === "published";
+  const isGraded = submission.status === "graded";
+  const showResults = isGraded || isPublished;
+
   const score = submission.score != null ? Math.round(Number(submission.score)) : null;
   const passed = score != null && score >= 50;
+
+  const statusLabel = isPendingReview
+    ? "Đã ghi nhận, chờ chấm"
+    : isPublished
+    ? "Đã công bố kết quả"
+    : isGraded
+    ? "Đã chấm"
+    : "Chờ chấm";
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
@@ -63,19 +76,34 @@ export default function SubmissionScreen() {
         contentContainerStyle={{ paddingTop: 24, paddingHorizontal: 20, paddingBottom: bottomPad + 30 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[s.scoreCard, { backgroundColor: passed ? colors.success : colors.destructive }]}>
-          <Feather
-            name={passed ? "check-circle" : "x-circle"}
-            size={40}
-            color="#FFF"
-          />
-          {score != null ? (
-            <Text style={s.scoreNum}>{score}%</Text>
-          ) : (
-            <Text style={s.scoreNum}>—</Text>
-          )}
-          <Text style={s.scoreLabel}>{passed ? "Xuất sắc! Bài đạt yêu cầu" : "Bài chưa đạt"}</Text>
-        </View>
+        {isPendingReview ? (
+          <View style={[s.scoreCard, { backgroundColor: "#F59E0B" }]}>
+            <Feather name="clock" size={40} color="#FFF" />
+            <Text style={s.scoreLabel}>Bài làm đã được ghi nhận</Text>
+            <Text style={[s.scoreLabel, { fontSize: 13, opacity: 0.85 }]}>
+              Giáo viên sẽ chấm điểm và công bố kết quả sau
+            </Text>
+          </View>
+        ) : showResults ? (
+          <View style={[s.scoreCard, { backgroundColor: passed ? colors.success : colors.destructive }]}>
+            <Feather
+              name={passed ? "check-circle" : "x-circle"}
+              size={40}
+              color="#FFF"
+            />
+            {score != null ? (
+              <Text style={s.scoreNum}>{score}%</Text>
+            ) : (
+              <Text style={s.scoreNum}>—</Text>
+            )}
+            <Text style={s.scoreLabel}>{passed ? "Xuất sắc! Bài đạt yêu cầu" : "Bài chưa đạt"}</Text>
+          </View>
+        ) : (
+          <View style={[s.scoreCard, { backgroundColor: colors.muted }]}>
+            <Feather name="loader" size={40} color={colors.mutedForeground} />
+            <Text style={[s.scoreLabel, { color: colors.mutedForeground }]}>Đang xử lý...</Text>
+          </View>
+        )}
 
         <View style={s.meta}>
           <MetaItem
@@ -87,12 +115,12 @@ export default function SubmissionScreen() {
           <MetaItem
             icon="clock"
             label="Trạng thái"
-            value={submission.status === "graded" ? "Đã chấm" : "Chờ chấm"}
+            value={statusLabel}
             colors={colors}
           />
         </View>
 
-        {submission.aiGrading && (
+        {showResults && submission.aiGrading && (
           <View style={[s.aiCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={s.aiHeader}>
               <Feather name="cpu" size={16} color={colors.primary} />
@@ -114,7 +142,7 @@ export default function SubmissionScreen() {
           </View>
         )}
 
-        {submission.answers && (submission.answers as any[]).length > 0 && (
+        {showResults && submission.answers && (submission.answers as any[]).length > 0 && (
           <>
             <Text style={[s.sectionTitle, { color: colors.foreground }]}>Chi tiết câu trả lời</Text>
             {(submission.answers as any[]).map((ans, i) => (
@@ -137,6 +165,20 @@ export default function SubmissionScreen() {
                       </Text>
                     )}
                   </View>
+                )}
+                {ans.teacherComment && (
+                  <View style={[s.teacherComment, { backgroundColor: colors.primary + "10", borderLeftColor: colors.primary }]}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                      <Feather name="message-circle" size={12} color={colors.primary} />
+                      <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: colors.primary }}>Nhận xét giáo viên</Text>
+                    </View>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.foreground }}>{ans.teacherComment}</Text>
+                  </View>
+                )}
+                {ans.pointsEarned != null && (
+                  <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.mutedForeground, marginTop: 4 }}>
+                    Điểm: {ans.pointsEarned}/{ans.points ?? "?"}
+                  </Text>
                 )}
               </View>
             ))}
@@ -213,6 +255,7 @@ const styles = (colors: ReturnType<typeof useColors>) =>
     answerResult: { flexDirection: "row", alignItems: "center", borderRadius: 8, padding: 8, gap: 6 },
     answerResultText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
     answerCorrect: { fontSize: 12, fontFamily: "Inter_400Regular", flex: 1 },
+    teacherComment: { marginTop: 8, padding: 10, borderRadius: 8, borderLeftWidth: 3 },
     homeBtn: { borderRadius: 14, height: 52, alignItems: "center", justifyContent: "center", marginTop: 16 },
     homeBtnText: { color: "#FFF", fontSize: 16, fontFamily: "Inter_600SemiBold" },
   });

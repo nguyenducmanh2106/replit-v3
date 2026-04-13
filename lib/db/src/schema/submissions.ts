@@ -29,6 +29,7 @@ export const submissionAnswersTable = pgTable("submission_answers", {
   isCorrect: text("is_correct"),
   pointsEarned: real("points_earned").notNull().default(0),
   feedback: text("feedback"),
+  teacherComment: text("teacher_comment"),
 });
 
 export const insertSubmissionAnswerSchema = createInsertSchema(submissionAnswersTable).omit({ id: true });

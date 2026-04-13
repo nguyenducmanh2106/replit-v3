@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, inArray, desc } from "drizzle-orm";
+import { eq, and, inArray, desc, or } from "drizzle-orm";
 import {
   db, submissionsTable,
   assignmentsTable, usersTable, coursesTable,
@@ -30,7 +30,7 @@ async function computeSkillAverages(submissionIds: number[]): Promise<{
       totalPoints: submissionsTable.totalPoints,
     })
     .from(submissionsTable)
-    .where(and(inArray(submissionsTable.id, submissionIds), eq(submissionsTable.status, "graded")));
+    .where(and(inArray(submissionsTable.id, submissionIds), or(eq(submissionsTable.status, "graded"), eq(submissionsTable.status, "published"))));
 
   for (const s of gradedSubs) {
     if (s.score == null || s.totalPoints <= 0) continue;

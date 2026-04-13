@@ -60,7 +60,7 @@ export default function SubmissionsPage() {
                     <div className="flex flex-col items-end gap-1.5">
                       <ScoreBadge percentage={s.percentage} />
                       <Badge variant="outline" className="text-xs">
-                        {s.status === "graded" ? "Đã chấm" : "Chờ chấm"}
+                        {s.status === "graded" ? "Đã chấm" : s.status === "published" ? "Đã công bố" : s.status === "pending_review" ? "Chờ chấm" : "Đang xử lý"}
                       </Badge>
                     </div>
                   </div>

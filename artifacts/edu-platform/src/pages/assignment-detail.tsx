@@ -5,6 +5,7 @@ import {
   getGetAssignmentQueryKey, getListAssignmentsQueryKey,
   useListQuizTemplates, useImportFromTemplate,
   useListCourses, useUpdateAssignmentQuestion,
+  usePublishGrades,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -692,6 +693,7 @@ export default function AssignmentDetailPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: me } = useGetMe();
+  const { mutateAsync: publishGradesMutate } = usePublishGrades();
   const isTeacher = me?.role && ["teacher", "center_admin", "school_admin", "system_admin", "enterprise_admin"].includes(me.role);
 
   const [addQOpen, setAddQOpen] = useState(false);
@@ -1154,9 +1156,28 @@ export default function AssignmentDetailPage() {
       </Card>
 
       <div className="flex items-center justify-between pt-2">
-        <Link href="/submissions">
-          <Button variant="outline" size="sm">Xem bài nộp ({assignment.submissionCount})</Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/submissions">
+            <Button variant="outline" size="sm">Xem bài nộp ({assignment.submissionCount})</Button>
+          </Link>
+          {isTeacher && !assignment.autoGrade && (assignment.submissionCount ?? 0) > 0 && (
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={async () => {
+                try {
+                  const result = await publishGradesMutate({ id: assignmentId });
+                  toast({ title: result.message || "Đã publish kết quả" });
+                  queryClient.invalidateQueries({ queryKey: getGetAssignmentQueryKey(assignmentId) });
+                } catch {
+                  toast({ title: "Lỗi", description: "Không thể publish kết quả", variant: "destructive" });
+                }
+              }}
+            >
+              Publish kết quả
+            </Button>
+          )}
+        </div>
       </div>
 
       <QuestionEditDialog

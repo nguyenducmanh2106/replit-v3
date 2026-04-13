@@ -532,7 +532,7 @@ export const ListSubmissionsResponseItem = zod.object({
   score: zod.number().nullish(),
   totalPoints: zod.number(),
   percentage: zod.number().nullish(),
-  status: zod.string().describe("pending | graded"),
+  status: zod.string().describe("pending_review | graded | published"),
   submittedAt: zod.coerce.date(),
   gradedAt: zod.coerce.date().nullish(),
 });
@@ -568,7 +568,7 @@ export const GetSubmissionResponse = zod.object({
   score: zod.number().nullish(),
   totalPoints: zod.number(),
   percentage: zod.number().nullish(),
-  status: zod.string(),
+  status: zod.string().describe("pending_review | graded | published"),
   submittedAt: zod.coerce.date(),
   gradedAt: zod.coerce.date().nullish(),
   answers: zod.array(
@@ -579,6 +579,7 @@ export const GetSubmissionResponse = zod.object({
       isCorrect: zod.boolean().nullish(),
       pointsEarned: zod.number(),
       feedback: zod.string().nullish(),
+      teacherComment: zod.string().nullish(),
     }),
   ),
   feedback: zod.string().nullish(),
@@ -616,9 +617,44 @@ export const GradeSubmissionResponse = zod.object({
       isCorrect: zod.boolean().nullish(),
       pointsEarned: zod.number(),
       feedback: zod.string().nullish(),
+      teacherComment: zod.string().nullish(),
     }),
   ),
   feedback: zod.string().nullish(),
+});
+
+/**
+ * @summary Grade a single question in a submission
+ */
+export const GradeQuestionParams = zod.object({
+  id: zod.coerce.number(),
+  questionId: zod.coerce.number(),
+});
+
+export const GradeQuestionBody = zod.object({
+  pointsEarned: zod.number().optional(),
+  teacherComment: zod.string().optional(),
+});
+
+export const GradeQuestionResponse = zod.object({
+  success: zod.boolean(),
+  questionId: zod.number(),
+  pointsEarned: zod.number(),
+  teacherComment: zod.string().nullish(),
+  submissionScore: zod.number().nullish(),
+});
+
+/**
+ * @summary Publish grades for all submissions of an assignment
+ */
+export const PublishGradesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const PublishGradesResponse = zod.object({
+  success: zod.boolean(),
+  publishedCount: zod.number(),
+  message: zod.string(),
 });
 
 /**

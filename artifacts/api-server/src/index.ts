@@ -8,6 +8,8 @@ async function runStartupMigrations() {
   try {
     await db.execute(sql`ALTER TABLE assignment_questions DROP CONSTRAINT IF EXISTS assignment_questions_question_id_questions_id_fk`);
     await db.execute(sql`ALTER TABLE assignments ADD COLUMN IF NOT EXISTS auto_grade BOOLEAN NOT NULL DEFAULT false`);
+    await db.execute(sql`ALTER TABLE submission_answers ADD COLUMN IF NOT EXISTS teacher_comment TEXT`);
+    await db.execute(sql`UPDATE submissions SET status = 'pending_review' WHERE status = 'pending'`);
     logger.info("Startup migrations completed");
   } catch (e) {
     logger.warn({ err: e }, "Startup migration warning (non-fatal)");

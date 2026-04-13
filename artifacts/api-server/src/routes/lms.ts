@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { db, usersTable, coursesTable, courseMembersTable, submissionsTable, assignmentsTable } from "@workspace/db";
 import {
   SyncLmsBody,
@@ -54,7 +54,7 @@ router.post("/lms/sync", requireAuth, async (req, res): Promise<void> => {
   }
 
   const gradedSubmissions = await db.select().from(submissionsTable)
-    .where(and(eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
+    .where(and(or(eq(submissionsTable.status, "graded"), eq(submissionsTable.status, "published")), eq(submissionsTable.isFinal, true)));
 
   lastSyncTimes[provider] = new Date();
 

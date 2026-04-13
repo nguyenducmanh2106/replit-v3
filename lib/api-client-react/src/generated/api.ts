@@ -49,6 +49,9 @@ import type {
   GetLeaderboardParams,
   GradeEssayBody,
   GradeSubmissionBody,
+  GradeQuestionBody,
+  GradeQuestionResult,
+  PublishGradesResult,
   HealthStatus,
   ImportCourseMembersBody,
   ImportResult,
@@ -2495,6 +2498,159 @@ export const useGradeSubmission = <
   TContext
 > => {
   return useMutation(getGradeSubmissionMutationOptions(options));
+};
+
+/**
+ * @summary Grade a single question in a submission
+ */
+export const getGradeQuestionUrl = (id: number, questionId: number) => {
+  return `/api/submissions/${id}/answers/${questionId}`;
+};
+
+export const gradeQuestion = async (
+  id: number,
+  questionId: number,
+  gradeQuestionBody: GradeQuestionBody,
+  options?: RequestInit,
+): Promise<GradeQuestionResult> => {
+  return customFetch<GradeQuestionResult>(getGradeQuestionUrl(id, questionId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(gradeQuestionBody),
+  });
+};
+
+export const getGradeQuestionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof gradeQuestion>>,
+    TError,
+    { id: number; questionId: number; data: BodyType<GradeQuestionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof gradeQuestion>>,
+  TError,
+  { id: number; questionId: number; data: BodyType<GradeQuestionBody> },
+  TContext
+> => {
+  const mutationKey = ["gradeQuestion"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof gradeQuestion>>,
+    { id: number; questionId: number; data: BodyType<GradeQuestionBody> }
+  > = (props) => {
+    const { id, questionId, data } = props ?? {};
+    return gradeQuestion(id, questionId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export const useGradeQuestion = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof gradeQuestion>>,
+    TError,
+    { id: number; questionId: number; data: BodyType<GradeQuestionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof gradeQuestion>>,
+  TError,
+  { id: number; questionId: number; data: BodyType<GradeQuestionBody> },
+  TContext
+> => {
+  return useMutation(getGradeQuestionMutationOptions(options));
+};
+
+/**
+ * @summary Publish grades for all submissions of an assignment
+ */
+export const getPublishGradesUrl = (id: number) => {
+  return `/api/assignments/${id}/publish-grades`;
+};
+
+export const publishGrades = async (
+  id: number,
+  options?: RequestInit,
+): Promise<PublishGradesResult> => {
+  return customFetch<PublishGradesResult>(getPublishGradesUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+  });
+};
+
+export const getPublishGradesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishGrades>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof publishGrades>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["publishGrades"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof publishGrades>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+    return publishGrades(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export const usePublishGrades = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof publishGrades>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof publishGrades>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getPublishGradesMutationOptions(options));
 };
 
 /**
