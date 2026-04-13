@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ interface CreateQuestionDialogProps {
   onClose: () => void;
   onSave: (data: QuestionData) => void;
   saving?: boolean;
+  defaultEssayAutoGrade?: boolean;
 }
 
 export interface QuestionData {
@@ -56,7 +57,7 @@ export interface QuestionData {
   points: number;
 }
 
-export function CreateQuestionDialog({ open, onClose, onSave, saving }: CreateQuestionDialogProps) {
+export function CreateQuestionDialog({ open, onClose, onSave, saving, defaultEssayAutoGrade = false }: CreateQuestionDialogProps) {
   const [type, setType] = useState("mcq");
   const [skill, setSkill] = useState("reading");
   const [level, setLevel] = useState("A1");
@@ -81,7 +82,12 @@ export function CreateQuestionDialog({ open, onClose, onSave, saving }: CreateQu
   const [audioUrl, setAudioUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [timedQuestions, setTimedQuestions] = useState<VideoQuestion[]>([]);
-  const [essayAutoGrade, setEssayAutoGrade] = useState(false);
+  const [essayAutoGrade, setEssayAutoGrade] = useState(defaultEssayAutoGrade);
+
+  // Sync essay auto-grade default whenever the dialog opens (handles async data load)
+  useEffect(() => {
+    if (open) setEssayAutoGrade(defaultEssayAutoGrade);
+  }, [open, defaultEssayAutoGrade]);
 
   function resetForm() {
     setType("mcq"); setSkill("reading"); setLevel("A1");
@@ -90,7 +96,7 @@ export function CreateQuestionDialog({ open, onClose, onSave, saving }: CreateQu
     setAllowMultiple(false); setTfAnswer("true"); setFillBlanks([""]); setPassage("");
     setCorrectWords([]); setPairs([{ left: "", right: "" }]); setDragItems([""]); setDragZones([{ label: "", accepts: [] }]);
     setReorderItems([""]); setSubQuestions([newSubQuestion()]); setAudioUrl(""); setVideoUrl(""); setTimedQuestions([]);
-    setEssayAutoGrade(false);
+    setEssayAutoGrade(defaultEssayAutoGrade);
   }
 
   function buildQuestionData(): QuestionData {
@@ -152,7 +158,7 @@ export function CreateQuestionDialog({ open, onClose, onSave, saving }: CreateQu
         options = JSON.stringify(timedQuestions);
         break;
       case "essay":
-        if (essayAutoGrade) metadata = JSON.stringify({ autoGrade: true });
+        metadata = JSON.stringify({ autoGrade: essayAutoGrade });
         break;
     }
 

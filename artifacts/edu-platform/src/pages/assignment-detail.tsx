@@ -1184,6 +1184,7 @@ export default function AssignmentDetailPage() {
         onClose={() => setCreateQOpen(false)}
         onSave={handleCreateQuestion}
         saving={creatingQ}
+        defaultEssayAutoGrade={assignment?.autoGrade ?? false}
       />
 
       <Dialog open={importTemplateOpen} onOpenChange={(v) => { if (!v) { setImportTemplateOpen(false); setPreviewTemplateId(null); setPreviewQuestions([]); } }}>
