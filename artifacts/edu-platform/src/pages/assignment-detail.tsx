@@ -710,6 +710,14 @@ export default function AssignmentDetailPage() {
   const { data: assignment, isLoading } = useGetAssignment(assignmentId, {
     query: { enabled: !!assignmentId, queryKey: getGetAssignmentQueryKey(assignmentId) },
   });
+
+  // Redirect students to the take page — the detail page is teacher-only
+  useEffect(() => {
+    if (!isLoading && me && !isTeacher && assignment) {
+      navigate(`/assignments/${assignmentId}/take`);
+    }
+  }, [isLoading, me, isTeacher, assignment, assignmentId, navigate]);
+
   const { mutate: updateAssignment, isPending: updatingAssignment } = useUpdateAssignment();
   const { mutate: addQuestion, isPending: addingQuestion } = useAddQuestionToAssignment();
   const { mutate: removeQuestion, isPending: removingQuestion } = useRemoveQuestionFromAssignment();

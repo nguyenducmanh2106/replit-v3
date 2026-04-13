@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListAssignments, useCreateAssignment, useListCourses, getListAssignmentsQueryKey } from "@workspace/api-client-react";
+import { useListAssignments, useCreateAssignment, useListCourses, getListAssignmentsQueryKey, useGetMe } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +30,8 @@ export default function AssignmentsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { data: me } = useGetMe();
+  const isTeacher = me?.role && ["teacher", "center_admin", "school_admin", "system_admin", "enterprise_admin"].includes(me.role);
   const params = statusFilter !== "all" ? { status: statusFilter } : {};
   const { data: assignments, isLoading } = useListAssignments(params);
   const { data: courses } = useListCourses();
@@ -66,12 +68,16 @@ export default function AssignmentsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Bài tập & Đề thi</h1>
-          <p className="text-muted-foreground mt-1">Tạo và quản lý các bài kiểm tra</p>
+          <p className="text-muted-foreground mt-1">
+            {isTeacher ? "Tạo và quản lý các bài kiểm tra" : "Danh sách bài tập của bạn"}
+          </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Tạo bài tập
-        </Button>
+        {isTeacher && (
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Tạo bài tập
+          </Button>
+        )}
       </div>
 
       <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -93,7 +99,7 @@ export default function AssignmentsPage() {
       ) : assignments && assignments.length > 0 ? (
         <div className="space-y-3">
           {assignments.map((a) => (
-            <Link key={a.id} href={`/assignments/${a.id}`}>
+            <Link key={a.id} href={isTeacher ? `/assignments/${a.id}` : `/assignments/${a.id}/take`}>
               <Card className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all">
                 <CardContent className="py-4 px-5">
                   <div className="flex items-start justify-between">
@@ -136,7 +142,9 @@ export default function AssignmentsPage() {
         <div className="text-center py-20 border-2 border-dashed border-gray-200 rounded-2xl">
           <PenSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="font-semibold text-gray-700">Chưa có bài tập nào</h3>
-          <p className="text-sm text-muted-foreground mt-1">Nhấn "Tạo bài tập" để bắt đầu</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isTeacher ? "Nhấn \"Tạo bài tập\" để bắt đầu" : "Bạn chưa được gán vào khoá học nào có bài tập đang mở"}
+          </p>
         </div>
       )}
 
