@@ -50,7 +50,8 @@ router.get("/enterprise/department-report", requireAuth, async (req, res): Promi
     const subs = memberIds.length > 0
       ? await db.select().from(submissionsTable).where(and(
           inArray(submissionsTable.studentId, memberIds),
-          eq(submissionsTable.status, "graded")
+          eq(submissionsTable.status, "graded"),
+          eq(submissionsTable.isFinal, true)
         ))
       : [];
 
@@ -79,13 +80,13 @@ router.get("/enterprise/department-report", requireAuth, async (req, res): Promi
     };
   }));
 
-  const allSubs = await db.select().from(submissionsTable).where(eq(submissionsTable.status, "graded"));
+  const allSubs = await db.select().from(submissionsTable).where(and(eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
   const totalPercent = allSubs.reduce((sum, s) =>
     sum + (s.totalPoints > 0 && s.score != null ? (s.score / s.totalPoints) * 100 : 0), 0);
 
   const topPerformers = await Promise.all(allStudents.slice(0, 5).map(async (student, idx) => {
     const subs = await db.select().from(submissionsTable).where(
-      and(eq(submissionsTable.studentId, student.id), eq(submissionsTable.status, "graded"))
+      and(eq(submissionsTable.studentId, student.id), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true))
     );
     const totalScore = subs.reduce((sum, s) => sum + (s.score ?? 0), 0);
     const totalPct = subs.reduce((sum, s) =>
@@ -141,7 +142,7 @@ router.get("/enterprise/competency-matrix", requireAuth, async (req, res): Promi
 
   const matrix = await Promise.all(students.map(async (student) => {
     const subs = await db.select().from(submissionsTable).where(
-      and(eq(submissionsTable.studentId, student.id), eq(submissionsTable.status, "graded"))
+      and(eq(submissionsTable.studentId, student.id), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true))
     );
 
     const skillScores: Record<string, { total: number; points: number }> = {

@@ -28,11 +28,11 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
       const [totalStudentsRow] = await db.select({ count: sql<number>`count(*)` }).from(usersTable).where(eq(usersTable.role, "student"));
       const [totalCoursesRow] = await db.select({ count: sql<number>`count(*)` }).from(coursesTable);
       const [totalAssignmentsRow] = await db.select({ count: sql<number>`count(*)` }).from(assignmentsTable);
-      const [totalSubmissionsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable);
-      const [pendingGradingRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(eq(submissionsTable.status, "pending"));
-      const [gradedCountRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(eq(submissionsTable.status, "graded"));
-      const [avgScoreRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(eq(submissionsTable.status, "graded"));
-      const [totalPointsRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable);
+      const [totalSubmissionsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(eq(submissionsTable.isFinal, true));
+      const [pendingGradingRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(eq(submissionsTable.status, "pending"), eq(submissionsTable.isFinal, true)));
+      const [gradedCountRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
+      const [avgScoreRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
+      const [totalPointsRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(eq(submissionsTable.isFinal, true));
 
       const totalSubs = Number(totalSubmissionsRow?.count ?? 0);
       const graded = Number(gradedCountRow?.count ?? 0);
@@ -61,11 +61,11 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
 
       let totalSubs = 0, pendingGrading = 0, graded = 0, avgPercent = 0;
       if (myAssignmentIds.length > 0) {
-        const [totalSubmissionsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(inArray(submissionsTable.assignmentId, myAssignmentIds));
-        const [pendingGradingRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.status, "pending")));
-        const [gradedCountRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.status, "graded")));
-        const [avgScoreRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.status, "graded")));
-        const [totalPointsRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(inArray(submissionsTable.assignmentId, myAssignmentIds));
+        const [totalSubmissionsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.isFinal, true)));
+        const [pendingGradingRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.status, "pending"), eq(submissionsTable.isFinal, true)));
+        const [gradedCountRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
+        const [avgScoreRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
+        const [totalPointsRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.isFinal, true)));
 
         totalSubs = Number(totalSubmissionsRow?.count ?? 0);
         pendingGrading = Number(pendingGradingRow?.count ?? 0);
@@ -80,7 +80,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
       // Count unique students who have submitted to teacher's assignments
       let totalStudents = 0;
       if (myAssignmentIds.length > 0) {
-        const [studentCountRow] = await db.select({ count: sql<number>`count(distinct student_id)` }).from(submissionsTable).where(inArray(submissionsTable.assignmentId, myAssignmentIds));
+        const [studentCountRow] = await db.select({ count: sql<number>`count(distinct student_id)` }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.isFinal, true)));
         totalStudents = Number(studentCountRow?.count ?? 0);
       }
 
@@ -97,11 +97,11 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
     }
   } else {
     // Student: own submissions only
-    const [totalSubmissionsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(eq(submissionsTable.studentId, dbUser.id));
-    const [gradedCountRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "graded")));
-    const [pendingGradingRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "pending")));
-    const [avgScoreRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "graded")));
-    const [totalPointsRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "graded")));
+    const [totalSubmissionsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.isFinal, true)));
+    const [gradedCountRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
+    const [pendingGradingRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "pending"), eq(submissionsTable.isFinal, true)));
+    const [avgScoreRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
+    const [totalPointsRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
 
     const totalSubs = Number(totalSubmissionsRow?.count ?? 0);
     const graded = Number(gradedCountRow?.count ?? 0);
@@ -113,7 +113,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res): Promise<void> =>
     // Count courses the student is enrolled in
     const enrolledCourses = await db.select({ courseId: sql<number>`distinct course_id` }).from(submissionsTable)
       .innerJoin(assignmentsTable, eq(submissionsTable.assignmentId, assignmentsTable.id))
-      .where(and(eq(submissionsTable.studentId, dbUser.id), sql`${assignmentsTable.courseId} IS NOT NULL`));
+      .where(and(eq(submissionsTable.studentId, dbUser.id), sql`${assignmentsTable.courseId} IS NOT NULL`, eq(submissionsTable.isFinal, true)));
 
     res.json(GetDashboardSummaryResponse.parse({
       totalStudents: 0,
@@ -147,6 +147,7 @@ router.get("/dashboard/activity", requireAuth, async (req, res): Promise<void> =
           submittedAt: submissionsTable.submittedAt,
         })
         .from(submissionsTable)
+        .where(eq(submissionsTable.isFinal, true))
         .orderBy(desc(submissionsTable.submittedAt))
         .limit(10);
     } else {
@@ -162,7 +163,7 @@ router.get("/dashboard/activity", requireAuth, async (req, res): Promise<void> =
               submittedAt: submissionsTable.submittedAt,
             })
             .from(submissionsTable)
-            .where(inArray(submissionsTable.assignmentId, myAssignmentIds))
+            .where(and(inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.isFinal, true)))
             .orderBy(desc(submissionsTable.submittedAt))
             .limit(10)
         : [];
@@ -177,7 +178,7 @@ router.get("/dashboard/activity", requireAuth, async (req, res): Promise<void> =
         submittedAt: submissionsTable.submittedAt,
       })
       .from(submissionsTable)
-      .where(eq(submissionsTable.studentId, dbUser.id))
+      .where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.isFinal, true)))
       .orderBy(desc(submissionsTable.submittedAt))
       .limit(10);
   }
@@ -245,7 +246,8 @@ router.get("/dashboard/upcoming", requireAuth, async (req, res): Promise<void> =
     const [sub] = await db.select().from(submissionsTable)
       .where(and(
         eq(submissionsTable.assignmentId, a.id),
-        eq(submissionsTable.studentId, dbUser.id)
+        eq(submissionsTable.studentId, dbUser.id),
+        eq(submissionsTable.isFinal, true)
       ));
     submitted = !!sub;
     let courseName: string | null = null;
@@ -277,7 +279,7 @@ router.get("/dashboard/skill-progress", requireAuth, async (req, res): Promise<v
   const graded = await db
     .select({ score: submissionsTable.score, totalPoints: submissionsTable.totalPoints })
     .from(submissionsTable)
-    .where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "graded")));
+    .where(and(eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
 
   let totalPct = 0, count = 0;
   for (const sub of graded) {
@@ -328,26 +330,26 @@ router.get("/dashboard/weekly-stats", requireAuth, async (req, res): Promise<voi
 
     if (TEACHER_ROLES.includes(dbUser.role)) {
       if (dbUser.role === "system_admin") {
-        const [subsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(timeFilter);
-        const [avgRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(sql`${timeFilter} AND status = 'graded'`);
-        const [totAvgRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(sql`${timeFilter} AND status = 'graded'`);
+        const [subsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(timeFilter, eq(submissionsTable.isFinal, true)));
+        const [avgRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, eq(submissionsTable.isFinal, true)));
+        const [totAvgRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, eq(submissionsTable.isFinal, true)));
         subsCount = Number(subsRow?.count ?? 0);
         const avgScore = Number(avgRow?.avg ?? 0);
         const avgTotal = Number(totAvgRow?.avg ?? 1);
         pct = avgTotal > 0 ? Math.round((avgScore / avgTotal) * 100 * 10) / 10 : 0;
       } else if (myAssignmentIds.length > 0) {
-        const [subsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(timeFilter, inArray(submissionsTable.assignmentId, myAssignmentIds)));
-        const [avgRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, inArray(submissionsTable.assignmentId, myAssignmentIds)));
-        const [totAvgRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, inArray(submissionsTable.assignmentId, myAssignmentIds)));
+        const [subsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(timeFilter, inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.isFinal, true)));
+        const [avgRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.isFinal, true)));
+        const [totAvgRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, inArray(submissionsTable.assignmentId, myAssignmentIds), eq(submissionsTable.isFinal, true)));
         subsCount = Number(subsRow?.count ?? 0);
         const avgScore = Number(avgRow?.avg ?? 0);
         const avgTotal = Number(totAvgRow?.avg ?? 1);
         pct = avgTotal > 0 ? Math.round((avgScore / avgTotal) * 100 * 10) / 10 : 0;
       }
     } else {
-      const [subsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(timeFilter, eq(submissionsTable.studentId, dbUser.id)));
-      const [avgRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, eq(submissionsTable.studentId, dbUser.id)));
-      const [totAvgRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, eq(submissionsTable.studentId, dbUser.id)));
+      const [subsRow] = await db.select({ count: sql<number>`count(*)` }).from(submissionsTable).where(and(timeFilter, eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.isFinal, true)));
+      const [avgRow] = await db.select({ avg: sql<number>`avg(score)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.isFinal, true)));
+      const [totAvgRow] = await db.select({ avg: sql<number>`avg(total_points)` }).from(submissionsTable).where(and(sql`${timeFilter} AND status = 'graded'`, eq(submissionsTable.studentId, dbUser.id), eq(submissionsTable.isFinal, true)));
       subsCount = Number(subsRow?.count ?? 0);
       const avgScore = Number(avgRow?.avg ?? 0);
       const avgTotal = Number(totAvgRow?.avg ?? 1);

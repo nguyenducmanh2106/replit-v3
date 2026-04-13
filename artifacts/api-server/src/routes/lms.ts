@@ -54,7 +54,7 @@ router.post("/lms/sync", requireAuth, async (req, res): Promise<void> => {
   }
 
   const gradedSubmissions = await db.select().from(submissionsTable)
-    .where(eq(submissionsTable.status, "graded"));
+    .where(and(eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true)));
 
   lastSyncTimes[provider] = new Date();
 

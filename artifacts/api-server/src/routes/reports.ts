@@ -89,7 +89,7 @@ router.get("/reports/overview", requireAuth, async (req, res): Promise<void> => 
         score: submissionsTable.score,
         totalPoints: submissionsTable.totalPoints,
         status: submissionsTable.status,
-      }).from(submissionsTable).where(inArray(submissionsTable.assignmentId, assignmentIds));
+      }).from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, assignmentIds), eq(submissionsTable.isFinal, true)));
     }
   }
 
@@ -112,7 +112,7 @@ router.get("/reports/overview", requireAuth, async (req, res): Promise<void> => 
     const courseAssignmentIds = courseAssignments.map(a => a.id);
     const courseSubs = courseAssignmentIds.length > 0
       ? await db.select({ score: submissionsTable.score, totalPoints: submissionsTable.totalPoints, status: submissionsTable.status })
-        .from(submissionsTable).where(inArray(submissionsTable.assignmentId, courseAssignmentIds))
+        .from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, courseAssignmentIds), eq(submissionsTable.isFinal, true)))
       : [];
 
     const gradedSubs = courseSubs.filter(s => s.status === "graded" && s.score != null);
@@ -173,7 +173,7 @@ router.get("/reports/course/:courseId", requireAuth, async (req, res): Promise<v
   const assignmentIds = assignments.map(a => a.id);
 
   const subs = assignmentIds.length > 0
-    ? await db.select().from(submissionsTable).where(inArray(submissionsTable.assignmentId, assignmentIds))
+    ? await db.select().from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, assignmentIds), eq(submissionsTable.isFinal, true)))
     : [];
 
   const gradedSubs = subs.filter(s => s.status === "graded" && s.score != null);
@@ -272,7 +272,7 @@ router.get("/reports/student/:studentId", requireAuth, async (req, res): Promise
     totalPoints: submissionsTable.totalPoints,
     status: submissionsTable.status,
     submittedAt: submissionsTable.submittedAt,
-  }).from(submissionsTable).where(eq(submissionsTable.studentId, studentId));
+  }).from(submissionsTable).where(and(eq(submissionsTable.studentId, studentId), eq(submissionsTable.isFinal, true)));
 
   const graded = subs.filter(s => s.status === "graded" && s.score != null);
   const averageScore = graded.length > 0

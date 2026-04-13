@@ -42,7 +42,7 @@ async function checkAndAwardBadges(userId: number) {
   const longestStreak = streakRow?.longestStreak ?? 0;
 
   const submissions = await db.select().from(submissionsTable).where(
-    and(eq(submissionsTable.studentId, userId), eq(submissionsTable.status, "graded"))
+    and(eq(submissionsTable.studentId, userId), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true))
   );
 
   const submissionCount = submissions.length;
@@ -179,7 +179,7 @@ router.get("/gamification/leaderboard", requireAuth, async (req, res): Promise<v
 
   const entries = await Promise.all(students.map(async (student) => {
     const subs = await db.select().from(submissionsTable).where(
-      and(eq(submissionsTable.studentId, student.id), eq(submissionsTable.status, "graded"))
+      and(eq(submissionsTable.studentId, student.id), eq(submissionsTable.status, "graded"), eq(submissionsTable.isFinal, true))
     );
 
     const totalScore = subs.reduce((sum, s) => sum + (s.score ?? 0), 0);
