@@ -18,8 +18,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Link } from "wouter";
-import { Users, PenSquare, Calendar, Plus, Trash2, FileText, Upload, Clock } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Users, PenSquare, Calendar, Plus, Trash2, FileText, Upload, Clock, Play, RefreshCw, Ban, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -464,6 +464,8 @@ function AssignmentsTab({ courseId, canManage, assignments, loading }: { courseI
   const { mutateAsync: createAssignment, isPending } = useCreateAssignment();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", timeLimitMinutes: 60 });
+  const [retakeWarning, setRetakeWarning] = useState<{ id: number; title: string; myAttemptCount: number; maxAttempts: number } | null>(null);
+  const [, navigate] = useLocation();
 
   async function handleCreate() {
     if (!form.title) {
@@ -529,7 +531,7 @@ function AssignmentsTab({ courseId, canManage, assignments, loading }: { courseI
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {canManage ? (
                         <Badge className={
                           a.status === "published" ? "bg-green-100 text-green-700 border-0" :
@@ -538,14 +540,31 @@ function AssignmentsTab({ courseId, canManage, assignments, loading }: { courseI
                         }>
                           {a.status === "published" ? "Đã công bố" : a.status === "closed" ? "Đã đóng" : "Nháp"}
                         </Badge>
-                      ) : (
-                        <Link href={`/assignments/${a.id}/take`}>
-                          <Button size="sm">
-                            <PenSquare className="w-3.5 h-3.5 mr-1" />
-                            Làm bài
+                      ) : (() => {
+                        const myAttempts = a.myAttemptCount ?? 0;
+                        const maxAtt = a.maxAttempts ?? 0;
+                        const exceeded = maxAtt > 0 && myAttempts >= maxAtt;
+                        const isRetake = myAttempts > 0 && !exceeded;
+                        if (exceeded) {
+                          return (
+                            <Badge className="bg-red-100 text-red-600 border-0 flex items-center gap-1">
+                              <Ban className="w-3 h-3" />Đã hết lượt
+                            </Badge>
+                          );
+                        }
+                        return isRetake ? (
+                          <Button size="sm" variant="outline" className="border-amber-400 text-amber-700 hover:bg-amber-50"
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); setRetakeWarning({ id: a.id, title: a.title, myAttemptCount: myAttempts, maxAttempts: maxAtt }); }}>
+                            <RefreshCw className="w-3.5 h-3.5 mr-1" />Làm lại
                           </Button>
-                        </Link>
-                      )}
+                        ) : (
+                          <Link href={`/assignments/${a.id}/take`}>
+                            <Button size="sm" onClick={(e) => e.stopPropagation()}>
+                              <Play className="w-3.5 h-3.5 mr-1" />Làm bài
+                            </Button>
+                          </Link>
+                        );
+                      })()}
                     </div>
                   </div>
                 </CardContent>
@@ -592,6 +611,38 @@ function AssignmentsTab({ courseId, canManage, assignments, loading }: { courseI
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Hủy</Button>
             <Button onClick={handleCreate} disabled={isPending}>{isPending ? "Đang tạo..." : "Tạo bài tập"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!retakeWarning} onOpenChange={(v) => { if (!v) setRetakeWarning(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Xác nhận làm lại bài tập
+            </DialogTitle>
+          </DialogHeader>
+          {retakeWarning && (
+            <div className="space-y-3 pt-2">
+              <p className="font-medium text-gray-900">{retakeWarning.title}</p>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+                <p className="text-sm text-amber-800">
+                  Đây là lần làm thứ <span className="font-bold">{retakeWarning.myAttemptCount + 1}</span> trên giới hạn <span className="font-bold">{retakeWarning.maxAttempts}</span> lần cho phép.
+                </p>
+                <p className="text-sm text-amber-800">
+                  Làm lại sẽ xoá kết quả của bài nộp cũ và ghi nhận kết quả mới nhất.
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">Còn lại: {retakeWarning.maxAttempts - retakeWarning.myAttemptCount} lượt</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRetakeWarning(null)}>Hủy</Button>
+            <Button variant="destructive" onClick={() => {
+              if (retakeWarning) navigate(`/assignments/${retakeWarning.id}/take`);
+              setRetakeWarning(null);
+            }}>Xác nhận làm lại</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

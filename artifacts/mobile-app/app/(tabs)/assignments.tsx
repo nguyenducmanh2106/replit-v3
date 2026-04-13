@@ -22,6 +22,8 @@ type Assignment = {
   status: string;
   dueAt?: string | null;
   courseId?: number | null;
+  myAttemptCount?: number | null;
+  maxAttempts?: number | null;
 };
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -33,17 +35,23 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 function AssignmentCard({ item }: { item: Assignment }) {
   const colors = useColors();
   const status = STATUS_MAP[item.status] ?? { label: item.status, color: colors.mutedForeground };
+  const myAttempts = item.myAttemptCount ?? 0;
+  const maxAtt = item.maxAttempts ?? 0;
+  const exceeded = maxAtt > 0 && myAttempts >= maxAtt;
+  const isRetake = myAttempts > 0 && !exceeded;
 
   return (
     <Pressable
-      style={[card.wrap, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={() => router.push(`/assignment/${item.id}`)}
+      style={[card.wrap, { backgroundColor: colors.card, borderColor: exceeded ? "#FECACA" : colors.border }]}
+      onPress={() => !exceeded && router.push(`/assignment/${item.id}`)}
     >
       <View style={card.top}>
-        <View style={[card.statusDot, { backgroundColor: status.color }]} />
-        <Text style={[card.statusLabel, { color: status.color }]}>{status.label}</Text>
+        <View style={[card.statusDot, { backgroundColor: exceeded ? "#EF4444" : status.color }]} />
+        <Text style={[card.statusLabel, { color: exceeded ? "#EF4444" : status.color }]}>
+          {exceeded ? "Hết lượt" : status.label}
+        </Text>
       </View>
-      <Text style={[card.title, { color: colors.foreground }]} numberOfLines={2}>
+      <Text style={[card.title, { color: exceeded ? colors.mutedForeground : colors.foreground }]} numberOfLines={2}>
         {item.title}
       </Text>
       {item.dueAt && (
@@ -54,10 +62,14 @@ function AssignmentCard({ item }: { item: Assignment }) {
           </Text>
         </View>
       )}
-      <View style={[card.footer, { borderTopColor: colors.border }]}>
-        <Text style={[card.takeBtn, { color: colors.primary }]}>Làm bài</Text>
-        <Feather name="arrow-right" size={14} color={colors.primary} />
-      </View>
+      {!exceeded && (
+        <View style={[card.footer, { borderTopColor: colors.border }]}>
+          <Text style={[card.takeBtn, { color: isRetake ? "#D97706" : colors.primary }]}>
+            {isRetake ? "Làm lại" : "Làm bài"}
+          </Text>
+          <Feather name={isRetake ? "refresh-cw" : "arrow-right"} size={14} color={isRetake ? "#D97706" : colors.primary} />
+        </View>
+      )}
     </Pressable>
   );
 }

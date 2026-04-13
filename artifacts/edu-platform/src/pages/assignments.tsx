@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, PenSquare, Calendar, Clock, Users, AlertTriangle, Ban } from "lucide-react";
+import { Plus, PenSquare, Calendar, Clock, Users, AlertTriangle, Ban, Play, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { format, parseISO } from "date-fns";
 
@@ -152,11 +152,21 @@ export default function AssignmentsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {exceededLimit && (
-                            <Badge className="bg-red-100 text-red-600 border-0 flex items-center gap-1">
-                              <Ban className="w-3 h-3" />Đã hết lượt
-                            </Badge>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {!isTeacher && a.status === "published" && (
+                            exceededLimit ? (
+                              <Badge className="bg-red-100 text-red-600 border-0 flex items-center gap-1">
+                                <Ban className="w-3 h-3" />Đã hết lượt
+                              </Badge>
+                            ) : isRetake ? (
+                              <Button size="sm" variant="outline" className="border-amber-400 text-amber-700 hover:bg-amber-50">
+                                <RefreshCw className="w-3.5 h-3.5 mr-1" />Làm lại
+                              </Button>
+                            ) : (
+                              <Button size="sm">
+                                <Play className="w-3.5 h-3.5 mr-1" />Làm bài
+                              </Button>
+                            )
                           )}
                           <StatusBadge status={a.status} />
                         </div>

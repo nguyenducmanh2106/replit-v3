@@ -874,11 +874,26 @@ export default function AssignmentDetailPage() {
               </Button>
             </Link>
           )}
-          {assignment.status === "published" && !isTeacher && (
-            <Link href={`/assignments/${assignmentId}/take`}>
-              <Button size="sm"><Play className="w-4 h-4 mr-2" />Làm bài</Button>
-            </Link>
-          )}
+          {assignment.status === "published" && !isTeacher && (() => {
+            const myAttempts = assignment.myAttemptCount ?? 0;
+            const maxAtt = assignment.maxAttempts ?? 0;
+            const exceeded = maxAtt > 0 && myAttempts >= maxAtt;
+            if (exceeded) return null;
+            if (myAttempts > 0) {
+              return (
+                <Link href={`/assignments/${assignmentId}/take`}>
+                  <Button size="sm" variant="outline" className="border-amber-400 text-amber-700 hover:bg-amber-50">
+                    <RefreshCw className="w-4 h-4 mr-2" />Làm lại
+                  </Button>
+                </Link>
+              );
+            }
+            return (
+              <Link href={`/assignments/${assignmentId}/take`}>
+                <Button size="sm"><Play className="w-4 h-4 mr-2" />Làm bài</Button>
+              </Link>
+            );
+          })()}
           {assignment.status === "draft" && isTeacher && (
             <Button
               size="sm"

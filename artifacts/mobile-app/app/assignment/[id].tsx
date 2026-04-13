@@ -81,6 +81,36 @@ export default function AssignmentScreen() {
     );
   }
 
+  const myAttempts = (assignment as any).myAttemptCount ?? 0;
+  const maxAtt = (assignment as any).maxAttempts ?? 0;
+  const exceeded = maxAtt > 0 && myAttempts >= maxAtt;
+
+  if (exceeded) {
+    return (
+      <View style={[s.container, { backgroundColor: colors.background }]}>
+        <View style={[s.header, { paddingTop: topPad + 8, borderBottomColor: colors.border }]}>
+          <Pressable onPress={() => router.back()} style={s.backBtn}>
+            <Feather name="chevron-left" size={24} color={colors.foreground} />
+          </Pressable>
+          <Text style={[s.headerTitle, { color: colors.foreground }]} numberOfLines={1}>{assignment.title}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={[s.centered, { flex: 1 }]}>
+          <Feather name="lock" size={48} color="#EF4444" />
+          <Text style={{ fontSize: 17, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginTop: 16, textAlign: "center" as const }}>
+            Đã hết lượt làm bài
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.mutedForeground, marginTop: 8, textAlign: "center" as const, paddingHorizontal: 32 }}>
+            Bạn đã sử dụng hết {maxAtt} lượt cho phép.
+          </Text>
+          <Pressable onPress={() => router.back()} style={{ marginTop: 24 }}>
+            <Text style={{ color: colors.primary, fontFamily: "Inter_600SemiBold" }}>Quay lại</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   const questions = assignment.questions ?? [];
   const totalAnswered = questions.filter((q) => (answers[String(q.question.id)] ?? "").trim().length > 0).length;
   const progress = questions.length > 0 ? totalAnswered / questions.length : 0;
