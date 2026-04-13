@@ -194,6 +194,7 @@ router.get("/assignments/:id", requireAuth, async (req, res): Promise<void> => {
     totalPoints: assignment.totalPoints,
     maxAttempts: assignment.maxAttempts,
     allowReview: assignment.allowReview,
+    autoGrade: assignment.autoGrade,
     status: assignment.status,
     submissionCount: Number(submissionCount[0]?.count ?? 0),
     createdAt: assignment.createdAt.toISOString(),
