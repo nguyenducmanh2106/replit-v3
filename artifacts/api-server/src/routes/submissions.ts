@@ -381,14 +381,19 @@ router.post("/submissions", requireAuth, async (req, res): Promise<void> => {
     }
   }
 
-  const autoGraded = questionMap.size > 0 && Array.from(questionMap.values()).every(q => {
-    if (q.type === "essay") {
-      const meta = safeJson<Record<string, unknown>>(q.metadata, {});
-      return meta.autoGrade === true || assignment.autoGrade === true;
-    }
-    if (q.type === "reading" && !q.correctAnswer) return false;
-    return true;
-  });
+  // If the assignment-level autoGrade flag is on, always mark as auto-graded
+  // (AI has already run for essays above; non-essay types are graded by correctAnswer)
+  const autoGraded = questionMap.size > 0 && (
+    assignment.autoGrade === true ||
+    Array.from(questionMap.values()).every(q => {
+      if (q.type === "essay") {
+        const meta = safeJson<Record<string, unknown>>(q.metadata, {});
+        return meta.autoGrade === true;
+      }
+      if ((q.type === "reading" || q.type === "listening") && !q.correctAnswer) return false;
+      return true;
+    })
+  );
 
   if (isPreview) {
     const percentage = assignment.totalPoints > 0 ? Math.round((totalScore / assignment.totalPoints) * 100 * 10) / 10 : null;

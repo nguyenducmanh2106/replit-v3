@@ -1005,7 +1005,7 @@ export default function AssignmentDetailPage() {
                       onChange={e => setSettingsDraft(d => ({ ...d, autoGrade: e.target.checked }))}
                       className="rounded"
                     />
-                    <span className="text-sm text-gray-700">Tự động chấm bài tự luận bằng AI</span>
+                    <span className="text-sm text-gray-700">Tự động chấm bài</span>
                   </label>
                 </div>
                 <div className="flex gap-2">
