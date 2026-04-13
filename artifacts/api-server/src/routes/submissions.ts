@@ -227,8 +227,11 @@ router.get("/submissions", requireAuth, async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
 
   const conditions = [];
+  const isStudentView = !TEACHER_ROLES.includes(dbUser.role);
 
-  if (!TEACHER_ROLES.includes(dbUser.role)) {
+  conditions.push(eq(submissionsTable.isFinal, true));
+
+  if (isStudentView) {
     conditions.push(eq(submissionsTable.studentId, dbUser.id));
   } else {
     if (dbUser.role !== "system_admin") {
