@@ -54,7 +54,7 @@ function AssignmentCard({ item }: { item: Assignment }) {
         : `Bạn đã làm bài này ${myAttempts} lần trước đó.`;
       Alert.alert(
         "Xác nhận làm lại",
-        `${attemptInfo}\n\nNếu đồng ý làm lại, kết quả cũ sẽ bị xoá vĩnh viễn và kết quả mới sẽ được ghi nhận.${remaining}`,
+        `${attemptInfo}\n\nNếu đồng ý làm lại, kết quả của lần làm mới nhất sẽ được ghi nhận. Số lần đã làm vẫn được tính cộng dồn.${remaining}`,
         [
           { text: "Hủy", style: "cancel" },
           { text: "Làm lại", style: "destructive", onPress: () => router.push(`/assignment/${item.id}`) },

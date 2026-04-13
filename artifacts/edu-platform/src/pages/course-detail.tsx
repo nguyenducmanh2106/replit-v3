@@ -636,8 +636,8 @@ function AssignmentsTab({ courseId, canManage, assignments, loading }: { courseI
                     Bạn đã làm bài này <span className="font-bold">{retakeWarning.myAttemptCount}</span> lần trước đó.
                   </p>
                 )}
-                <p className="text-sm font-medium text-red-700">
-                  Nếu đồng ý làm lại, kết quả cũ sẽ bị xoá vĩnh viễn và kết quả mới sẽ được ghi nhận.
+                <p className="text-sm font-medium text-amber-800">
+                  Nếu đồng ý làm lại, kết quả của lần làm mới nhất sẽ được ghi nhận. Số lần đã làm vẫn được tính cộng dồn.
                 </p>
               </div>
               {retakeWarning.maxAttempts > 0 && (
