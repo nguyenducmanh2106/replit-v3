@@ -627,9 +627,16 @@ export default function SubmissionDetailPage() {
                                   {isTeacher && (
                                     <p className="text-xs text-muted-foreground mt-1 italic">💡 Chọn văn bản để thêm nhận xét inline</p>
                                   )}
-                                  {!isTeacher && (
-                                    <Badge className="bg-amber-100 text-warning border-0 text-xs mt-1">Chờ chấm tay</Badge>
-                                  )}
+                                  {!isTeacher && (() => {
+                                    const isGradedEssay =
+                                      submission.status === "published" ||
+                                      (submission.status === "graded" && (answer.pointsEarned != null || answer.teacherComment != null));
+                                    return isGradedEssay ? (
+                                      <Badge className="bg-green-100 text-green-700 border-0 text-xs mt-1">Đã chấm</Badge>
+                                    ) : (
+                                      <Badge className="bg-amber-100 text-warning border-0 text-xs mt-1">Chờ chấm tay</Badge>
+                                    );
+                                  })()}
                                 </div>
                               ) : (
                                 <>
