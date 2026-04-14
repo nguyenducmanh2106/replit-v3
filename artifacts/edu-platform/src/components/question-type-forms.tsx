@@ -1111,6 +1111,58 @@ export function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, se
   );
 }
 
+export function OpenEndForm({ content, setContent, explanation, setExplanation, allowedTypes, setAllowedTypes }:
+  { content: string; setContent: (v: string) => void; explanation: string; setExplanation: (v: string) => void; allowedTypes: string[]; setAllowedTypes: (v: string[]) => void }) {
+  const toggleType = (t: string) => {
+    if (allowedTypes.includes(t)) {
+      if (allowedTypes.length <= 1) return;
+      setAllowedTypes(allowedTypes.filter(x => x !== t));
+    } else {
+      setAllowedTypes([...allowedTypes, t]);
+    }
+  };
+  const typeOptions = [
+    { value: "text", label: "Văn bản", icon: "📝" },
+    { value: "audio", label: "Ghi âm", icon: "🎙️" },
+    { value: "image", label: "Hình ảnh", icon: "📷" },
+  ];
+  return (
+    <div className="space-y-5">
+      <div>
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi *</Label>
+        <Textarea value={content} onChange={e => setContent(e.target.value)}
+          placeholder="Nhập câu hỏi mở..." rows={4} className="text-sm" />
+      </div>
+      <div>
+        <Label className="text-sm font-semibold text-gray-700 block mb-2">Hình thức trả lời cho phép *</Label>
+        <div className="flex gap-3">
+          {typeOptions.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => toggleType(opt.value)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                allowedTypes.includes(opt.value)
+                  ? "border-violet-400 bg-violet-50 text-violet-700 shadow-sm"
+                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+              }`}
+            >
+              <span className="text-lg">{opt.icon}</span>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-1.5">Chọn ít nhất 1 hình thức. Học sinh sẽ chọn cách trả lời khi làm bài.</p>
+      </div>
+      <div>
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Tiêu chí chấm (tuỳ chọn)</Label>
+        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
+          placeholder="Tiêu chí chấm điểm cho giáo viên..." rows={3} className="text-sm" />
+      </div>
+    </div>
+  );
+}
+
 export function EssayForm({ content, setContent, explanation, setExplanation, autoGrade, setAutoGrade }:
   { content: string; setContent: (v: string) => void; explanation: string; setExplanation: (v: string) => void; autoGrade?: boolean; setAutoGrade?: (v: boolean) => void }) {
   return (

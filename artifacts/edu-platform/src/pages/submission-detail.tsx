@@ -598,23 +598,56 @@ export default function SubmissionDetailPage() {
                             <div className="mt-2 space-y-1">
                               {isEssay ? (
                                 <div>
-                                  <p className="text-xs text-muted-foreground mb-1">Bài luận:</p>
-                                  {isTeacher ? (
-                                    <AnnotatedText
-                                      text={answer.answer || "(Bỏ trống)"}
-                                      annotations={anns.map(a => ({
-                                        id: a.id,
-                                        startOffset: a.startOffset,
-                                        endOffset: a.endOffset,
-                                        comment: a.comment ?? null,
-                                        color: a.color,
-                                      }))}
-                                      onAnnotate={(start, end, color, comment) => handleAnnotate(answer.questionId, start, end, color, comment)}
-                                      canAnnotate={!!isTeacher}
-                                    />
-                                  ) : (
-                                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{answer.answer || "(Bỏ trống)"}</p>
-                                  )}
+                                  <p className="text-xs text-muted-foreground mb-1">{(() => {
+                                    let parsed: any = null;
+                                    try { parsed = JSON.parse(answer.answer || "{}"); } catch {}
+                                    return parsed?.mode ? "Câu hỏi mở:" : "Bài luận:";
+                                  })()}</p>
+                                  {(() => {
+                                    let openEndParsed: any = null;
+                                    try { openEndParsed = JSON.parse(answer.answer || "{}"); } catch {}
+                                    const isOpenEnd = openEndParsed?.mode;
+
+                                    if (isOpenEnd) {
+                                      return (
+                                        <div className="space-y-2">
+                                          {openEndParsed.mode === "text" && openEndParsed.text && (
+                                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{openEndParsed.text}</p>
+                                          )}
+                                          {openEndParsed.mode === "audio" && openEndParsed.audioUrl && (
+                                            <div className="p-2 bg-violet-50 rounded-xl border border-violet-200">
+                                              <audio controls src={openEndParsed.audioUrl} className="w-full" />
+                                            </div>
+                                          )}
+                                          {openEndParsed.mode === "image" && openEndParsed.imageUrl && (
+                                            <div className="p-2 bg-violet-50 rounded-xl border border-violet-200">
+                                              <img src={openEndParsed.imageUrl} alt="Ảnh trả lời" className="max-h-64 rounded-lg object-contain" />
+                                            </div>
+                                          )}
+                                          {!openEndParsed.text && !openEndParsed.audioUrl && !openEndParsed.imageUrl && (
+                                            <p className="text-sm text-gray-400 italic">(Bỏ trống)</p>
+                                          )}
+                                        </div>
+                                      );
+                                    }
+
+                                    return isTeacher ? (
+                                      <AnnotatedText
+                                        text={answer.answer || "(Bỏ trống)"}
+                                        annotations={anns.map(a => ({
+                                          id: a.id,
+                                          startOffset: a.startOffset,
+                                          endOffset: a.endOffset,
+                                          comment: a.comment ?? null,
+                                          color: a.color,
+                                        }))}
+                                        onAnnotate={(start, end, color, comment) => handleAnnotate(answer.questionId, start, end, color, comment)}
+                                        canAnnotate={!!isTeacher}
+                                      />
+                                    ) : (
+                                      <p className="text-sm text-gray-900 whitespace-pre-wrap">{answer.answer || "(Bỏ trống)"}</p>
+                                    );
+                                  })()}
                                   {anns.length > 0 && (
                                     <div className="mt-2 space-y-1">
                                       {anns.map(a => (

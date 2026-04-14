@@ -29,6 +29,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: any; color: string; bgC
   listening:        { label: "Nghe hiểu",         icon: Headphones,      color: "text-green-600",   bgColor: "bg-green-100",   gradient: "from-green-500 to-teal-600" },
   video_interactive:{ label: "Video tương tác",   icon: Video,           color: "text-red-600",     bgColor: "bg-red-100",     gradient: "from-red-500 to-rose-600" },
   essay:            { label: "Bài luận",          icon: BookOpen,        color: "text-amber-600",   bgColor: "bg-amber-100",   gradient: "from-amber-500 to-orange-600" },
+  open_end:         { label: "Câu hỏi mở",       icon: HelpCircle,      color: "text-violet-600",  bgColor: "bg-violet-100",  gradient: "from-violet-500 to-fuchsia-600" },
 };
 
 // ─── Audio Player ────────────────────────────────────────────────────────────
@@ -738,6 +739,165 @@ function shuffleArray<T>(arr: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
   }
   return shuffled;
+}
+
+// ─── Open End Input ──────────────────────────────────────────────────────────
+function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[]; value: string; onChange: (v: string) => void }) {
+  const parsed = useMemo(() => {
+    try { return JSON.parse(value) as { mode?: string; text?: string; audioUrl?: string; imageUrl?: string }; } catch { return { mode: allowedTypes[0] || "text" }; }
+  }, [value]);
+
+  const mode = parsed.mode || allowedTypes[0] || "text";
+  const update = (patch: Record<string, string>) => onChange(JSON.stringify({ ...parsed, ...patch }));
+
+  const [recording, setRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioPreview, setAudioPreview] = useState(parsed.audioUrl || "");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreview, setImagePreview] = useState(parsed.imageUrl || "");
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+      chunksRef.current = [];
+      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioPreview(url);
+        update({ mode: "audio", audioUrl: url });
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mr.start();
+      setRecording(true);
+    } catch { }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setImagePreview(dataUrl);
+      update({ mode: "image", imageUrl: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const modeLabels: Record<string, { label: string; icon: string }> = {
+    text: { label: "Văn bản", icon: "📝" },
+    audio: { label: "Ghi âm", icon: "🎙️" },
+    image: { label: "Hình ảnh", icon: "📷" },
+  };
+
+  return (
+    <div className="space-y-4">
+      {allowedTypes.length > 1 && (
+        <div className="flex gap-2">
+          {allowedTypes.map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => update({ mode: t })}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all",
+                mode === t
+                  ? "border-violet-400 bg-violet-50 text-violet-700 shadow-sm"
+                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+              )}
+            >
+              <span>{modeLabels[t]?.icon}</span>
+              {modeLabels[t]?.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {mode === "text" && (
+        <div>
+          <label className="text-sm font-semibold text-violet-700 mb-2 flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Câu trả lời:
+          </label>
+          <textarea
+            value={parsed.text || ""}
+            onChange={e => update({ mode: "text", text: e.target.value })}
+            placeholder="Nhập câu trả lời..."
+            rows={6}
+            className="w-full p-4 text-sm border-2 border-gray-200 rounded-2xl focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-y"
+          />
+        </div>
+      )}
+
+      {mode === "audio" && (
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-violet-700 mb-2 flex items-center gap-2">
+            <Volume2 className="w-4 h-4" />
+            Ghi âm câu trả lời:
+          </label>
+          <div className="flex items-center gap-3">
+            {!recording ? (
+              <Button type="button" onClick={startRecording} variant="outline" className="gap-2 rounded-xl border-violet-300 text-violet-700 hover:bg-violet-50">
+                <Circle className="w-4 h-4 text-red-500 fill-red-500" />
+                Bắt đầu ghi âm
+              </Button>
+            ) : (
+              <Button type="button" onClick={stopRecording} variant="outline" className="gap-2 rounded-xl border-red-300 text-red-700 hover:bg-red-50 animate-pulse">
+                <X className="w-4 h-4" />
+                Dừng ghi âm
+              </Button>
+            )}
+          </div>
+          {audioPreview && (
+            <div className="p-3 bg-violet-50 rounded-xl border border-violet-200">
+              <audio controls src={audioPreview} className="w-full" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {mode === "image" && (
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-violet-700 mb-2 flex items-center gap-2">
+            <Layers className="w-4 h-4" />
+            Upload hình ảnh:
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            className="gap-2 rounded-xl border-violet-300 text-violet-700 hover:bg-violet-50"
+          >
+            <Layers className="w-4 h-4" />
+            Chọn hoặc chụp ảnh
+          </Button>
+          {imagePreview && (
+            <div className="p-2 bg-violet-50 rounded-xl border border-violet-200">
+              <img src={imagePreview} alt="Ảnh đã chọn" className="max-h-64 rounded-lg object-contain mx-auto" />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SentenceReorderInput({ items, value, onChange }: { items: string[]; value: string; onChange: (v: string) => void }) {
@@ -1851,6 +2011,12 @@ export default function AssignmentTakePage() {
                       <RichTextEditor value={currentAnswer} onChange={setAnswer} />
                     </div>
                   )}
+
+                  {currentQ.type === "open_end" && (() => {
+                    const meta = currentQ.metadata ? (() => { try { return JSON.parse(currentQ.metadata); } catch { return {}; } })() : {};
+                    const allowedTypes: string[] = meta.allowedTypes ?? ["text", "audio", "image"];
+                    return <OpenEndInput allowedTypes={allowedTypes} value={currentAnswer} onChange={setAnswer} />;
+                  })()}
                 </div>
 
                 {/* Explanation hint (shown only if answer given, teacher mode) */}

@@ -168,17 +168,17 @@ Streak and badges are updated on each submission.
 
 ### Two-Tier Grading System
 - **Type 1 (Auto-grade)**: All non-essay questions graded automatically on submit → status `graded`
-- **Type 2 (Manual)**: Assignments with essay (non-autoGrade) → status `pending_review` on submit → teacher grades per-question → teacher publishes → status `published`
+- **Type 2 (Manual)**: Assignments with essay/open_end (non-autoGrade) → status `pending_review` on submit → teacher grades per-question → teacher publishes → status `published`
 - **Status flow**: `pending_review` → (teacher grades) → `published` (student sees results); `graded` (auto-graded, immediate)
-- **Per-question grading**: `PATCH /submissions/:id/answers/:questionId` — essay: score + comment; others: comment only
+- **Per-question grading**: `PATCH /submissions/:id/answers/:questionId` — essay/open_end: score + comment; others: comment only
 - **Batch publish**: `POST /assignments/:id/publish-grades` — moves all `pending_review` → `published`
 - **Student view for pending_review**: Sees submission exists but no scores/answers/comments/points (all suppressed server-side)
 - **Student view for published**: Full results with teacher comments (bypasses `allowReview`)
 - **teacherComment**: Column on `submission_answers` table, shown per-question in web + mobile
 - **Analytics**: Both `graded` and `published` count in all reports/dashboards (via `or(graded, published)` filters)
 
-## Question Types (11 total)
-`mcq`, `true_false`, `fill_blank`, `word_selection`, `matching`, `drag_drop`, `sentence_reorder`, `reading`, `listening`, `video_interactive`, `essay`
+## Question Types (12 total)
+`mcq`, `true_false`, `fill_blank`, `word_selection`, `matching`, `drag_drop`, `sentence_reorder`, `reading`, `listening`, `video_interactive`, `essay`, `open_end`
 
 ### Question Schema Fields
 - `content` — main question text (may contain `___` for fill_blank inline rendering)

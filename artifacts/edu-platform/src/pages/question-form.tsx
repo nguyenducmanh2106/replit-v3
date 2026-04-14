@@ -39,6 +39,7 @@ const QUESTION_TYPES = [
   { value: "listening", label: "Nghe hiểu", icon: "🎧", desc: "Audio + câu hỏi" },
   { value: "video_interactive", label: "Video tương tác", icon: "🎬", desc: "Video + câu hỏi theo mốc" },
   { value: "essay", label: "Bài luận", icon: "✍️", desc: "Viết tự do" },
+  { value: "open_end", label: "Câu hỏi mở", icon: "💬", desc: "Trả lời bằng text, audio, hoặc hình ảnh" },
 ] as const;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -1183,6 +1184,58 @@ function EssayForm({ content, setContent, explanation, setExplanation, autoGrade
   );
 }
 
+function OpenEndForm({ content, setContent, explanation, setExplanation, allowedTypes, setAllowedTypes }:
+  { content: string; setContent: (v: string) => void; explanation: string; setExplanation: (v: string) => void; allowedTypes: string[]; setAllowedTypes: (v: string[]) => void }) {
+  const toggleType = (t: string) => {
+    if (allowedTypes.includes(t)) {
+      if (allowedTypes.length <= 1) return;
+      setAllowedTypes(allowedTypes.filter(x => x !== t));
+    } else {
+      setAllowedTypes([...allowedTypes, t]);
+    }
+  };
+  const typeOptions = [
+    { value: "text", label: "Văn bản", icon: "📝" },
+    { value: "audio", label: "Ghi âm", icon: "🎙️" },
+    { value: "image", label: "Hình ảnh", icon: "📷" },
+  ];
+  return (
+    <div className="space-y-5">
+      <div>
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi *</Label>
+        <Textarea value={content} onChange={e => setContent(e.target.value)}
+          placeholder="Nhập câu hỏi mở..." rows={4} className="text-sm" />
+      </div>
+      <div>
+        <Label className="text-sm font-semibold text-gray-700 block mb-2">Hình thức trả lời cho phép *</Label>
+        <div className="flex gap-3">
+          {typeOptions.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => toggleType(opt.value)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                allowedTypes.includes(opt.value)
+                  ? "border-violet-400 bg-violet-50 text-violet-700 shadow-sm"
+                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+              }`}
+            >
+              <span className="text-lg">{opt.icon}</span>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-1.5">Chọn ít nhất 1 hình thức. Học sinh sẽ chọn cách trả lời khi làm bài.</p>
+      </div>
+      <div>
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Tiêu chí chấm (tuỳ chọn)</Label>
+        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
+          placeholder="Tiêu chí chấm điểm cho giáo viên..." rows={3} className="text-sm" />
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Form Page ───────────────────────────────────────────────────────────
 
 export default function QuestionFormPage() {
@@ -1261,6 +1314,9 @@ export default function QuestionFormPage() {
   // Essay
   const [essayAutoGrade, setEssayAutoGrade] = useState(false);
 
+  // Open End
+  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio", "image"]);
+
   // ── Load existing question ────────────────────────────────────────────────
   useEffect(() => {
     if (!existingQ) return;
@@ -1320,6 +1376,10 @@ export default function QuestionFormPage() {
     }
     if (existingQ.type === "essay") {
       setEssayAutoGrade((meta.autoGrade as boolean) ?? false);
+    }
+    if (existingQ.type === "open_end") {
+      const allowed = (meta.allowedTypes as string[]) ?? ["text", "audio", "image"];
+      setOpenEndAllowedTypes(allowed);
     }
   }, [existingQ]);
 
@@ -1386,6 +1446,9 @@ export default function QuestionFormPage() {
         options: JSON.stringify(videoTimedQs),
         explanation: explanation || undefined,
       };
+    }
+    if (qType === "open_end") {
+      return { ...base, content, explanation: explanation || undefined, metadata: JSON.stringify({ allowedTypes: openEndAllowedTypes }) };
     }
     // essay
     return { ...base, content, explanation: explanation || undefined, metadata: JSON.stringify({ autoGrade: essayAutoGrade }) };
@@ -1529,6 +1592,7 @@ export default function QuestionFormPage() {
               {qType === "listening" && "Nhập URL audio, thêm transcript và câu hỏi."}
               {qType === "video_interactive" && "Nhập URL video và thêm câu hỏi xuất hiện tại mốc thời gian cụ thể."}
               {qType === "essay" && "Nhập đề bài. Học sinh sẽ trả lời tự do, giáo viên chấm tay."}
+              {qType === "open_end" && "Học sinh trả lời bằng text, ghi âm, hoặc chụp/upload ảnh. Giáo viên chấm tay."}
             </p>
           </div>
         </div>
@@ -1629,6 +1693,13 @@ export default function QuestionFormPage() {
                 content={content} setContent={setContent}
                 explanation={explanation} setExplanation={setExplanation}
                 autoGrade={essayAutoGrade} setAutoGrade={setEssayAutoGrade}
+              />
+            )}
+            {qType === "open_end" && (
+              <OpenEndForm
+                content={content} setContent={setContent}
+                explanation={explanation} setExplanation={setExplanation}
+                allowedTypes={openEndAllowedTypes} setAllowedTypes={setOpenEndAllowedTypes}
               />
             )}
           </div>

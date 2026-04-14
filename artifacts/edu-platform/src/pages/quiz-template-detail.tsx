@@ -28,7 +28,7 @@ import {
 import {
   McqForm, TrueFalseForm, FillBlankForm, WordSelectionForm,
   MatchingForm, DragDropForm, SentenceReorderForm, ReadingForm,
-  ListeningForm, VideoInteractiveForm, EssayForm,
+  ListeningForm, VideoInteractiveForm, EssayForm, OpenEndForm,
   safeJson as sharedSafeJson, newSubQuestion,
   type McqOption, type MatchingPair, type DragZone, type SubQuestion, type VideoQuestion,
 } from "@/components/question-type-forms";
@@ -39,13 +39,13 @@ const TYPE_LABELS: Record<string, string> = {
   mcq: "Trắc nghiệm", true_false: "Đúng/Sai", fill_blank: "Điền chỗ trống",
   word_selection: "Chọn từ", matching: "Nối cặp", drag_drop: "Kéo thả",
   sentence_reorder: "Sắp xếp câu", reading: "Đọc hiểu", listening: "Nghe",
-  video_interactive: "Video tương tác", essay: "Tự luận",
+  video_interactive: "Video tương tác", essay: "Tự luận", open_end: "Câu hỏi mở",
 };
 
 const TYPE_ICONS: Record<string, string> = {
   mcq: "🔤", true_false: "✓✗", fill_blank: "___", word_selection: "Aa",
   matching: "↔", drag_drop: "⇅", sentence_reorder: "↕", reading: "📖",
-  listening: "🎧", video_interactive: "🎬", essay: "✍️",
+  listening: "🎧", video_interactive: "🎬", essay: "✍️", open_end: "💬",
 };
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -315,6 +315,17 @@ function OptionsView({ type, options, correctAnswer }: { type: string; options: 
     );
   }
 
+  if (type === "open_end") {
+    const meta = safeJson<Record<string, unknown>>(q.metadata, {});
+    const allowedTypes = (meta.allowedTypes as string[]) ?? ["text", "audio", "image"];
+    const labels: Record<string, string> = { text: "Văn bản", audio: "Ghi âm", image: "Hình ảnh" };
+    return (
+      <div className="mt-3 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-sm text-violet-600 italic">
+        Câu hỏi mở — trả lời bằng: {allowedTypes.map(t => labels[t] || t).join(", ")}
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -430,6 +441,7 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTimedQs, setVideoTimedQs] = useState<VideoQuestion[]>([]);
   const [essayAutoGrade, setEssayAutoGrade] = useState(false);
+  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio", "image"]);
 
   useEffect(() => {
     if (!q) return;
@@ -508,6 +520,9 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
     if (q.type === "essay") {
       setEssayAutoGrade((meta.autoGrade as boolean) ?? false);
     }
+    if (q.type === "open_end") {
+      setOpenEndAllowedTypes((meta.allowedTypes as string[]) ?? ["text", "audio", "image"]);
+    }
   }, [q]);
 
   if (!q) return null;
@@ -556,6 +571,9 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
     if (qType === "video_interactive") {
       return { ...base, content, videoUrl: videoUrl || null, options: JSON.stringify(videoTimedQs), explanation: explanation || null } as any;
     }
+    if (qType === "open_end") {
+      return { ...base, content, explanation: explanation || null, metadata: JSON.stringify({ allowedTypes: openEndAllowedTypes }) } as any;
+    }
     // essay
     return { ...base, content, explanation: explanation || null, metadata: JSON.stringify({ autoGrade: essayAutoGrade }) } as any;
   }
@@ -598,6 +616,8 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
           explanation={explanation} setExplanation={setExplanation} />;
       case "essay":
         return <EssayForm content={content} setContent={setContent} explanation={explanation} setExplanation={setExplanation} autoGrade={essayAutoGrade} setAutoGrade={setEssayAutoGrade} />;
+      case "open_end":
+        return <OpenEndForm content={content} setContent={setContent} explanation={explanation} setExplanation={setExplanation} allowedTypes={openEndAllowedTypes} setAllowedTypes={setOpenEndAllowedTypes} />;
       default:
         return (
           <div className="space-y-4">

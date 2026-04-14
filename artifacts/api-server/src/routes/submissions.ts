@@ -103,7 +103,7 @@ Respond only with the JSON.`;
 }
 
 function gradeAnswer(question: QuestionLike, studentAnswer: string): { isCorrect: boolean | null; pointsEarned: number } {
-  if (question.type === "essay") {
+  if (question.type === "essay" || question.type === "open_end") {
     const meta = safeJson<Record<string, unknown>>(question.metadata, {});
     if (!meta.autoGrade) return { isCorrect: null, pointsEarned: 0 };
     return { isCorrect: null, pointsEarned: 0 };
@@ -393,9 +393,17 @@ router.post("/submissions", requireAuth, async (req, res): Promise<void> => {
     }
   }
 
-  // If the assignment-level autoGrade flag is on, always mark as auto-graded
-  // (AI has already run for essays above; non-essay types are graded by correctAnswer)
-  const autoGraded = questionMap.size > 0 && (
+  // Check if any question requires manual grading (open_end always, essay without autoGrade)
+  const hasManualOnly = Array.from(questionMap.values()).some(q => {
+    if (q.type === "open_end") return true;
+    if (q.type === "essay") {
+      const meta = safeJson<Record<string, unknown>>(q.metadata, {});
+      return meta.autoGrade !== true && assignment.autoGrade !== true;
+    }
+    return false;
+  });
+
+  const autoGraded = questionMap.size > 0 && !hasManualOnly && (
     assignment.autoGrade === true ||
     Array.from(questionMap.values()).every(q => {
       if (q.type === "essay") {
@@ -594,13 +602,13 @@ router.patch("/submissions/:id/answers/:questionId", requireAuth, async (req, re
   const questions = await db.select().from(assignmentQuestionsTable)
     .where(eq(assignmentQuestionsTable.assignmentId, existing.assignmentId));
   const question = questions.find(q => q.id === params.data.questionId);
-  const isEssay = question?.type === "essay";
+  const isManualType = question?.type === "essay" || question?.type === "open_end";
 
   const updateData: Record<string, unknown> = {};
   if (parsed.data.teacherComment !== undefined) {
     updateData.teacherComment = parsed.data.teacherComment;
   }
-  if (parsed.data.pointsEarned !== undefined && isEssay) {
+  if (parsed.data.pointsEarned !== undefined && isManualType) {
     const maxPoints = question?.points ?? Infinity;
     if (parsed.data.pointsEarned < 0 || parsed.data.pointsEarned > maxPoints) {
       res.status(400).json({ error: `Điểm phải từ 0 đến ${maxPoints}` }); return;

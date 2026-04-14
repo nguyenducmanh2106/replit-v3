@@ -188,8 +188,8 @@ router.get("/dashboard/activity", requireAuth, async (req, res): Promise<void> =
     const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, s.assignmentId));
     return {
       id: s.id * 10 + i,
-      type: s.status === "graded" ? "grading" : "submission",
-      title: s.status === "graded" ? "Bài nộp đã được chấm điểm" : "Bài nộp mới",
+      type: (s.status === "graded" || s.status === "published") ? "grading" : "submission",
+      title: s.status === "published" ? "Kết quả đã được công bố" : s.status === "graded" ? "Bài nộp đã được chấm điểm" : "Bài nộp mới",
       description: `${student?.name ?? "Học sinh"} nộp bài "${assignment?.title ?? "Bài kiểm tra"}"`,
       userName: student?.name ?? "Học sinh",
       timestamp: s.submittedAt.toISOString(),

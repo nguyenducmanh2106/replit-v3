@@ -69,6 +69,7 @@ const SHEET_TYPE_MAP: Record<string, string> = {
   "DRAG_DROP": "drag_drop",
   "READING": "reading",
   "LISTENING": "listening",
+  "OPEN_END": "open_end",
 };
 
 function cellStr(row: Record<string, unknown>, key: string): string {
@@ -186,6 +187,16 @@ function parseRowByType(type: string, row: Record<string, unknown>): {
       return {
         ...base,
         metadata: JSON.stringify({ autoGrade }),
+      };
+    }
+    case "open_end": {
+      const allowedRaw = cellStr(row, "allowedTypes") || "text,audio,image";
+      const validTypes = ["text", "audio", "image"];
+      const allowedTypes = allowedRaw.split(",").map(s => s.trim().toLowerCase()).filter(t => validTypes.includes(t));
+      if (allowedTypes.length === 0) allowedTypes.push("text");
+      return {
+        ...base,
+        metadata: JSON.stringify({ allowedTypes }),
       };
     }
     case "drag_drop": {
@@ -309,6 +320,11 @@ router.get("/questions/import-template", requireAuth, requireTeacherRole(), asyn
     { content: "Nghe và trả lời câu hỏi", skill: "listening", level: "B1", points: 1, audioUrl: "https://example.com/audio.mp3", passage: "", question1: "Người nói đề cập đến gì?", choices1: "Du lịch|Ẩm thực|Thể thao", correct1: "Du lịch", points1: 1 },
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(listenData), "LISTENING");
+
+  const openEndData = [
+    { content: "Mô tả bức tranh bạn thấy", skill: "writing", level: "A2", points: 10, explanation: "", allowedTypes: "text,audio,image" },
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(openEndData), "OPEN_END");
 
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

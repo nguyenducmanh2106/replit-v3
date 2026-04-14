@@ -15,6 +15,7 @@ import {
   Sparkles, BookMarked, Layers, ToggleLeft, AlignLeft, MousePointerClick,
   Shuffle, MoveVertical, BookOpen, Headphones, Video, FileText,
   Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle, Loader2,
+  MessageSquare,
 } from "lucide-react";
 
 const SKILLS = ["reading", "writing", "listening", "speaking"] as const;
@@ -22,7 +23,7 @@ const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 const TYPES = [
   "mcq", "true_false", "fill_blank", "word_selection",
   "matching", "drag_drop", "sentence_reorder",
-  "reading", "listening", "video_interactive", "essay",
+  "reading", "listening", "video_interactive", "essay", "open_end",
 ] as const;
 
 const SKILL_LABELS: Record<string, string> = { reading: "Đọc", writing: "Viết", listening: "Nghe", speaking: "Nói" };
@@ -31,7 +32,7 @@ const TYPE_LABELS: Record<string, string> = {
   mcq: "Trắc nghiệm", true_false: "Đúng/Sai", fill_blank: "Điền chỗ trống",
   word_selection: "Chọn từ", matching: "Nối cặp", drag_drop: "Kéo thả",
   sentence_reorder: "Sắp xếp câu", reading: "Đọc hiểu", listening: "Nghe hiểu",
-  video_interactive: "Video", essay: "Bài luận",
+  video_interactive: "Video", essay: "Bài luận", open_end: "Câu hỏi mở",
 };
 const TYPE_CONFIG: Record<string, { icon: React.ReactNode; gradient: string; border: string; light: string; text: string }> = {
   mcq:             { icon: <Layers className="w-4 h-4" />,             gradient: "from-blue-500 to-blue-600",     border: "border-blue-200",   light: "bg-blue-50",   text: "text-blue-700" },
@@ -45,6 +46,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ReactNode; gradient: string; bor
   listening:       { icon: <Headphones className="w-4 h-4" />,          gradient: "from-green-500 to-emerald-600",border: "border-green-200",  light: "bg-green-50",  text: "text-green-700" },
   video_interactive:{ icon: <Video className="w-4 h-4" />,              gradient: "from-red-500 to-rose-600",     border: "border-red-200",    light: "bg-red-50",    text: "text-red-700" },
   essay:           { icon: <FileText className="w-4 h-4" />,            gradient: "from-amber-500 to-yellow-600", border: "border-amber-200",  light: "bg-amber-50",  text: "text-amber-700" },
+  open_end:        { icon: <MessageSquare className="w-4 h-4" />,      gradient: "from-violet-500 to-fuchsia-600", border: "border-violet-200", light: "bg-violet-50", text: "text-violet-700" },
 };
 
 type ImportResult = {
@@ -360,7 +362,7 @@ export default function QuestionsPage() {
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <h4 className="text-sm font-semibold text-blue-800 mb-2">Hướng dẫn</h4>
                 <ul className="text-xs text-blue-700 space-y-1.5">
-                  <li>Mỗi <strong>sheet</strong> tương ứng 1 dạng câu hỏi: MCQ, TRUE_FALSE, FILL_BLANK, MATCHING, SENTENCE_REORDER, ESSAY, WORD_SELECTION, DRAG_DROP, READING, LISTENING</li>
+                  <li>Mỗi <strong>sheet</strong> tương ứng 1 dạng câu hỏi: MCQ, TRUE_FALSE, FILL_BLANK, MATCHING, SENTENCE_REORDER, ESSAY, OPEN_END, WORD_SELECTION, DRAG_DROP, READING, LISTENING</li>
                   <li>Các cột chung: <code className="bg-blue-100 px-1 rounded">content</code>, <code className="bg-blue-100 px-1 rounded">skill</code>, <code className="bg-blue-100 px-1 rounded">level</code>, <code className="bg-blue-100 px-1 rounded">points</code>, <code className="bg-blue-100 px-1 rounded">explanation</code></li>
                   <li>Tải file mẫu để biết chính xác cấu trúc từng dạng</li>
                 </ul>

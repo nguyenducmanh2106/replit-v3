@@ -10,7 +10,7 @@ import { Plus, Trash2, CheckCircle2, Circle } from "lucide-react";
 import {
   McqForm, TrueFalseForm, FillBlankForm, WordSelectionForm,
   MatchingForm, DragDropForm, SentenceReorderForm, ReadingForm,
-  ListeningForm, VideoInteractiveForm, EssayForm,
+  ListeningForm, VideoInteractiveForm, EssayForm, OpenEndForm,
   safeJson, newSubQuestion,
   type McqOption, type MatchingPair, type DragZone, type SubQuestion, type VideoQuestion,
 } from "@/components/question-type-forms";
@@ -31,6 +31,7 @@ const QUESTION_TYPES = [
   { value: "listening", label: "Nghe hiểu" },
   { value: "video_interactive", label: "Video tương tác" },
   { value: "essay", label: "Bài luận" },
+  { value: "open_end", label: "Câu hỏi mở" },
 ] as const;
 
 interface CreateQuestionDialogProps {
@@ -83,6 +84,7 @@ export function CreateQuestionDialog({ open, onClose, onSave, saving, defaultEss
   const [videoUrl, setVideoUrl] = useState("");
   const [timedQuestions, setTimedQuestions] = useState<VideoQuestion[]>([]);
   const [essayAutoGrade, setEssayAutoGrade] = useState(defaultEssayAutoGrade);
+  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio", "image"]);
 
   // Sync essay auto-grade default whenever the dialog opens (handles async data load)
   useEffect(() => {
@@ -97,6 +99,7 @@ export function CreateQuestionDialog({ open, onClose, onSave, saving, defaultEss
     setCorrectWords([]); setPairs([{ left: "", right: "" }]); setDragItems([""]); setDragZones([{ label: "", accepts: [] }]);
     setReorderItems([""]); setSubQuestions([newSubQuestion()]); setAudioUrl(""); setVideoUrl(""); setTimedQuestions([]);
     setEssayAutoGrade(defaultEssayAutoGrade);
+    setOpenEndAllowedTypes(["text", "audio", "image"]);
   }
 
   function buildQuestionData(): QuestionData {
@@ -159,6 +162,9 @@ export function CreateQuestionDialog({ open, onClose, onSave, saving, defaultEss
         break;
       case "essay":
         metadata = JSON.stringify({ autoGrade: essayAutoGrade });
+        break;
+      case "open_end":
+        metadata = JSON.stringify({ allowedTypes: openEndAllowedTypes });
         break;
     }
 
@@ -304,6 +310,9 @@ export function CreateQuestionDialog({ open, onClose, onSave, saving, defaultEss
             )}
             {type === "essay" && (
               <EssayForm content={content} setContent={setContent} explanation={explanation} setExplanation={setExplanation} autoGrade={essayAutoGrade} setAutoGrade={setEssayAutoGrade} />
+            )}
+            {type === "open_end" && (
+              <OpenEndForm content={content} setContent={setContent} explanation={explanation} setExplanation={setExplanation} allowedTypes={openEndAllowedTypes} setAllowedTypes={setOpenEndAllowedTypes} />
             )}
           </div>
         </div>

@@ -94,11 +94,11 @@ router.get("/reports/overview", requireAuth, async (req, res): Promise<void> => 
   }
 
   const totalSubmissions = allSubs.length;
-  const graded = allSubs.filter(s => s.status === "graded" && s.score != null);
+  const graded = allSubs.filter(s => (s.status === "graded" || s.status === "published") && s.score != null);
   const averageScore = graded.length > 0
     ? Math.round((graded.reduce((acc, s) => acc + (s.score! / s.totalPoints) * 100, 0) / graded.length) * 10) / 10
     : 0;
-  const pendingGrading = allSubs.filter(s => s.status === "pending").length;
+  const pendingGrading = allSubs.filter(s => s.status === "pending" || s.status === "pending_review").length;
 
   const skillAverages = await computeSkillAverages(allSubs.map(s => s.id));
 
@@ -115,7 +115,7 @@ router.get("/reports/overview", requireAuth, async (req, res): Promise<void> => 
         .from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, courseAssignmentIds), eq(submissionsTable.isFinal, true)))
       : [];
 
-    const gradedSubs = courseSubs.filter(s => s.status === "graded" && s.score != null);
+    const gradedSubs = courseSubs.filter(s => (s.status === "graded" || s.status === "published") && s.score != null);
     const avgScore = gradedSubs.length > 0
       ? Math.round((gradedSubs.reduce((a, s) => a + (s.score! / s.totalPoints) * 100, 0) / gradedSubs.length) * 10) / 10
       : 0;
@@ -176,7 +176,7 @@ router.get("/reports/course/:courseId", requireAuth, async (req, res): Promise<v
     ? await db.select().from(submissionsTable).where(and(inArray(submissionsTable.assignmentId, assignmentIds), eq(submissionsTable.isFinal, true)))
     : [];
 
-  const gradedSubs = subs.filter(s => s.status === "graded" && s.score != null);
+  const gradedSubs = subs.filter(s => (s.status === "graded" || s.status === "published") && s.score != null);
   const percentages = gradedSubs.map(s => (s.score! / s.totalPoints) * 100);
 
   const averageScore = percentages.length > 0
@@ -207,7 +207,7 @@ router.get("/reports/course/:courseId", requireAuth, async (req, res): Promise<v
   }));
 
   const studentScores = await Promise.all(members.map(async (m) => {
-    const studentSubs = subs.filter(s => s.studentId === m.userId && s.status === "graded" && s.score != null);
+    const studentSubs = subs.filter(s => s.studentId === m.userId && (s.status === "graded" || s.status === "published") && s.score != null);
     const avgPct = studentSubs.length > 0
       ? Math.round((studentSubs.reduce((a, s) => a + (s.score! / s.totalPoints) * 100, 0) / studentSubs.length) * 10) / 10
       : 0;
@@ -274,7 +274,7 @@ router.get("/reports/student/:studentId", requireAuth, async (req, res): Promise
     submittedAt: submissionsTable.submittedAt,
   }).from(submissionsTable).where(and(eq(submissionsTable.studentId, studentId), eq(submissionsTable.isFinal, true)));
 
-  const graded = subs.filter(s => s.status === "graded" && s.score != null);
+  const graded = subs.filter(s => (s.status === "graded" || s.status === "published") && s.score != null);
   const averageScore = graded.length > 0
     ? Math.round((graded.reduce((a, s) => a + s.score!, 0) / graded.length) * 10) / 10
     : 0;
@@ -310,7 +310,7 @@ router.get("/reports/student/:studentId", requireAuth, async (req, res): Promise
       courseMap[cid] = { courseId: assignment?.courseId ?? null, courseName, scores: [], count: 0 };
     }
     courseMap[cid]!.count++;
-    if (s.status === "graded" && s.score != null && s.totalPoints > 0) {
+    if ((s.status === "graded" || s.status === "published") && s.score != null && s.totalPoints > 0) {
       courseMap[cid]!.scores.push((s.score / s.totalPoints) * 100);
     }
   }

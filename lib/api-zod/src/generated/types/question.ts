@@ -8,7 +8,7 @@
 
 export interface Question {
   id: number;
-  /** mcq | true_false | fill_blank | word_selection | matching | drag_drop | sentence_reorder | reading | listening | video_interactive | essay */
+  /** mcq | true_false | fill_blank | word_selection | matching | drag_drop | sentence_reorder | reading | listening | video_interactive | essay | open_end */
   type: string;
   /** reading | writing | listening | speaking | grammar | vocabulary */
   skill: string;
