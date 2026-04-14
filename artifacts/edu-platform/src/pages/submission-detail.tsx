@@ -567,17 +567,26 @@ export default function SubmissionDetailPage() {
                 {(submission.answers ?? []).map((answer, index) => {
                   const isEssay = answer.isCorrect === undefined || answer.isCorrect === null;
                   const anns = annotationsForAnswer(answer.questionId);
+                  const isGradedEssay = isEssay && (
+                    submission.status === "published" ||
+                    (submission.status === "graded" && (answer.pointsEarned != null || answer.teacherComment != null))
+                  );
                   return (
                     <div key={answer.questionId} className={`p-4 rounded-xl border-2 ${
-                      isEssay ? "border-amber-100 bg-amber-50/30" :
-                      answer.isCorrect ? "border-green-100 bg-green-50/30" :
+                      isEssay
+                        ? isGradedEssay
+                          ? "border-green-100 bg-green-50/30"
+                          : "border-amber-100 bg-amber-50/30"
+                        : answer.isCorrect ? "border-green-100 bg-green-50/30" :
                       "border-red-100 bg-red-50/30"
                     }`}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white border">
                             {isEssay ? (
-                              <Clock className="w-4 h-4 text-warning" />
+                              isGradedEssay
+                                ? <CheckCircle className="w-4 h-4 text-success" />
+                                : <Clock className="w-4 h-4 text-warning" />
                             ) : answer.isCorrect ? (
                               <CheckCircle className="w-4 h-4 text-success" />
                             ) : (
@@ -627,16 +636,13 @@ export default function SubmissionDetailPage() {
                                   {isTeacher && (
                                     <p className="text-xs text-muted-foreground mt-1 italic">💡 Chọn văn bản để thêm nhận xét inline</p>
                                   )}
-                                  {!isTeacher && (() => {
-                                    const isGradedEssay =
-                                      submission.status === "published" ||
-                                      (submission.status === "graded" && (answer.pointsEarned != null || answer.teacherComment != null));
-                                    return isGradedEssay ? (
+                                  {!isTeacher && (
+                                    isGradedEssay ? (
                                       <Badge className="bg-green-100 text-green-700 border-0 text-xs mt-1">Đã chấm</Badge>
                                     ) : (
                                       <Badge className="bg-amber-100 text-warning border-0 text-xs mt-1">Chờ chấm tay</Badge>
-                                    );
-                                  })()}
+                                    )
+                                  )}
                                 </div>
                               ) : (
                                 <>
