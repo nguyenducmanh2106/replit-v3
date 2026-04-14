@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useListQuestions, useDeleteQuestion, getListQuestionsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,11 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Library, Pencil, Trash2, CheckCircle2, Volume2, Search, Filter,
   Sparkles, BookMarked, Layers, ToggleLeft, AlignLeft, MousePointerClick,
   Shuffle, MoveVertical, BookOpen, Headphones, Video, FileText,
+  Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle, Loader2,
 } from "lucide-react";
 
 const SKILLS = ["reading", "writing", "listening", "speaking"] as const;
@@ -45,6 +47,18 @@ const TYPE_CONFIG: Record<string, { icon: React.ReactNode; gradient: string; bor
   essay:           { icon: <FileText className="w-4 h-4" />,            gradient: "from-amber-500 to-yellow-600", border: "border-amber-200",  light: "bg-amber-50",  text: "text-amber-700" },
 };
 
+type ImportResult = {
+  totalImported: number;
+  totalSkipped: number;
+  details: Array<{
+    sheet: string;
+    type: string;
+    imported: number;
+    skipped: number;
+    errors: string[];
+  }>;
+};
+
 export default function QuestionsPage() {
   const [, navigate] = useLocation();
   const [skillFilter, setSkillFilter] = useState("all");
@@ -52,7 +66,13 @@ export default function QuestionsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const params = {
     ...(skillFilter !== "all" ? { skill: skillFilter } : {}),
@@ -80,9 +100,58 @@ export default function QuestionsPage() {
     });
   }
 
+  async function handleDownloadTemplate() {
+    try {
+      const res = await fetch("/api/questions/import-template", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to download");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "question_import_template.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: "Lỗi tải file mẫu", variant: "destructive" });
+    }
+  }
+
+  async function handleImport() {
+    if (!selectedFile) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      const res = await fetch("/api/questions/import", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Lỗi không xác định" }));
+        throw new Error(err.error);
+      }
+      const result: ImportResult = await res.json();
+      setImportResult(result);
+      if (result.totalImported > 0) {
+        queryClient.invalidateQueries({ queryKey: getListQuestionsQueryKey() });
+      }
+    } catch (e: any) {
+      toast({ title: e.message || "Lỗi import", variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function closeImportDialog() {
+    setImportOpen(false);
+    setSelectedFile(null);
+    setImportResult(null);
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#378ADD] to-[#1D5FAF] p-6 text-white">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-2 right-10 w-40 h-40 rounded-full bg-white/30 blur-2xl" />
@@ -98,10 +167,16 @@ export default function QuestionsPage() {
             <p className="text-blue-200 text-sm mt-1">Tạo và tái sử dụng câu hỏi cho tất cả bài thi</p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <Button onClick={() => navigate("/questions/new")} className="bg-white text-blue-700 hover:bg-blue-50 font-semibold shadow-lg">
-              <Plus className="w-4 h-4 mr-1.5" />
-              Tạo câu hỏi mới
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setImportOpen(true)} variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 font-semibold">
+                <Upload className="w-4 h-4 mr-1.5" />
+                Import Excel
+              </Button>
+              <Button onClick={() => navigate("/questions/new")} className="bg-white text-blue-700 hover:bg-blue-50 font-semibold shadow-lg">
+                <Plus className="w-4 h-4 mr-1.5" />
+                Tạo câu hỏi mới
+              </Button>
+            </div>
             <div className="text-right">
               <span className="text-3xl font-bold">{totalCount}</span>
               <span className="text-blue-200 text-sm ml-1">câu hỏi</span>
@@ -131,7 +206,6 @@ export default function QuestionsPage() {
         )}
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -161,7 +235,6 @@ export default function QuestionsPage() {
         </Select>
       </div>
 
-      {/* Question List */}
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
@@ -235,18 +308,23 @@ export default function QuestionsPage() {
             {search ? "Không tìm thấy câu hỏi nào" : "Chưa có câu hỏi nào"}
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            {search ? "Thử tìm với từ khóa khác" : "Nhấn \"Tạo câu hỏi mới\" để bắt đầu"}
+            {search ? "Thử tìm với từ khóa khác" : "Nhấn \"Tạo câu hỏi mới\" hoặc \"Import Excel\" để bắt đầu"}
           </p>
           {!search && (
-            <Button className="mt-4" onClick={() => navigate("/questions/new")}>
-              <Sparkles className="w-4 h-4 mr-2" />
-              Tạo câu hỏi đầu tiên
-            </Button>
+            <div className="flex justify-center gap-3 mt-4">
+              <Button onClick={() => navigate("/questions/new")}>
+                <Sparkles className="w-4 h-4 mr-2" />
+                Tạo câu hỏi đầu tiên
+              </Button>
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                Import từ Excel
+              </Button>
+            </div>
           )}
         </div>
       )}
 
-      {/* Delete Confirm Dialog */}
       <Dialog open={!!deleteId} onOpenChange={(v) => { if (!v) setDeleteId(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -262,6 +340,156 @@ export default function QuestionsPage() {
               {deleting ? "Đang xoá..." : "Xoá câu hỏi"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={importOpen} onOpenChange={(v) => { if (!v) closeImportDialog(); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-green-600" />
+              Import câu hỏi từ Excel
+            </DialogTitle>
+            <DialogDescription>
+              Tải lên file Excel (.xlsx) với mỗi sheet tương ứng một dạng câu hỏi
+            </DialogDescription>
+          </DialogHeader>
+
+          {!importResult ? (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <h4 className="text-sm font-semibold text-blue-800 mb-2">Hướng dẫn</h4>
+                <ul className="text-xs text-blue-700 space-y-1.5">
+                  <li>Mỗi <strong>sheet</strong> tương ứng 1 dạng câu hỏi: MCQ, TRUE_FALSE, FILL_BLANK, MATCHING, SENTENCE_REORDER, ESSAY, WORD_SELECTION, DRAG_DROP, READING, LISTENING</li>
+                  <li>Các cột chung: <code className="bg-blue-100 px-1 rounded">content</code>, <code className="bg-blue-100 px-1 rounded">skill</code>, <code className="bg-blue-100 px-1 rounded">level</code>, <code className="bg-blue-100 px-1 rounded">points</code>, <code className="bg-blue-100 px-1 rounded">explanation</code></li>
+                  <li>Tải file mẫu để biết chính xác cấu trúc từng dạng</li>
+                </ul>
+                <Button size="sm" variant="outline" className="mt-3 text-blue-700 border-blue-300 hover:bg-blue-100" onClick={handleDownloadTemplate}>
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Tải file mẫu (.xlsx)
+                </Button>
+              </div>
+
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${selectedFile ? "border-green-300 bg-green-50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/50"}`}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = e.dataTransfer.files[0];
+                  if (file && (file.name.endsWith(".xlsx") || file.name.endsWith(".xls"))) {
+                    setSelectedFile(file);
+                  } else {
+                    toast({ title: "Chỉ hỗ trợ file .xlsx", variant: "destructive" });
+                  }
+                }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) setSelectedFile(file);
+                  }}
+                />
+                {selectedFile ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <CheckCircle className="w-10 h-10 text-green-500" />
+                    <p className="text-sm font-semibold text-green-700">{selectedFile.name}</p>
+                    <p className="text-xs text-green-600">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                    <Button size="sm" variant="ghost" className="text-xs text-gray-500" onClick={e => { e.stopPropagation(); setSelectedFile(null); }}>
+                      Chọn file khác
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="w-10 h-10 text-gray-300" />
+                    <p className="text-sm font-medium text-gray-600">Kéo thả hoặc nhấn để chọn file Excel</p>
+                    <p className="text-xs text-gray-400">Hỗ trợ .xlsx, .xls (tối đa 10MB)</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={closeImportDialog}>Hủy</Button>
+                <Button onClick={handleImport} disabled={!selectedFile || importing}>
+                  {importing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                      Đang import...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-1.5" />
+                      Import câu hỏi
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className={`rounded-xl p-4 ${importResult.totalImported > 0 ? "bg-green-50 border border-green-200" : "bg-amber-50 border border-amber-200"}`}>
+                <div className="flex items-center gap-3 mb-2">
+                  {importResult.totalImported > 0 ? (
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  ) : (
+                    <AlertCircle className="w-6 h-6 text-amber-600" />
+                  )}
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      {importResult.totalImported > 0
+                        ? `Import thành công ${importResult.totalImported} câu hỏi`
+                        : "Không có câu hỏi nào được import"}
+                    </p>
+                    {importResult.totalSkipped > 0 && (
+                      <p className="text-xs text-gray-500">{importResult.totalSkipped} dòng bị bỏ qua</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {importResult.details.map((d, i) => (
+                  <div key={i} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{d.sheet}</Badge>
+                        {d.type !== "unknown" && (
+                          <span className="text-xs text-gray-500">{TYPE_LABELS[d.type] ?? d.type}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        {d.imported > 0 && (
+                          <span className="text-green-600 font-medium">{d.imported} OK</span>
+                        )}
+                        {d.skipped > 0 && (
+                          <span className="text-amber-600 font-medium">{d.skipped} lỗi</span>
+                        )}
+                      </div>
+                    </div>
+                    {d.errors.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {d.errors.map((err, ei) => (
+                          <p key={ei} className="text-xs text-red-500 flex items-start gap-1">
+                            <AlertCircle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                            {err}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={closeImportDialog}>Đóng</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

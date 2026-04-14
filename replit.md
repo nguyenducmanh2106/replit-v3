@@ -100,6 +100,8 @@ pnpm monorepo with TypeScript project references.
 - `PATCH /api/submissions/:id/grade`
 - `PATCH /api/submissions/:id/answers/:questionId` — per-question grading (score for essay, comment for all)
 - `POST /api/assignments/:id/publish-grades` — batch publish pending_review → published
+- `GET /api/questions/import-template` — download Excel template for question import
+- `POST /api/questions/import` — bulk import questions from Excel file (multipart/form-data)
 - `GET/POST /api/quiz-templates`, `GET/PATCH/DELETE /api/quiz-templates/:id`
 - `POST /api/quiz-templates/:id/import-questions` — import questions from bank as copies
 - `POST /api/quiz-templates/:id/questions` — add single question
