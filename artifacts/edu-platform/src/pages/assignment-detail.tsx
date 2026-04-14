@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useGetMe } from "@workspace/api-client-react";
@@ -66,6 +67,8 @@ const LEVEL_COLORS: Record<string, string> = {
 };
 
 const SKILL_LABELS: Record<string, string> = { reading: "Đọc", writing: "Viết", listening: "Nghe", speaking: "Nói" };
+const SKILLS = ["reading", "writing", "listening", "speaking"] as const;
+const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
 function safeJson<T>(str: string | null | undefined, fallback: T): T {
   if (!str) return fallback;
@@ -333,6 +336,8 @@ function OptionsView({ type, options, correctAnswer, metadata }: { type: string;
 interface EditDraft {
   content: string;
   points: number;
+  skill: string;
+  level: string;
   options: string;
   correctAnswer: string;
   imageUrl: string;
@@ -348,6 +353,8 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
   onSave: (data: Partial<EditDraft>) => void; saving: boolean;
 }) {
   const [points, setPoints] = useState(1);
+  const [skill, setSkill] = useState("reading");
+  const [level, setLevel] = useState("B1");
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
   const [explanation, setExplanation] = useState("");
@@ -383,6 +390,8 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
   useEffect(() => {
     if (!q) return;
     setPoints(q.points ?? 1);
+    setSkill(q.skill ?? "reading");
+    setLevel(q.level ?? "B1");
     setImageUrl(q.imageUrl ?? "");
     setContent(q.content ?? "");
     setExplanation(q.explanation ?? "");
@@ -465,7 +474,7 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
   if (!q) return null;
 
   function buildPayload(): Partial<EditDraft> {
-    const base: Record<string, unknown> = { points, imageUrl: imageUrl || null };
+    const base: Record<string, unknown> = { points, skill, level, imageUrl: imageUrl || null };
     const qType = q.type;
 
     if (qType === "mcq") {
@@ -581,6 +590,26 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
           </DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-5 pr-1 pb-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Kỹ năng</Label>
+              <Select value={skill} onValueChange={setSkill}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SKILLS.map(s => <SelectItem key={s} value={s}>{SKILL_LABELS[s]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Cấp độ</Label>
+              <Select value={level} onValueChange={setLevel}>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Điểm</Label>

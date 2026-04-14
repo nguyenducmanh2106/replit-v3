@@ -366,6 +366,8 @@ router.patch("/assignments/:id/questions/:questionId", requireAuth, requireTeach
 
   const body = req.body as Record<string, unknown>;
   const updates: Record<string, unknown> = {};
+  if (body.skill != null) updates.skill = body.skill;
+  if (body.level != null) updates.level = body.level;
   if (body.content != null) updates.content = body.content;
   if (body.options != null) updates.options = body.options;
   if (body.correctAnswer !== undefined) updates.correctAnswer = body.correctAnswer;
