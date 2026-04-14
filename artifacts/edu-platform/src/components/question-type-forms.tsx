@@ -1124,7 +1124,6 @@ export function OpenEndForm({ content, setContent, explanation, setExplanation, 
   const typeOptions = [
     { value: "text", label: "Văn bản", icon: "📝" },
     { value: "audio", label: "Ghi âm", icon: "🎙️" },
-    { value: "image", label: "Hình ảnh", icon: "📷" },
   ];
   return (
     <div className="space-y-5">

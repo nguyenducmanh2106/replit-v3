@@ -145,10 +145,49 @@ export default function SubmissionScreen() {
         {showResults && submission.answers && (submission.answers as any[]).length > 0 && (
           <>
             <Text style={[s.sectionTitle, { color: colors.foreground }]}>Chi tiết câu trả lời</Text>
-            {(submission.answers as any[]).map((ans, i) => (
+            {(submission.answers as any[]).map((ans, i) => {
+              let openEnd: any = null;
+              try { openEnd = JSON.parse(ans.answer || "{}"); } catch {}
+              const isOpenEnd = openEnd?.input_type || openEnd?.mode;
+              const oeText = openEnd?.text_content || openEnd?.text;
+              const oeAudio = openEnd?.audio_url || openEnd?.audioUrl;
+              const oeTranscript = openEnd?.transcript;
+              const oeDuration = openEnd?.duration_seconds;
+              const oeConfidence = openEnd?.stt_confidence;
+
+              return (
               <View key={i} style={[s.answerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[s.answerQ, { color: colors.mutedForeground }]}>Câu {i + 1}</Text>
-                <Text style={[s.answerText, { color: colors.foreground }]}>{ans.answer ?? "—"}</Text>
+                {isOpenEnd ? (
+                  <View style={{ gap: 8 }}>
+                    {oeText ? <Text style={[s.answerText, { color: colors.foreground }]}>{oeText}</Text> : null}
+                    {oeAudio ? (
+                      <View style={{ padding: 8, backgroundColor: "#F5F3FF", borderRadius: 12, borderWidth: 1, borderColor: "#DDD6FE" }}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                          <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#6D28D9" }}>🎙️ Ghi âm</Text>
+                          <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                            {oeDuration ? <Text style={{ fontSize: 11, color: "#9CA3AF" }}>{Math.floor(oeDuration / 60)}:{String(oeDuration % 60).padStart(2, "0")}</Text> : null}
+                            {oeConfidence != null && oeConfidence > 0 ? (
+                              <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: oeConfidence >= 0.8 ? "#15803D" : oeConfidence >= 0.5 ? "#B45309" : "#DC2626" }}>
+                                STT: {Math.round(oeConfidence * 100)}%
+                              </Text>
+                            ) : null}
+                          </View>
+                        </View>
+                        <Text style={{ fontSize: 12, color: "#6B7280", fontStyle: "italic" }}>(Nghe audio trên web)</Text>
+                        {oeTranscript ? (
+                          <View style={{ marginTop: 6, padding: 8, backgroundColor: "#FFF", borderRadius: 8, borderWidth: 1, borderColor: "#EDE9FE" }}>
+                            <Text style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 2 }}>Bản chuyển đổi:</Text>
+                            <Text style={{ fontSize: 13, color: "#1F2937" }}>{oeTranscript}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    ) : null}
+                    {!oeText && !oeAudio ? <Text style={[s.answerText, { color: "#9CA3AF", fontStyle: "italic" }]}>(Bỏ trống)</Text> : null}
+                  </View>
+                ) : (
+                  <Text style={[s.answerText, { color: colors.foreground }]}>{ans.answer ?? "—"}</Text>
+                )}
                 {ans.isCorrect !== undefined && (
                   <View style={[s.answerResult, { backgroundColor: ans.isCorrect ? colors.success + "15" : colors.destructive + "15" }]}>
                     <Feather
@@ -181,7 +220,8 @@ export default function SubmissionScreen() {
                   </Text>
                 )}
               </View>
-            ))}
+              );
+            })}
           </>
         )}
 

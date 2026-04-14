@@ -318,8 +318,8 @@ function OptionsView({ type, options, correctAnswer, metadata }: { type: string;
 
   if (type === "open_end") {
     const meta = safeJson<Record<string, unknown>>(metadata ?? null, {});
-    const allowedTypes = (meta.allowedTypes as string[]) ?? ["text", "audio", "image"];
-    const labels: Record<string, string> = { text: "Văn bản", audio: "Ghi âm", image: "Hình ảnh" };
+    const allowedTypes = ((meta.allowedTypes as string[]) ?? ["text", "audio"]).filter(t => t !== "image");
+    const labels: Record<string, string> = { text: "Văn bản", audio: "Ghi âm" };
     return (
       <div className="mt-3 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-sm text-violet-600 italic">
         Câu hỏi mở — trả lời bằng: {allowedTypes.map(t => labels[t] || t).join(", ")}
@@ -378,7 +378,7 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTimedQs, setVideoTimedQs] = useState<VideoQuestion[]>([]);
   const [essayAutoGrade, setEssayAutoGrade] = useState(false);
-  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio", "image"]);
+  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio"]);
 
   useEffect(() => {
     if (!q) return;
@@ -458,7 +458,7 @@ function QuestionEditDialog({ q, open, onClose, onSave, saving }: {
       setEssayAutoGrade((meta.autoGrade as boolean) ?? false);
     }
     if (q.type === "open_end") {
-      setOpenEndAllowedTypes((meta.allowedTypes as string[]) ?? ["text", "audio", "image"]);
+      setOpenEndAllowedTypes(((meta.allowedTypes as string[]) ?? ["text", "audio"]).filter(t => t !== "image"));
     }
   }, [q]);
 

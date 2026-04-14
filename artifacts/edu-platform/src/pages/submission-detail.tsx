@@ -601,30 +601,55 @@ export default function SubmissionDetailPage() {
                                   <p className="text-xs text-muted-foreground mb-1">{(() => {
                                     let parsed: any = null;
                                     try { parsed = JSON.parse(answer.answer || "{}"); } catch {}
-                                    return parsed?.mode ? "Câu hỏi mở:" : "Bài luận:";
+                                    return (parsed?.input_type || parsed?.mode) ? "Câu hỏi mở:" : "Bài luận:";
                                   })()}</p>
                                   {(() => {
                                     let openEndParsed: any = null;
                                     try { openEndParsed = JSON.parse(answer.answer || "{}"); } catch {}
-                                    const isOpenEnd = openEndParsed?.mode;
+                                    const isOpenEnd = openEndParsed?.input_type || openEndParsed?.mode;
 
                                     if (isOpenEnd) {
+                                      const textVal = openEndParsed.text_content || openEndParsed.text;
+                                      const audioVal = openEndParsed.audio_url || openEndParsed.audioUrl;
+                                      const transcriptVal = openEndParsed.transcript;
+                                      const durationVal = openEndParsed.duration_seconds;
+                                      const confidenceVal = openEndParsed.stt_confidence;
+                                      const imageVal = openEndParsed.imageUrl;
+                                      const hasContent = textVal || audioVal || imageVal;
+
                                       return (
                                         <div className="space-y-2">
-                                          {openEndParsed.mode === "text" && openEndParsed.text && (
-                                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{openEndParsed.text}</p>
+                                          {textVal && (
+                                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{textVal}</p>
                                           )}
-                                          {openEndParsed.mode === "audio" && openEndParsed.audioUrl && (
-                                            <div className="p-2 bg-violet-50 rounded-xl border border-violet-200">
-                                              <audio controls src={openEndParsed.audioUrl} className="w-full" />
+                                          {audioVal && (
+                                            <div className="p-3 bg-violet-50 rounded-xl border border-violet-200 space-y-2">
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-xs font-medium text-violet-700">🎙️ Ghi âm</span>
+                                                <div className="flex items-center gap-2">
+                                                  {durationVal && <span className="text-xs text-gray-400">{Math.floor(durationVal / 60)}:{String(durationVal % 60).padStart(2, "0")}</span>}
+                                                  {confidenceVal != null && confidenceVal > 0 && (
+                                                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${confidenceVal >= 0.8 ? "bg-green-100 text-green-700" : confidenceVal >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                                                      STT: {Math.round(confidenceVal * 100)}%
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              <audio controls src={audioVal} className="w-full h-10" />
+                                              {transcriptVal && (
+                                                <div className="mt-1 p-2 bg-white rounded-lg border border-violet-100">
+                                                  <p className="text-xs text-gray-400 mb-0.5">Bản chuyển đổi:</p>
+                                                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{transcriptVal}</p>
+                                                </div>
+                                              )}
                                             </div>
                                           )}
-                                          {openEndParsed.mode === "image" && openEndParsed.imageUrl && (
+                                          {imageVal && (
                                             <div className="p-2 bg-violet-50 rounded-xl border border-violet-200">
-                                              <img src={openEndParsed.imageUrl} alt="Ảnh trả lời" className="max-h-64 rounded-lg object-contain" />
+                                              <img src={imageVal} alt="Ảnh trả lời" className="max-h-64 rounded-lg object-contain" />
                                             </div>
                                           )}
-                                          {!openEndParsed.text && !openEndParsed.audioUrl && !openEndParsed.imageUrl && (
+                                          {!hasContent && (
                                             <p className="text-sm text-gray-400 italic">(Bỏ trống)</p>
                                           )}
                                         </div>

@@ -84,7 +84,7 @@ export function CreateQuestionDialog({ open, onClose, onSave, saving, defaultEss
   const [videoUrl, setVideoUrl] = useState("");
   const [timedQuestions, setTimedQuestions] = useState<VideoQuestion[]>([]);
   const [essayAutoGrade, setEssayAutoGrade] = useState(defaultEssayAutoGrade);
-  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio", "image"]);
+  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio"]);
 
   // Sync essay auto-grade default whenever the dialog opens (handles async data load)
   useEffect(() => {

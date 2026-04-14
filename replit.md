@@ -156,6 +156,16 @@ Auto-grading is applied on submission for all question types except `essay` (man
 - `video_interactive` — partial scoring per checkpoint question, keyed by original index in options array (handles notes correctly)
 - `reading` — simple text compare if `correctAnswer` exists, otherwise manual (no correctAnswer → pending)
 - `essay` — always manual (teacher or AI grading)
+- `open_end` — always manual (pending_review); supports text + audio recording with STT
+
+### Open End Question (open_end)
+- **Payload format**: `{input_type: "text"|"audio"|"combined", text_content?, audio_url?, transcript?, duration_seconds?, stt_confidence?}`
+- **Allowed input types**: `text`, `audio` (image mode removed)
+- **Audio flow**: MediaRecorder → upload to object storage → Web Speech API STT (vi-VN) → editable transcript
+- **Audio state machine**: `idle` → `recording` (canvas waveform + timer) → `processing` (upload + STT) → `transcribed`
+- **Paste detection**: Counter tracked, toast warning at >2 pastes, visual banner shown
+- **Min text length**: 10 characters with color-coded counter (gray/amber/green)
+- **Backward compatibility**: Display layer reads both new snake_case fields and old camelCase format
 
 Streak and badges are updated on each submission.
 

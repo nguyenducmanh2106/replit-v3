@@ -1315,7 +1315,7 @@ export default function QuestionFormPage() {
   const [essayAutoGrade, setEssayAutoGrade] = useState(false);
 
   // Open End
-  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio", "image"]);
+  const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio"]);
 
   // ── Load existing question ────────────────────────────────────────────────
   useEffect(() => {
@@ -1378,7 +1378,7 @@ export default function QuestionFormPage() {
       setEssayAutoGrade((meta.autoGrade as boolean) ?? false);
     }
     if (existingQ.type === "open_end") {
-      const allowed = (meta.allowedTypes as string[]) ?? ["text", "audio", "image"];
+      const allowed = ((meta.allowedTypes as string[]) ?? ["text", "audio"]).filter((t: string) => t !== "image");
       setOpenEndAllowedTypes(allowed);
     }
   }, [existingQ]);
