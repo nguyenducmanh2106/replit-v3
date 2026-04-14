@@ -2381,9 +2381,21 @@ export default function AssignmentTakePage() {
   };
   const isFlagged = (idx: number) => flagged.includes(idx);
   const currentAnswer = currentAQ ? (answers[currentAQ.id] ?? "") : "";
+  const isOpenEndAnswered = (ans: string) => {
+    try {
+      const p = JSON.parse(ans);
+      if (!p || typeof p !== "object") return false;
+      const hasText = typeof p.text_content === "string" && p.text_content.trim().length > 0;
+      const hasAudio = typeof p.audio_url === "string" && p.audio_url.length > 0;
+      return hasText || hasAudio;
+    } catch { return false; }
+  };
+
   const answeredCount = questions.filter(aq => {
     const ans = answers[aq.id] ?? "";
-    if (["matching", "drag_drop", "sentence_reorder", "video_interactive", "listening", "reading"].includes(aq.question?.type ?? "")) {
+    const qType = aq.question?.type ?? "";
+    if (qType === "open_end") return isOpenEndAnswered(ans);
+    if (["matching", "drag_drop", "sentence_reorder", "video_interactive", "listening", "reading"].includes(qType)) {
       try { const parsed = JSON.parse(ans); return Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0; } catch { return ans.trim().length > 0; }
     }
     return ans.trim().length > 0;
@@ -2394,6 +2406,7 @@ export default function AssignmentTakePage() {
   const progressPercent = (answeredCount / questions.length) * 100;
   const isAnswered = (aqId: number, qType: string) => {
     const ans = answers[aqId] ?? "";
+    if (qType === "open_end") return isOpenEndAnswered(ans);
     if (["matching", "drag_drop", "sentence_reorder", "video_interactive", "listening", "reading"].includes(qType)) {
       try { const parsed = JSON.parse(ans); return Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0; } catch { return ans.trim().length > 0; }
     }
