@@ -63,6 +63,7 @@ app.use(cors({
   },
 }));
 app.use(express.json());
+app.use(express.text({ type: "text/plain" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use(clerkMiddleware());

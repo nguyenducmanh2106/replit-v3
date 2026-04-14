@@ -19,6 +19,7 @@ import gamificationRouter from "./gamification";
 import enterpriseRouter from "./enterprise";
 import lmsRouter from "./lms";
 import quizTemplatesRouter from "./quiz-templates";
+import quizSessionsRouter from "./quiz-sessions";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(gamificationRouter);
 router.use(enterpriseRouter);
 router.use(lmsRouter);
 router.use(quizTemplatesRouter);
+router.use(quizSessionsRouter);
 
 export default router;

@@ -10,6 +10,30 @@ async function runStartupMigrations() {
     await db.execute(sql`ALTER TABLE assignments ADD COLUMN IF NOT EXISTS auto_grade BOOLEAN NOT NULL DEFAULT false`);
     await db.execute(sql`ALTER TABLE submission_answers ADD COLUMN IF NOT EXISTS teacher_comment TEXT`);
     await db.execute(sql`UPDATE submissions SET status = 'pending_review' WHERE status = 'pending'`);
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS quiz_sessions (
+        id SERIAL PRIMARY KEY,
+        session_id VARCHAR(64) NOT NULL UNIQUE,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        assignment_id INTEGER NOT NULL REFERENCES assignments(id),
+        answers JSONB NOT NULL DEFAULT '{}',
+        flagged JSONB NOT NULL DEFAULT '[]',
+        current_question INTEGER NOT NULL DEFAULT 0,
+        time_left_seconds INTEGER,
+        started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_saved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        status TEXT NOT NULL DEFAULT 'in_progress'
+      )
+    `);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_quiz_sessions_active
+      ON quiz_sessions (user_id, assignment_id)
+      WHERE status = 'in_progress'
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_quiz_sessions_lookup
+      ON quiz_sessions (user_id, assignment_id, status)
+    `);
     logger.info("Startup migrations completed");
   } catch (e) {
     logger.warn({ err: e }, "Startup migration warning (non-fatal)");

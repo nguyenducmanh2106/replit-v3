@@ -8,3 +8,4 @@ export * from "./fraud";
 export * from "./conversations";
 export * from "./messages";
 export * from "./quiz-templates";
+export * from "./quiz-sessions";

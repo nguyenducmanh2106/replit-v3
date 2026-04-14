@@ -12,7 +12,8 @@ import {
   ArrowRight, Headphones, BookOpen, Video, Type, X, HelpCircle,
   MousePointerClick, ArrowUpDown, Layers, RotateCcw, Gauge,
   GripVertical, GripHorizontal, Lightbulb, ChevronDown, ChevronUp,
-  FileText, Circle, Mic, Square, Loader2, AlertTriangle
+  FileText, Circle, Mic, Square, Loader2, AlertTriangle,
+  Flag, Save, Cloud, CloudOff, WifiOff, RefreshCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -1879,6 +1880,64 @@ function ListeningInput({ audioUrl, options, value, onChange }: { audioUrl?: str
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+type SaveStatus = "idle" | "pending" | "saving" | "saved" | "offline";
+
+function SaveIndicator({ status, lastSaved }: { status: SaveStatus; lastSaved: string | null }) {
+  if (status === "idle") return null;
+  const config = {
+    pending: { icon: Save, text: "Sẽ lưu sau 2s...", color: "text-amber-500", bg: "bg-amber-50", border: "border-amber-200" },
+    saving: { icon: Cloud, text: "Đang lưu...", color: "text-blue-500", bg: "bg-blue-50", border: "border-blue-200" },
+    saved: { icon: CheckCircle2, text: lastSaved ? `Đã lưu lúc ${lastSaved}` : "Đã lưu", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+    offline: { icon: WifiOff, text: "Offline — đã lưu cục bộ", color: "text-red-500", bg: "bg-red-50", border: "border-red-200" },
+  }[status];
+  const Icon = config.icon;
+  return (
+    <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all", config.bg, config.color, config.border)}>
+      <Icon className={cn("w-3.5 h-3.5", status === "saving" && "animate-spin")} />
+      {config.text}
+    </div>
+  );
+}
+
+function ResumeSessionBanner({
+  onResume,
+  onRestart,
+}: {
+  onResume: () => void;
+  onRestart: () => void;
+}) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50/40">
+      <div className="text-center p-10 bg-white rounded-3xl shadow-xl border border-blue-100 max-w-md">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-200">
+          <RefreshCw className="w-9 h-9 text-white" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Phát hiện phiên làm bài cũ</h2>
+        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+          Bạn đã có một phiên làm bài chưa hoàn thành. Bạn muốn tiếp tục hay bắt đầu lại từ đầu?
+        </p>
+        <div className="flex gap-3 justify-center">
+          <Button
+            onClick={onRestart}
+            variant="outline"
+            className="rounded-xl gap-2 px-5"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Làm lại
+          </Button>
+          <Button
+            onClick={onResume}
+            className="rounded-xl gap-2 px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-200"
+          >
+            <Play className="w-4 h-4" />
+            Tiếp tục
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AssignmentTakePage() {
   const { id } = useParams<{ id: string }>();
   const assignmentId = Number(id);
@@ -1893,10 +1952,212 @@ export default function AssignmentTakePage() {
   const { mutate: reportFraud } = useReportFraudEvent();
 
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [flagged, setFlagged] = useState<number[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const tabSwitchCount = useRef(0);
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(!isPreview);
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [pendingSession, setPendingSession] = useState<any>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionReady = useRef(false);
+
+  const answersRef = useRef(answers);
+  const flaggedRef = useRef(flagged);
+  const currentIdxRef = useRef(currentIdx);
+  const timeLeftRef = useRef(timeLeft);
+  const sessionIdRef = useRef(sessionId);
+  answersRef.current = answers;
+  flaggedRef.current = flagged;
+  currentIdxRef.current = currentIdx;
+  timeLeftRef.current = timeLeft;
+  sessionIdRef.current = sessionId;
+
+  const autoSave = useCallback(async () => {
+    if (!sessionIdRef.current || !assignmentId || isPreview) return;
+    setSaveStatus("saving");
+    try {
+      const res = await fetch(`/api/assignments/${assignmentId}/session`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          sessionId: sessionIdRef.current,
+          answers: answersRef.current,
+          flagged: flaggedRef.current,
+          currentQuestion: currentIdxRef.current,
+          timeLeftSeconds: timeLeftRef.current,
+        }),
+      });
+      if (res.ok) {
+        const now = new Date();
+        setLastSavedTime(`${padTwo(now.getHours())}:${padTwo(now.getMinutes())}:${padTwo(now.getSeconds())}`);
+        setSaveStatus("saved");
+        localStorage.removeItem(`quiz_draft_${sessionIdRef.current}`);
+      } else {
+        throw new Error("save failed");
+      }
+    } catch {
+      setSaveStatus("offline");
+      localStorage.setItem(`quiz_draft_${sessionIdRef.current}`, JSON.stringify({
+        answers: answersRef.current,
+        flagged: flaggedRef.current,
+        currentQuestion: currentIdxRef.current,
+        timeLeftSeconds: timeLeftRef.current,
+        savedLocally: Date.now(),
+      }));
+    }
+  }, [assignmentId, isPreview]);
+
+  const scheduleSave = useCallback(() => {
+    if (!sessionReady.current || isPreview) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaveStatus("pending");
+    saveTimerRef.current = setTimeout(() => { autoSave(); }, 2000);
+  }, [autoSave, isPreview]);
+
+  useEffect(() => {
+    if (!sessionId || isPreview) return;
+    intervalSaveRef.current = setInterval(() => { autoSave(); }, 30000);
+    heartbeatRef.current = setInterval(async () => {
+      try {
+        await fetch(`/api/assignments/${assignmentId}/session/heartbeat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ sessionId }),
+        });
+      } catch {}
+    }, 60000);
+    return () => {
+      if (intervalSaveRef.current) clearInterval(intervalSaveRef.current);
+      if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    };
+  }, [sessionId, assignmentId, autoSave, isPreview]);
+
+  useEffect(() => {
+    if (!sessionId || isPreview) return;
+    const handleBeforeUnload = () => {
+      localStorage.setItem(`quiz_draft_${sessionId}`, JSON.stringify({
+        answers: answersRef.current,
+        flagged: flaggedRef.current,
+        currentQuestion: currentIdxRef.current,
+        timeLeftSeconds: timeLeftRef.current,
+        savedLocally: Date.now(),
+      }));
+      const body = JSON.stringify({
+        sessionId,
+        answers: answersRef.current,
+        flagged: flaggedRef.current,
+        currentQuestion: currentIdxRef.current,
+        timeLeftSeconds: timeLeftRef.current,
+      });
+      navigator.sendBeacon(`/api/assignments/${assignmentId}/session/beacon`, new Blob([body], { type: "application/json" }));
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [sessionId, assignmentId, isPreview]);
+
+  useEffect(() => {
+    if (!sessionId || isPreview) return;
+    const handleOnline = async () => {
+      const draft = localStorage.getItem(`quiz_draft_${sessionId}`);
+      if (draft) {
+        await autoSave();
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [sessionId, autoSave, isPreview]);
+
+  useEffect(() => {
+    if (!assignmentId || isPreview || !assignment) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/assignments/${assignmentId}/session`, { credentials: "include" });
+        if (cancelled) return;
+        const data = await res.json();
+        if (data.session) {
+          setPendingSession(data.session);
+          setShowResumeBanner(true);
+        }
+      } catch {}
+      if (!cancelled) setSessionLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [assignmentId, isPreview, assignment]);
+
+  const startNewSession = useCallback(async () => {
+    const newId = crypto.randomUUID();
+    try {
+      const res = await fetch(`/api/assignments/${assignmentId}/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ sessionId: newId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSessionId(data.sessionId ?? newId);
+        sessionReady.current = true;
+        if (assignment?.timeLimitMinutes) setTimeLeft(assignment.timeLimitMinutes * 60);
+      }
+    } catch {}
+    setSessionLoading(false);
+  }, [assignmentId, assignment]);
+
+  const handleResume = useCallback(() => {
+    if (!pendingSession) return;
+    setSessionId(pendingSession.sessionId);
+    sessionReady.current = true;
+    const restoredAnswers: Record<number, string> = {};
+    if (pendingSession.answers && typeof pendingSession.answers === "object") {
+      for (const [key, val] of Object.entries(pendingSession.answers)) {
+        restoredAnswers[Number(key)] = String(val);
+      }
+    }
+    setAnswers(restoredAnswers);
+    setFlagged(Array.isArray(pendingSession.flagged) ? pendingSession.flagged : []);
+    setCurrentIdx(pendingSession.currentQuestion ?? 0);
+    if (pendingSession.timeLeftSeconds !== null && pendingSession.timeLeftSeconds !== undefined) {
+      setTimeLeft(Math.max(0, pendingSession.timeLeftSeconds));
+    } else if (assignment?.timeLimitMinutes) {
+      setTimeLeft(assignment.timeLimitMinutes * 60);
+    }
+    setShowResumeBanner(false);
+    setSessionLoading(false);
+  }, [pendingSession, assignment]);
+
+  const handleRestart = useCallback(async () => {
+    try {
+      await fetch(`/api/assignments/${assignmentId}/session`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+    } catch {}
+    setPendingSession(null);
+    setShowResumeBanner(false);
+    await startNewSession();
+  }, [assignmentId, startNewSession]);
+
+  useEffect(() => {
+    if (!assignmentId || isPreview || sessionLoading || showResumeBanner || sessionId) return;
+    if (assignment && !pendingSession) {
+      startNewSession();
+    }
+  }, [assignmentId, isPreview, sessionLoading, showResumeBanner, sessionId, assignment, pendingSession, startNewSession]);
+
+  useEffect(() => {
+    if (isPreview && assignment?.timeLimitMinutes) setTimeLeft(assignment.timeLimitMinutes * 60);
+  }, [isPreview, assignment?.timeLimitMinutes]);
 
   useEffect(() => {
     if (!assignmentId || submitted) return;
@@ -1913,10 +2174,6 @@ export default function AssignmentTakePage() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [assignmentId, submitted, reportFraud]);
 
-  useEffect(() => {
-    if (assignment?.timeLimitMinutes) setTimeLeft(assignment.timeLimitMinutes * 60);
-  }, [assignment?.timeLimitMinutes]);
-
   const handleSubmit = useCallback(() => {
     if (!assignment) return;
     const answerPayload = (assignment.questions ?? []).map((aq) => ({
@@ -1928,6 +2185,18 @@ export default function AssignmentTakePage() {
       {
         onSuccess: (result) => {
           setSubmitted(true);
+          if (sessionId) {
+            fetch(`/api/assignments/${assignmentId}/session/submit`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ sessionId }),
+            }).catch(() => {});
+            localStorage.removeItem(`quiz_draft_${sessionId}`);
+          }
+          if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+          if (intervalSaveRef.current) clearInterval(intervalSaveRef.current);
+          if (heartbeatRef.current) clearInterval(heartbeatRef.current);
           if (!isPreview && result.id) {
             queryClient.invalidateQueries({ queryKey: getListSubmissionsQueryKey() });
             setTimeout(() => navigate(`/submissions/${result.id}`), 1500);
@@ -1935,7 +2204,7 @@ export default function AssignmentTakePage() {
         },
       }
     );
-  }, [assignment, answers, assignmentId, createSubmission, navigate, queryClient, isPreview]);
+  }, [assignment, answers, assignmentId, createSubmission, navigate, queryClient, isPreview, sessionId]);
 
   useEffect(() => {
     if (timeLeft === null) return;
@@ -1944,7 +2213,7 @@ export default function AssignmentTakePage() {
     return () => clearInterval(interval);
   }, [timeLeft, handleSubmit]);
 
-  if (isLoading) {
+  if (isLoading || (!isPreview && sessionLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 p-8 space-y-4">
         <Skeleton className="h-16 w-full rounded-2xl" />
@@ -1954,6 +2223,10 @@ export default function AssignmentTakePage() {
         </div>
       </div>
     );
+  }
+
+  if (showResumeBanner && pendingSession) {
+    return <ResumeSessionBanner onResume={handleResume} onRestart={handleRestart} />;
   }
 
   const myAttempts = assignment?.myAttemptCount ?? 0;
@@ -2054,7 +2327,17 @@ export default function AssignmentTakePage() {
       ? (Array.isArray(ddParsed.items) ? ddParsed.items : [])
       : [];
 
-  const setAnswer = (v: string) => { if (currentAQ) setAnswers((prev) => ({ ...prev, [currentAQ.id]: v })); };
+  const setAnswer = (v: string) => {
+    if (currentAQ) {
+      setAnswers((prev) => ({ ...prev, [currentAQ.id]: v }));
+      scheduleSave();
+    }
+  };
+  const toggleFlag = (idx: number) => {
+    setFlagged((prev) => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+    scheduleSave();
+  };
+  const isFlagged = (idx: number) => flagged.includes(idx);
   const currentAnswer = currentAQ ? (answers[currentAQ.id] ?? "") : "";
   const answeredCount = questions.filter(aq => {
     const ans = answers[aq.id] ?? "";
@@ -2095,6 +2378,7 @@ export default function AssignmentTakePage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {!isPreview && <SaveIndicator status={saveStatus} lastSaved={lastSavedTime} />}
           {timeLeft !== null && (
             <div className={cn(
               "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-mono font-bold text-lg transition-all",
@@ -2141,11 +2425,13 @@ export default function AssignmentTakePage() {
               return (
                 <button
                   key={aq.id}
-                  onClick={() => setCurrentIdx(i)}
+                  onClick={() => { setCurrentIdx(i); scheduleSave(); }}
                   className={cn(
                     "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-left",
                     active
                       ? `bg-gradient-to-r ${qCfg.gradient.replace("from-", "from-").replace("to-", "to-")} text-white shadow-md`
+                      : isFlagged(i)
+                      ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
                       : answered
                       ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -2153,11 +2439,12 @@ export default function AssignmentTakePage() {
                 >
                   <span className={cn(
                     "w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0",
-                    active ? "bg-white/20 text-white" : answered ? "bg-emerald-200 text-emerald-700" : "bg-gray-100 text-gray-500"
+                    active ? "bg-white/20 text-white" : isFlagged(i) ? "bg-amber-200 text-amber-700" : answered ? "bg-emerald-200 text-emerald-700" : "bg-gray-100 text-gray-500"
                   )}>{i + 1}</span>
                   <QIcon className={cn("w-3.5 h-3.5 flex-shrink-0", active ? "text-white/80" : answered ? "text-emerald-500" : "text-gray-400")} />
                   <span className="truncate text-xs leading-tight">{qCfg.label}</span>
-                  {answered && !active && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 ml-auto flex-shrink-0" />}
+                  {isFlagged(i) && !active && <Flag className="w-3.5 h-3.5 text-amber-500 ml-auto flex-shrink-0" />}
+                  {answered && !active && !isFlagged(i) && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 ml-auto flex-shrink-0" />}
                 </button>
               );
             })}
@@ -2171,6 +2458,12 @@ export default function AssignmentTakePage() {
               <div className="w-4 h-4 rounded-lg bg-gray-100 border border-gray-200" />
               <span className="text-gray-500">Chưa trả lời <span className="font-bold text-gray-600">{questions.length - answeredCount}</span></span>
             </div>
+            {flagged.length > 0 && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-4 h-4 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center"><Flag className="w-2.5 h-2.5 text-amber-500" /></div>
+                <span className="text-gray-500">Đánh dấu xem lại <span className="font-bold text-amber-600">{flagged.length}</span></span>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -2196,9 +2489,21 @@ export default function AssignmentTakePage() {
                       <span className="text-xs font-bold bg-gray-100 text-gray-500 px-3 py-1.5 rounded-full border border-gray-200">
                         Cấp {currentQ.level}
                       </span>
-                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200/50 ml-auto">
+                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200/50">
                         {currentQ.points} điểm
                       </span>
+                      <button
+                        onClick={() => toggleFlag(currentIdx)}
+                        className={cn(
+                          "text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-all ml-auto",
+                          isFlagged(currentIdx)
+                            ? "bg-amber-100 text-amber-600 border-amber-300"
+                            : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-amber-50 hover:text-amber-500 hover:border-amber-200"
+                        )}
+                      >
+                        <Flag className="w-3.5 h-3.5" />
+                        {isFlagged(currentIdx) ? "Đã đánh dấu" : "Đánh dấu"}
+                      </button>
                     </div>
                     <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">{currentQ.content}</p>
                   </div>

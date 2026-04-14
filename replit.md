@@ -110,6 +110,13 @@ pnpm monorepo with TypeScript project references.
 - `POST /api/ai/grade-essay` — AI essay grading (OpenAI)
 - `POST /api/ai/suggest-questions` — AI question suggestions
 - `POST /api/ai/personalized-feedback/:submissionId` — AI personalized feedback
+- `GET /api/assignments/:id/session` — check for existing quiz session
+- `POST /api/assignments/:id/session` — create new quiz session
+- `PATCH /api/assignments/:id/session` — auto-save session state (answers, flags, current question, timer)
+- `POST /api/assignments/:id/session/beacon` — beforeunload beacon save (handles text/plain)
+- `POST /api/assignments/:id/session/submit` — mark session as submitted
+- `DELETE /api/assignments/:id/session` — delete session (restart)
+- `POST /api/assignments/:id/session/heartbeat` — heartbeat + server-side expiry check
 - `POST /api/fraud/report`, `GET /api/fraud/events` — Fraud detection
 - `GET /api/gamification/badges`, `leaderboard`, `streak` — Gamification
 - `GET /api/enterprise/department-report`, `competency-matrix` — Enterprise
@@ -130,7 +137,7 @@ pnpm monorepo with TypeScript project references.
 ## Database Schema (Drizzle + PostgreSQL)
 
 ### Core Tables
-`users`, `courses`, `course_members`, `questions`, `assignments`, `assignment_questions`, `submissions`, `submission_answers`
+`users`, `courses`, `course_members`, `questions`, `assignments`, `assignment_questions`, `submissions`, `submission_answers`, `quiz_sessions`
 
 - `assignments` includes: `startTime`, `endTime`, `maxAttempts` (default 1), `allowReview` (default false)
 - `assignment_questions` stores embedded copies of question data (type, content, options, correctAnswer, points, etc.) — no FK to `questions`
@@ -138,6 +145,13 @@ pnpm monorepo with TypeScript project references.
 
 ### Quiz Template Tables
 `quiz_templates` (id, title, description, teacherId, createdAt, updatedAt), `quiz_template_questions` (id, templateId, type, skill, level, content, options, correctAnswer, audioUrl, videoUrl, imageUrl, passage, explanation, metadata, points, orderIndex, createdAt)
+
+### Quiz Session Tables
+`quiz_sessions` (id, sessionId, userId, assignmentId, answers JSONB, flagged JSONB, currentQuestion, timeLeftSeconds, startedAt, lastSavedAt, status)
+- Temporary table for persisting quiz-taking state (auto-save every 2s debounce + 30s interval)
+- Status: `in_progress` → `submitted` (on submit) / `expired` (server-side timeout)
+- Server validates expiry via `startedAt + assignment.timeLimitMinutes`
+- Frontend features: debounced auto-save, localStorage fallback (offline), beforeunload beacon, resume/restart dialog, flag questions for review, save status indicator
 
 ### Phase 2 Tables
 `schedule_events`, `course_documents`, `rubrics`, `rubric_criteria`, `answer_annotations`, `rubric_grades`, `audit_logs`, `system_settings`
