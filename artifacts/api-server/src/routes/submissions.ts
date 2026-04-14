@@ -587,7 +587,7 @@ router.patch("/submissions/:id/answers/:questionId", requireAuth, async (req, re
 
   const questions = await db.select().from(assignmentQuestionsTable)
     .where(eq(assignmentQuestionsTable.assignmentId, existing.assignmentId));
-  const question = questions.find(q => q.questionId === params.data.questionId);
+  const question = questions.find(q => q.id === params.data.questionId);
   const isEssay = question?.type === "essay";
 
   const updateData: Record<string, unknown> = {};

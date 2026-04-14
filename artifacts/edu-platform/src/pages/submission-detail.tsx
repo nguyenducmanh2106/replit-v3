@@ -463,14 +463,14 @@ export default function SubmissionDetailPage() {
   }
 
   async function handleGrade() {
-    const score = parseFloat(gradeScore);
-    if (isNaN(score)) { toast({ title: "Vui lòng nhập điểm hợp lệ", variant: "destructive" }); return; }
+    const parsedScore = parseFloat(gradeScore);
+    const score = isNaN(parsedScore) ? (submission?.score ?? 0) : parsedScore;
     try {
       await gradeSubmission({ id: submissionId, data: { score, feedback: gradeFeedback || undefined } });
       await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
-      toast({ title: "Đã chấm điểm thành công" });
+      toast({ title: "Đã lưu nhận xét" });
     } catch {
-      toast({ title: "Lỗi", description: "Không thể chấm điểm", variant: "destructive" });
+      toast({ title: "Lỗi", description: "Không thể lưu nhận xét", variant: "destructive" });
     }
   }
 
