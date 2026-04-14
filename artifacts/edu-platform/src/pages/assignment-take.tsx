@@ -1485,12 +1485,20 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
   const lastPauseIdxRef = useRef<number>(-1);
   const triggeredRef = useRef<Set<number>>(new Set());
 
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const currentTimeRef = useRef(0);
+  const durationRef = useRef(0);
+  const isPlayingRef = useRef(false);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const timeDisplayRef = useRef<HTMLSpanElement>(null);
+  const statusDotRef = useRef<HTMLDivElement>(null);
+  const statusTextRef = useRef<HTMLSpanElement>(null);
+  const playBtnIconRef = useRef<HTMLSpanElement>(null);
+  const rafRef = useRef<number>(0);
+
   const [playerReady, setPlayerReady] = useState(false);
   const [activeCheckpoint, setActiveCheckpoint] = useState<(TQ & { originalIndex: number }) | null>(null);
   const [passedCheckpoints, setPassedCheckpoints] = useState<Set<number>>(new Set());
+  const [, forceRender] = useState(0);
 
   const ytId = videoUrl ? getYouTubeIdTake(videoUrl) : null;
   const isYouTube = !!ytId;
@@ -1520,6 +1528,65 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
     }, 1000);
   }, []);
 
+  const updateDOMDisplay = useCallback(() => {
+    const ct = currentTimeRef.current;
+    const dur = durationRef.current;
+    const playing = isPlayingRef.current;
+    if (timeDisplayRef.current) {
+      timeDisplayRef.current.textContent = `${fmtMM(ct)} / ${dur > 0 ? fmtMM(dur) : "--:--"}`;
+    }
+    if (progressBarRef.current) {
+      const pct = dur > 0 ? Math.min(100, (ct / dur) * 100) : 0;
+      progressBarRef.current.style.width = `${pct}%`;
+    }
+    if (statusDotRef.current) {
+      statusDotRef.current.className = `w-2 h-2 rounded-full ${playing ? "bg-green-500" : "bg-gray-400"}`;
+    }
+    if (statusTextRef.current) {
+      statusTextRef.current.textContent = playing ? "Đang phát" : "Đã dừng";
+      statusTextRef.current.className = `text-xs font-medium ${playing ? "text-green-600" : "text-gray-500"}`;
+    }
+  }, []);
+
+  const checkCheckpoints = useCallback(() => {
+    if (!isPlayingRef.current) return;
+    const ct = currentTimeRef.current;
+    for (const cp of sortedCheckpoints) {
+      if (
+        !passedRef.current.has(cp.originalIndex) &&
+        !triggeredRef.current.has(cp.originalIndex) &&
+        ct >= cp.timestamp &&
+        ct < cp.timestamp + 2
+      ) {
+        triggeredRef.current.add(cp.originalIndex);
+        if (isYouTube) ytPause();
+        else if (videoRef.current) videoRef.current.pause();
+        isPlayingRef.current = false;
+        setActiveCheckpoint(cp);
+        forceRender(n => n + 1);
+        break;
+      }
+    }
+  }, [sortedCheckpoints, isYouTube, ytPause]);
+
+  useEffect(() => {
+    let running = true;
+    const tick = () => {
+      if (!running) return;
+      if (!isYouTube && videoRef.current) {
+        currentTimeRef.current = videoRef.current.currentTime;
+        if (videoRef.current.duration && videoRef.current.duration > 0) {
+          durationRef.current = videoRef.current.duration;
+        }
+      }
+      updateDOMDisplay();
+      checkCheckpoints();
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { running = false; cancelAnimationFrame(rafRef.current); };
+  }, [isYouTube, updateDOMDisplay, checkCheckpoints]);
+
   useEffect(() => {
     if (!isYouTube) return;
     const onMessage = (event: MessageEvent) => {
@@ -1531,14 +1598,14 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
 
       if (data.event === "onStateChange") {
         const state = data.info as number;
-        if (state === 1) setIsPlaying(true);
-        if (state === 2 || state === 0) setIsPlaying(false);
+        if (state === 1) { isPlayingRef.current = true; forceRender(n => n + 1); }
+        if (state === 2 || state === 0) { isPlayingRef.current = false; forceRender(n => n + 1); }
       }
 
       if (data.event === "infoDelivery" && data.info && typeof data.info === "object") {
         const info = data.info as Record<string, unknown>;
-        if (typeof info.currentTime === "number") setCurrentTime(info.currentTime);
-        if (typeof info.duration === "number" && info.duration > 0) setDuration(info.duration);
+        if (typeof info.currentTime === "number") currentTimeRef.current = info.currentTime;
+        if (typeof info.duration === "number" && info.duration > 0) durationRef.current = info.duration;
       }
     };
     window.addEventListener("message", onMessage);
@@ -1546,34 +1613,16 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
   }, [isYouTube]);
 
   useEffect(() => {
-    if (!isPlaying) return;
-    for (const cp of sortedCheckpoints) {
-      if (
-        !passedRef.current.has(cp.originalIndex) &&
-        !triggeredRef.current.has(cp.originalIndex) &&
-        currentTime >= cp.timestamp &&
-        currentTime < cp.timestamp + 2
-      ) {
-        triggeredRef.current.add(cp.originalIndex);
-        if (isYouTube) ytPause();
-        else if (videoRef.current) videoRef.current.pause();
-        setIsPlaying(false);
-        setActiveCheckpoint(cp);
-        break;
-      }
-    }
-  }, [currentTime, isPlaying, sortedCheckpoints, isYouTube, ytPause]);
-
-  useEffect(() => {
     passedRef.current = new Set();
     triggeredRef.current = new Set();
     setPassedCheckpoints(new Set());
     setActiveCheckpoint(null);
-    setCurrentTime(0);
-    setDuration(0);
-    setIsPlaying(false);
+    currentTimeRef.current = 0;
+    durationRef.current = 0;
+    isPlayingRef.current = false;
     setPlayerReady(false);
     lastPauseIdxRef.current = -1;
+    forceRender(n => n + 1);
   }, [videoUrl, rawTq]);
 
   function fmtMM(s: number) {
@@ -1584,14 +1633,16 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
 
   function togglePlay() {
     if (activeCheckpoint) return;
+    const playing = isPlayingRef.current;
     if (isYouTube) {
-      if (isPlaying) ytPause();
+      if (playing) ytPause();
       else ytPlay();
     } else if (videoRef.current) {
-      if (isPlaying) videoRef.current.pause();
+      if (playing) videoRef.current.pause();
       else videoRef.current.play().catch(() => {});
     }
-    setIsPlaying(!isPlaying);
+    isPlayingRef.current = !playing;
+    forceRender(n => n + 1);
   }
 
   function resumeFromCheckpoint() {
@@ -1601,7 +1652,8 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
     setActiveCheckpoint(null);
     if (isYouTube) ytPlay();
     else if (videoRef.current) videoRef.current.play().catch(() => {});
-    setIsPlaying(true);
+    isPlayingRef.current = true;
+    forceRender(n => n + 1);
   }
 
   function seekToTs(ts: number) {
@@ -1612,13 +1664,15 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
       videoRef.current.currentTime = ts;
       videoRef.current.play().catch(() => {});
     }
-    setIsPlaying(true);
+    currentTimeRef.current = ts;
+    isPlayingRef.current = true;
+    forceRender(n => n + 1);
   }
 
+  const isPlaying = isPlayingRef.current;
   const passedCount = passedCheckpoints.size;
   const totalCheckpoints = sortedCheckpoints.length;
   const progressPct = totalCheckpoints > 0 ? Math.round((passedCount / totalCheckpoints) * 100) : 0;
-  const playPct = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
 
   return (
     <div className="space-y-0">
@@ -1636,10 +1690,9 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
               />
             ) : (
               <video ref={videoRef} src={videoUrl!} className="w-full aspect-video"
-                onTimeUpdate={() => { if (videoRef.current) setCurrentTime(videoRef.current.currentTime); }}
-                onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration || 0); }}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)} />
+                onLoadedMetadata={() => { if (videoRef.current) { durationRef.current = videoRef.current.duration || 0; forceRender(n => n + 1); } }}
+                onPlay={() => { isPlayingRef.current = true; forceRender(n => n + 1); }}
+                onPause={() => { isPlayingRef.current = false; forceRender(n => n + 1); }} />
             )}
             {activeCheckpoint && (
               <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
@@ -1664,11 +1717,11 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
                   {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                   {isPlaying ? "Tạm dừng" : "Phát"}
                 </button>
-                <span className="text-sm font-mono text-gray-700">{fmtMM(currentTime)} / {duration > 0 ? fmtMM(duration) : "--:--"}</span>
+                <span ref={timeDisplayRef} className="text-sm font-mono text-gray-700">00:00 / --:--</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className={cn("w-2 h-2 rounded-full", isPlaying ? "bg-green-500" : "bg-gray-400")} />
-                <span className={cn("text-xs font-medium", isPlaying ? "text-green-600" : "text-gray-500")}>
+                <div ref={statusDotRef} className={`w-2 h-2 rounded-full ${isPlaying ? "bg-green-500" : "bg-gray-400"}`} />
+                <span ref={statusTextRef} className={`text-xs font-medium ${isPlaying ? "text-green-600" : "text-gray-500"}`}>
                   {isPlaying ? "Đang phát" : "Đã dừng"}
                 </span>
               </div>
@@ -1676,11 +1729,11 @@ function VideoInteractiveInput({ videoUrl, timedQuestions: rawTq, value, onChang
 
             <div className="relative">
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300"
-                  style={{ width: `${playPct}%` }} />
+                <div ref={progressBarRef} className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
+                  style={{ width: "0%", willChange: "width" }} />
               </div>
-              {duration > 0 && sortedCheckpoints.map((cp, i) => {
-                const pct = Math.max(0, Math.min(100, (cp.timestamp / duration) * 100));
+              {durationRef.current > 0 && sortedCheckpoints.map((cp, i) => {
+                const pct = Math.max(0, Math.min(100, (cp.timestamp / durationRef.current) * 100));
                 const isPassed = passedCheckpoints.has(cp.originalIndex);
                 const isNote = (cp.type ?? "question") === "note";
                 return (
