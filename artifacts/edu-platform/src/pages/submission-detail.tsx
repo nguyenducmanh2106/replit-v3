@@ -462,11 +462,11 @@ export default function SubmissionDetailPage() {
     }
   }
 
-  async function handleGrade() {
+  async function handleSaveFeedback() {
     const parsedScore = parseFloat(gradeScore);
     const score = isNaN(parsedScore) ? (submission?.score ?? 0) : parsedScore;
     try {
-      await gradeSubmission({ id: submissionId, data: { score, feedback: gradeFeedback || undefined } });
+      await gradeSubmission({ id: submissionId, data: { score, feedback: gradeFeedback || undefined, keepStatus: true } });
       await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
       toast({ title: "Đã lưu nhận xét" });
     } catch {
@@ -746,33 +746,43 @@ export default function SubmissionDetailPage() {
                 })}
 
                 <div className="border-t pt-4 space-y-4">
-                  <p className="text-sm font-semibold">Nhận xét tổng thể (tuỳ chọn)</p>
+                  <div>
+                    <p className="text-sm font-semibold">Nhận xét chung (tuỳ chọn)</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Nhận xét nội bộ — chỉ hiển thị cho học sinh sau khi publish kết quả</p>
+                  </div>
                   <Textarea
                     value={gradeFeedback}
                     onChange={e => setGradeFeedback(e.target.value)}
                     placeholder={submission.feedback ?? "Nhận xét chung cho học sinh..."}
                     rows={3}
                   />
-                  <div className="flex gap-3">
-                    <Button onClick={handleGrade} variant="outline">
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Lưu nhận xét tổng thể
-                    </Button>
-                    {submission.status === "pending_review" && (
-                      <Button
-                        onClick={async () => {
-                          try {
-                            const result = await publishGradesMutate({ id: submission.assignmentId });
-                            await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
-                            toast({ title: result.message || "Đã publish kết quả" });
-                          } catch {
-                            toast({ title: "Lỗi", description: "Không thể publish kết quả", variant: "destructive" });
-                          }
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        Publish kết quả
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-3 items-center">
+                      <Button onClick={handleSaveFeedback} variant="outline" size="sm">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Lưu nhận xét
                       </Button>
+                      <span className="text-xs text-muted-foreground">Lưu nháp — chưa công bố điểm cho học sinh</span>
+                    </div>
+                    {submission.status === "pending_review" && (
+                      <div className="flex gap-3 items-center pt-1 border-t">
+                        <Button
+                          onClick={async () => {
+                            try {
+                              const result = await publishGradesMutate({ id: submission.assignmentId });
+                              await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
+                              toast({ title: result.message || "Đã publish kết quả" });
+                            } catch {
+                              toast({ title: "Lỗi", description: "Không thể publish kết quả", variant: "destructive" });
+                            }
+                          }}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          Publish kết quả
+                        </Button>
+                        <span className="text-xs text-muted-foreground">Công bố điểm & nhận xét — học sinh sẽ thấy kết quả</span>
+                      </div>
                     )}
                   </div>
                 </div>

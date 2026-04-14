@@ -595,6 +595,7 @@ export const GradeSubmissionParams = zod.object({
 export const GradeSubmissionBody = zod.object({
   score: zod.number(),
   feedback: zod.string().optional(),
+  keepStatus: zod.boolean().optional(),
 });
 
 export const GradeSubmissionResponse = zod.object({

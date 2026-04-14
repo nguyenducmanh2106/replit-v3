@@ -346,6 +346,7 @@ export interface SubmissionResult {
 export interface GradeSubmissionBody {
   score: number;
   feedback?: string;
+  keepStatus?: boolean;
 }
 
 export interface DashboardSummary {

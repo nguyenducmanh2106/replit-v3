@@ -544,12 +544,15 @@ router.patch("/submissions/:id/grade", requireAuth, async (req, res): Promise<vo
     }
   }
 
-  await db.update(submissionsTable).set({
+  const updateFields: Record<string, unknown> = {
     score: parsed.data.score,
     feedback: parsed.data.feedback ?? null,
-    status: "graded",
-    gradedAt: new Date(),
-  }).where(eq(submissionsTable.id, params.data.id));
+  };
+  if (!parsed.data.keepStatus) {
+    updateFields.status = "graded";
+    updateFields.gradedAt = new Date();
+  }
+  await db.update(submissionsTable).set(updateFields).where(eq(submissionsTable.id, params.data.id));
 
   const result = await getSubmissionResult(params.data.id);
   if (!result) { res.status(404).json({ error: "Submission not found" }); return; }
