@@ -1,0 +1,204 @@
+---
+
+Dưới đây là kế hoạch chi tiết để triển khai cho Replit Agent:
+
+---
+
+## Kế hoạch triển khai: Lưu trạng thái phiên làm bài (Quiz Session Persistence)
+
+### Những gì cần lưu vào session state
+
+Mỗi phiên làm bài cần persist đủ 5 loại dữ liệu: câu trả lời đã chọn theo từng index câu hỏi, thời gian còn lại (tính bằng giây), câu hỏi đang xem hiện tại, danh sách câu đã đánh dấu xem lại, và timestamp lần lưu gần nhất.
+
+---
+
+### Database
+
+Cần tạo bảng mới (không phải bảng submission):
+
+| Cột | Kiểu | Mô tả |
+|---|---|---|
+| `session_id` | varchar (PK) | UUID duy nhất cho mỗi phiên |
+| `user_id` | int | Học sinh |
+| `quiz_id` | int | Bài thi |
+| `answers` | jsonb | `{0: 2, 3: 1, 7: 0, ...}` – index câu: index đáp án |
+| `flagged` | jsonb | `[2, 5, 8]` – danh sách câu đánh dấu |
+| `current_question` | int | Câu đang xem |
+| `time_left_seconds` | int | Thời gian còn lại |
+| `started_at` | timestamp | Khi nào bắt đầu |
+| `last_saved_at` | timestamp | Lần auto-save gần nhất |
+| `status` | enum | `in_progress` / `submitted` / `expired` |
+
+Quan trọng: bảng này là bảng tạm thời, tách biệt hoàn toàn với `submissions`. Khi học sinh nộp bài, mới chuyển dữ liệu sang `submissions` rồi xoá session.
+
+---
+
+### API cần tạo
+
+**1. Kiểm tra có session cũ không (gọi khi học sinh vào trang bài thi):**
+```
+GET
+→ Trả về session nếu còn in_progress, hoặc null nếu chưa có
+```
+
+**2. Tạo session mới:**
+```
+POST
+Body: { sessionId }
+→ Ghi session mới vào DB, trả về sessionId và started_at
+```
+
+**3. Auto-save (quan trọng nhất):**
+```
+PATCH
+Body: { sessionId, answers, flagged, currentQuestion, timeLeftSeconds }
+→ Upsert toàn bộ state, cập nhật last_saved_at
+```
+
+**4. Nộp bài cuối (xoá session, tạo submission):**
+```
+POST
+Body: { sessionId, answers }
+→ Tạo quiz_submission, xoá quiz_session
+```
+
+**5. Huỷ session (học sinh chọn "bắt đầu lại"):**
+```
+DELETE
+```
+
+---
+
+### Logic Auto-save phía Frontend
+
+Cơ chế debounce – không save ngay sau mỗi thao tác mà chờ 2 giây:
+
+```javascript
+let saveTimer = null;
+
+function onAnswerSelect(questionIndex, answerIndex) {
+  state.answers[questionIndex] = answerIndex;
+  renderUI();
+
+  clearTimeout(saveTimer);
+  showSaveIndicator('pending'); // "Sẽ lưu sau 2s..."
+  saveTimer = setTimeout(() => autoSave(), 2000);
+}
+
+async function autoSave() {
+  showSaveIndicator('saving');
+  try {
+    await fetch(`/api/quiz/${quizId}/session`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        sessionId: state.sessionId,
+        answers: state.answers,
+        flagged: state.flagged,
+        currentQuestion: state.currentQuestion,
+        timeLeftSeconds: state.timeLeft,
+      })
+    });
+    showSaveIndicator('saved'); // "Đã lưu lúc HH:MM:SS"
+    localStorage.removeItem(`quiz_draft_${state.sessionId}`); // xoá backup local
+  } catch {
+    showSaveIndicator('offline');
+    // Fallback: lưu vào localStorage khi mất mạng
+    localStorage.setItem(`quiz_draft_${state.sessionId}`, JSON.stringify(state));
+  }
+}
+```
+
+Ngoài debounce, cần thêm interval save mỗi 30 giây để bắt các trường hợp học sinh đọc bài lâu mà không click gì.
+
+---
+
+### Xử lý sự kiện thoát trang (beforeunload)
+
+```javascript
+window.addEventListener('beforeunload', () => {
+  // Lưu snapshot cuối vào localStorage ngay lập tức (sync, không async)
+  localStorage.setItem(`quiz_draft_${state.sessionId}`, JSON.stringify({
+    ...state,
+    savedLocally: Date.now()
+  }));
+  // Gửi beacon lên server (không chờ response)
+  navigator.sendBeacon(`/api/quiz/${quizId}/session`, JSON.stringify(state));
+});
+```
+
+Dùng `navigator.sendBeacon` thay vì `fetch` vì beacon được trình duyệt gửi đi ngay cả khi tab đã đóng.
+
+---
+
+### Luồng khôi phục khi học sinh vào lại
+
+Khi học sinh mở trang bài thi, frontend gọi `GET `:
+
+- Nếu không có session → tạo session mới, cho làm bài bình thường
+- Nếu có session `in_progress` → hiển thị banner hỏi "Tiếp tục hay làm lại"
+  - Chọn "Tiếp tục" → load toàn bộ state: answers, timer, câu đang xem, flags
+  - Chọn "Làm lại" → `DELETE` session cũ, tạo session mới
+
+Đặc biệt: khi load lại timer, cần tính lại thời gian thực tế đã trôi qua:
+
+```javascript
+const elapsed = Math.floor((Date.now() - session.last_saved_at) / 1000);
+state.timeLeft = Math.max(0, session.time_left_seconds - elapsed);
+```
+
+---
+
+### Xử lý hết giờ phía server (quan trọng)
+
+Không nên chỉ dựa vào client để biết hết giờ vì học sinh có thể can thiệp. Server cần tự tính:
+
+```
+started_at + quiz.duration_seconds < NOW()  →  session hết hạn
+```
+
+Khi session hết hạn, server tự động chuyển `status = expired` và ghi nhận bài nộp với những câu đã trả lời. Heartbeat từ frontend gửi lên mỗi 60 giây giúp server biết học sinh vẫn đang làm, đồng thời có thể dùng để detect gian lận (không còn heartbeat mà session vẫn in_progress).
+
+---
+
+### Xử lý mất mạng (Offline mode)
+
+```
+Mất mạng
+  └─ auto-save thất bại
+       └─ lưu vào localStorage (key: quiz_draft_{sessionId})
+            └─ hiện indicator "Offline – đã lưu cục bộ"
+
+Có mạng lại (online event)
+  └─ đọc localStorage
+       └─ sync lên server (PATCH /session)
+            └─ xoá localStorage backup
+                 └─ hiện indicator "Đã đồng bộ"
+```
+
+```javascript
+window.addEventListener('online', async () => {
+  const draft = localStorage.getItem(`quiz_draft_${state.sessionId}`);
+  if (draft) {
+    await autoSave(); // sync lên server
+  }
+});
+```
+
+---
+
+### Checklist cho Replit Agent
+
+- [ ] Tạo bảng với đầy đủ các cột như trên
+- [ ] `GET ` – kiểm tra session cũ
+- [ ] `POST ` – tạo session mới
+- [ ] `PATCH ` – auto-save state (dùng upsert)
+- [ ] `DELETE ` – huỷ session
+- [ ] `POST ` – nộp bài cuối, xoá session
+- [ ] Server tự tính thời gian hết hạn dựa trên `started_at`, không tin client
+- [ ] Frontend: debounce auto-save 2 giây sau mỗi thao tác
+- [ ] Frontend: interval save mỗi 30 giây
+- [ ] Frontend: `beforeunload` → `sendBeacon` + `localStorage` backup
+- [ ] Frontend: khi online lại → sync localStorage lên server
+- [ ] UI: banner "Tiếp tục / Làm lại" khi phát hiện session cũ
+- [ ] UI: save indicator 3 trạng thái (đang lưu / đã lưu / offline)
+- [ ] UI: tính lại timer chính xác dựa vào `last_saved_at` khi restore
