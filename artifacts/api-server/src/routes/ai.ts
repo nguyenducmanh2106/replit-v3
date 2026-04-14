@@ -11,6 +11,8 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { speechToText, ensureCompatibleFormat } from "@workspace/integrations-openai-ai-server/audio";
+import multer from "multer";
 
 const router: IRouter = Router();
 
@@ -301,6 +303,29 @@ Generate encouraging, personalized feedback in Vietnamese. Return ONLY this JSON
       nextSteps: ["Ôn tập lại các câu sai", "Luyện thêm bài tập tương tự"],
       encouragement: "Hãy tiếp tục cố gắng! Mỗi ngày bạn đang tiến bộ hơn.",
     }));
+  }
+});
+
+const transcribeUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
+
+router.post("/ai/transcribe", requireAuth, transcribeUpload.single("audio"), async (req, res): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: "No audio file provided" });
+      return;
+    }
+
+    const audioBuffer = Buffer.from(req.file.buffer);
+    const { buffer, format } = await ensureCompatibleFormat(audioBuffer);
+    const transcript = await speechToText(buffer, format);
+
+    res.json({ transcript, model: "gpt-4o-mini-transcribe" });
+  } catch (err) {
+    console.error("Transcription error:", err);
+    res.status(500).json({ error: "Transcription failed" });
   }
 });
 

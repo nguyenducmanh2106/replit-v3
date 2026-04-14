@@ -784,6 +784,8 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
   const [recordingTimer, setRecordingTimer] = useState(0);
   const [micError, setMicError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [liveTranscript, setLiveTranscript] = useState("");
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -792,6 +794,7 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const sttRecognitionRef = useRef<any>(null);
   const animFrameRef = useRef<number>(0);
   const recordingTimerRef = useRef(0);
   const mountedRef = useRef(true);
@@ -914,10 +917,42 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
       setAudioState("recording");
       setRecordingTimer(0);
       recordingTimerRef.current = 0;
+      setLiveTranscript("");
       timerRef.current = setInterval(() => {
         recordingTimerRef.current += 1;
         setRecordingTimer(recordingTimerRef.current);
       }, 1000);
+
+      try {
+        if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+          const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+          const recognition = new SpeechRecognitionCtor();
+          recognition.lang = "vi-VN";
+          recognition.interimResults = true;
+          recognition.maxAlternatives = 1;
+          recognition.continuous = true;
+          const finalChunks: string[] = [];
+          recognition.onresult = (event: any) => {
+            let interim = "";
+            for (let i = 0; i < event.results.length; i++) {
+              if (event.results[i].isFinal) {
+                if (i >= finalChunks.length) finalChunks.push(event.results[i][0].transcript);
+              } else {
+                interim += event.results[i][0].transcript;
+              }
+            }
+            setLiveTranscript(finalChunks.join(" ") + (interim ? " " + interim : ""));
+          };
+          recognition.onerror = () => {};
+          recognition.onend = () => {
+            if (mediaRecorderRef.current?.state === "recording") {
+              try { recognition.start(); } catch {}
+            }
+          };
+          recognition.start();
+          sttRecognitionRef.current = recognition;
+        }
+      } catch {}
 
       setTimeout(() => drawWaveform(), 100);
     } catch (err: any) {
@@ -931,6 +966,8 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
 
   const stopRecording = () => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    try { sttRecognitionRef.current?.stop(); } catch {}
+    sttRecognitionRef.current = null;
     mediaRecorderRef.current?.stop();
   };
 
@@ -959,74 +996,55 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
       return;
     }
 
-    let sttResult = { text: "", confidence: 0 };
+    if (liveTranscript) {
+      setTranscript(liveTranscript);
+      setSttConfidence(0.5);
+    }
+    setAudioState("transcribed");
+    setIsTranscribing(true);
+
     try {
-      if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-        const runSTT = (lang: string, audioSrc: string, durationSec: number) =>
-          new Promise<{ text: string; confidence: number }>((resolve) => {
-            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-            const recognition = new SpeechRecognition();
-            recognition.lang = lang;
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-            recognition.continuous = true;
-
-            const audio = new Audio(audioSrc);
-            const chunks: string[] = [];
-            let totalConf = 0;
-            let confCount = 0;
-
-            recognition.onresult = (event: any) => {
-              for (let i = event.resultIndex; i < event.results.length; i++) {
-                if (event.results[i].isFinal) {
-                  chunks.push(event.results[i][0].transcript);
-                  totalConf += event.results[i][0].confidence || 0;
-                  confCount++;
-                }
-              }
-            };
-
-            recognition.onend = () => {
-              resolve({ text: chunks.join(" "), confidence: confCount > 0 ? totalConf / confCount : 0 });
-            };
-
-            recognition.onerror = () => {
-              resolve({ text: "", confidence: 0 });
-            };
-
-            recognition.start();
-            audio.play().catch(() => {});
-            setTimeout(() => { try { recognition.stop(); } catch {} }, Math.max(durationSec * 1000 + 2000, 5000));
-          });
-
-        const [viResult, enResult] = await Promise.all([
-          runSTT("vi-VN", localUrl, liveDuration),
-          runSTT("en-US", localUrl, liveDuration),
-        ]);
-
-        if (viResult.text && enResult.text) {
-          sttResult = viResult.confidence >= enResult.confidence ? viResult : enResult;
-        } else {
-          sttResult = viResult.text ? viResult : enResult;
+      const formData = new FormData();
+      formData.append("audio", blob, `recording_${Date.now()}.webm`);
+      const res = await fetch("/api/ai/transcribe", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.transcript && mountedRef.current) {
+          setTranscript(data.transcript);
+          setSttConfidence(0.95);
+          const hasTxt = textContent.trim().length > 0;
+          const inputType: OpenEndPayload["input_type"] = hasTxt ? "combined" : "audio";
+          onChange(JSON.stringify({
+            input_type: inputType,
+            text_content: textContent || undefined,
+            audio_url: uploadedUrl || undefined,
+            transcript: data.transcript,
+            duration_seconds: liveDuration || undefined,
+            stt_confidence: 0.95,
+          }));
+          setIsTranscribing(false);
+          return;
         }
       }
-    } catch { }
+    } catch {}
 
     if (!mountedRef.current) return;
+    setIsTranscribing(false);
 
-    setTranscript(sttResult.text);
-    setSttConfidence(Math.round(sttResult.confidence * 100) / 100);
-    setAudioState("transcribed");
-
+    const fallbackTranscript = transcript || liveTranscript || "";
     const hasTxt = textContent.trim().length > 0;
     const inputType: OpenEndPayload["input_type"] = hasTxt ? "combined" : "audio";
     onChange(JSON.stringify({
       input_type: inputType,
       text_content: textContent || undefined,
       audio_url: uploadedUrl || undefined,
-      transcript: sttResult.text || undefined,
+      transcript: fallbackTranscript || undefined,
       duration_seconds: liveDuration || undefined,
-      stt_confidence: sttResult.confidence ? Math.round(sttResult.confidence * 100) / 100 : undefined,
+      stt_confidence: fallbackTranscript ? 0.5 : undefined,
     }));
   };
 
@@ -1157,6 +1175,12 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
                 <span className="text-lg font-mono font-bold text-red-700">{formatTime(recordingTimer)}</span>
               </div>
               <canvas ref={canvasRef} width={400} height={60} className="w-full h-[60px] rounded-lg" />
+              {liveTranscript && (
+                <div className="p-2 bg-white/70 rounded-lg border border-red-200">
+                  <p className="text-xs text-gray-400 mb-1">Đang nhận dạng:</p>
+                  <p className="text-sm text-gray-700 italic">{liveTranscript}</p>
+                </div>
+              )}
               <div className="flex justify-center">
                 <button
                   type="button"
@@ -1207,6 +1231,12 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
                 <audio controls src={localAudioUrl || audioUrl} className="w-full h-10" />
               </div>
 
+              {isTranscribing && (
+                <div className="flex items-center gap-2 p-2 bg-violet-50 rounded-lg border border-violet-200">
+                  <Loader2 className="w-3 h-3 text-violet-600 animate-spin" />
+                  <span className="text-xs text-violet-700">Đang nhận dạng chính xác bằng AI...</span>
+                </div>
+              )}
               {transcript ? (
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-gray-500">Bản chuyển đổi (có thể chỉnh sửa):</label>
@@ -1217,9 +1247,9 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
                     className="w-full p-3 text-sm border border-gray-200 rounded-xl focus:border-violet-400 focus:ring-1 focus:ring-violet-100 resize-y bg-white"
                   />
                 </div>
-              ) : (
+              ) : !isTranscribing ? (
                 <p className="text-xs text-gray-400 italic">Không nhận dạng được giọng nói. Bạn có thể ghi âm lại hoặc nhập văn bản.</p>
-              )}
+              ) : null}
             </div>
           )}
         </div>

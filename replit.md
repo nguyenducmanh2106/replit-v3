@@ -175,8 +175,9 @@ Auto-grading is applied on submission for all question types except `essay` (man
 ### Open End Question (open_end)
 - **Payload format**: `{input_type: "text"|"audio"|"combined", text_content?, audio_url?, transcript?, duration_seconds?, stt_confidence?}`
 - **Allowed input types**: `text`, `audio` (image mode removed)
-- **Audio flow**: MediaRecorder → upload to object storage → Web Speech API STT (vi-VN) → editable transcript
-- **Audio state machine**: `idle` → `recording` (canvas waveform + timer) → `processing` (upload + STT) → `transcribed`
+- **Audio flow**: MediaRecorder → upload to object storage → real-time Web Speech API preview during recording → server-side Whisper (gpt-4o-mini-transcribe via `/api/ai/transcribe`) for accurate final transcript → editable transcript
+- **Audio state machine**: `idle` → `recording` (canvas waveform + timer + live transcript) → `processing` (upload) → `transcribed` (with AI transcribing indicator if Whisper still pending)
+- **STT dual approach**: Real-time Web Speech API (vi-VN) runs during recording for instant preview; after recording, audio blob is sent to server `/api/ai/transcribe` endpoint which uses OpenAI Whisper (auto-detects language, supports Vietnamese + English + multilingual)
 - **Paste detection**: Counter tracked, toast warning at >2 pastes, visual banner shown
 - **Min text length**: 10 characters with color-coded counter (gray/amber/green)
 - **Backward compatibility**: Display layer reads both new snake_case fields and old camelCase format
