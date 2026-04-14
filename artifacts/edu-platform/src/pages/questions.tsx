@@ -118,6 +118,27 @@ export default function QuestionsPage() {
     }
   }
 
+  const [exporting, setExporting] = useState(false);
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/questions/export", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to export");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "questions_export.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Đã xuất file Excel thành công" });
+    } catch {
+      toast({ title: "Lỗi xuất file Excel", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  }
+
   async function handleImport() {
     if (!selectedFile) return;
     setImporting(true);
@@ -170,6 +191,10 @@ export default function QuestionsPage() {
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex gap-2">
+              <Button onClick={handleExport} disabled={exporting} variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 font-semibold">
+                <Download className="w-4 h-4 mr-1.5" />
+                {exporting ? "Đang xuất..." : "Export Excel"}
+              </Button>
               <Button onClick={() => setImportOpen(true)} variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 font-semibold">
                 <Upload className="w-4 h-4 mr-1.5" />
                 Import Excel

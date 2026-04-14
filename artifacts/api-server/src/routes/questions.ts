@@ -332,6 +332,192 @@ router.get("/questions/import-template", requireAuth, requireTeacherRole(), asyn
   res.send(Buffer.from(buf));
 });
 
+router.get("/questions/export", requireAuth, requireTeacherRole(), async (_req, res): Promise<void> => {
+  const allQuestions = await db.select().from(questionsTable);
+
+  const grouped: Record<string, typeof allQuestions> = {};
+  for (const q of allQuestions) {
+    const t = q.type;
+    if (!grouped[t]) grouped[t] = [];
+    grouped[t]!.push(q);
+  }
+
+  function safeJson<T>(str: string | null | undefined, fallback: T): T {
+    if (!str) return fallback;
+    try { return JSON.parse(str) as T; } catch { return fallback; }
+  }
+
+  const wb = XLSX.utils.book_new();
+
+  if (grouped.mcq?.length) {
+    const rows = grouped.mcq.map(q => {
+      const opts = safeJson<string[]>(q.options, []);
+      const meta = safeJson<Record<string, unknown>>(q.metadata, {});
+      const row: Record<string, unknown> = {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        explanation: q.explanation ?? "", correctAnswer: q.correctAnswer ?? "",
+        allowMultiple: (meta.allowMultiple as boolean) ? "true" : "false",
+      };
+      opts.forEach((o, i) => { row[`option${i + 1}`] = o; });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "MCQ");
+  }
+
+  if (grouped.true_false?.length) {
+    const rows = grouped.true_false.map(q => ({
+      content: q.content, skill: q.skill, level: q.level, points: q.points,
+      explanation: q.explanation ?? "", correctAnswer: q.correctAnswer ?? "",
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "TRUE_FALSE");
+  }
+
+  if (grouped.fill_blank?.length) {
+    const rows = grouped.fill_blank.map(q => {
+      const answers = safeJson<string[]>(q.correctAnswer, []);
+      const row: Record<string, unknown> = {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        explanation: q.explanation ?? "",
+      };
+      answers.forEach((a, i) => { row[`answer${i + 1}`] = a; });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "FILL_BLANK");
+  }
+
+  if (grouped.word_selection?.length) {
+    const rows = grouped.word_selection.map(q => {
+      const words = safeJson<string[]>(q.correctAnswer, []);
+      const row: Record<string, unknown> = {
+        content: q.content, passage: q.passage ?? "", skill: q.skill, level: q.level,
+        points: q.points, explanation: q.explanation ?? "",
+      };
+      words.forEach((w, i) => { row[`word${i + 1}`] = w; });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "WORD_SELECTION");
+  }
+
+  if (grouped.matching?.length) {
+    const rows = grouped.matching.map(q => {
+      const pairs = safeJson<Array<{ left: string; right: string }>>(q.options, []);
+      const row: Record<string, unknown> = {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        explanation: q.explanation ?? "",
+      };
+      pairs.forEach((p, i) => { row[`left${i + 1}`] = p.left; row[`right${i + 1}`] = p.right; });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "MATCHING");
+  }
+
+  if (grouped.sentence_reorder?.length) {
+    const rows = grouped.sentence_reorder.map(q => {
+      const words = safeJson<string[]>(q.options, []);
+      const row: Record<string, unknown> = {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        explanation: q.explanation ?? "",
+      };
+      words.forEach((w, i) => { row[`word${i + 1}`] = w; });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "SENTENCE_REORDER");
+  }
+
+  if (grouped.essay?.length) {
+    const rows = grouped.essay.map(q => {
+      const meta = safeJson<Record<string, unknown>>(q.metadata, {});
+      return {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        explanation: q.explanation ?? "", autoGrade: (meta.autoGrade as boolean) ? "true" : "false",
+      };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "ESSAY");
+  }
+
+  if (grouped.drag_drop?.length) {
+    const rows = grouped.drag_drop.map(q => {
+      const parsed = safeJson<{ items: string[]; zones: Array<{ label: string; accepts: string[] }> }>(q.options, { items: [], zones: [] });
+      const row: Record<string, unknown> = {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        explanation: q.explanation ?? "",
+      };
+      (parsed.items ?? []).forEach((item, i) => { row[`item${i + 1}`] = item; });
+      (parsed.zones ?? []).forEach((zone, i) => {
+        row[`zone${i + 1}`] = zone.label;
+        row[`zone${i + 1}_accepts`] = zone.accepts.join(",");
+      });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "DRAG_DROP");
+  }
+
+  if (grouped.reading?.length) {
+    const rows = grouped.reading.map(q => {
+      const subs = safeJson<Array<{ question: string; choices: string[]; correctAnswer: string; points: number }>>(q.options, []);
+      const row: Record<string, unknown> = {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        passage: q.passage ?? "",
+      };
+      subs.forEach((sq, i) => {
+        row[`question${i + 1}`] = sq.question;
+        row[`choices${i + 1}`] = sq.choices.join("|");
+        row[`correct${i + 1}`] = sq.correctAnswer;
+        row[`points${i + 1}`] = sq.points;
+      });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "READING");
+  }
+
+  if (grouped.listening?.length) {
+    const rows = grouped.listening.map(q => {
+      const subs = safeJson<Array<{ question: string; choices: string[]; correctAnswer: string; points: number }>>(q.options, []);
+      const row: Record<string, unknown> = {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        audioUrl: q.audioUrl ?? "", passage: q.passage ?? "",
+      };
+      subs.forEach((sq, i) => {
+        row[`question${i + 1}`] = sq.question;
+        row[`choices${i + 1}`] = sq.choices.join("|");
+        row[`correct${i + 1}`] = sq.correctAnswer;
+        row[`points${i + 1}`] = sq.points;
+      });
+      return row;
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "LISTENING");
+  }
+
+  if (grouped.open_end?.length) {
+    const rows = grouped.open_end.map(q => {
+      const meta = safeJson<Record<string, unknown>>(q.metadata, {});
+      const allowedTypes = (meta.allowedTypes as string[]) ?? ["text", "audio", "image"];
+      return {
+        content: q.content, skill: q.skill, level: q.level, points: q.points,
+        explanation: q.explanation ?? "", allowedTypes: allowedTypes.join(","),
+      };
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "OPEN_END");
+  }
+
+  if (grouped.video_interactive?.length) {
+    const rows = grouped.video_interactive.map(q => ({
+      content: q.content, skill: q.skill, level: q.level, points: q.points,
+      videoUrl: q.videoUrl ?? "", explanation: q.explanation ?? "",
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "VIDEO_INTERACTIVE");
+  }
+
+  if (wb.SheetNames.length === 0) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([]), "EMPTY");
+  }
+
+  const exportBuf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  res.setHeader("Content-Disposition", "attachment; filename=questions_export.xlsx");
+  res.send(Buffer.from(exportBuf));
+});
+
 router.post("/questions/import", requireAuth, requireTeacherRole(), upload.single("file"), async (req, res): Promise<void> => {
   const dbUser = req.dbUser!;
   const file = (req as any).file;
