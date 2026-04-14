@@ -74,7 +74,7 @@ interface EditDraft {
   metadata: string;
 }
 
-function OptionsView({ type, options, correctAnswer }: { type: string; options: string | null; correctAnswer: string | null }) {
+function OptionsView({ type, options, correctAnswer, metadata }: { type: string; options: string | null; correctAnswer: string | null; metadata?: string | null }) {
   if (type === "mcq") {
     const parsed = safeJson<string[]>(options, []);
     const opts = Array.isArray(parsed) ? parsed : [];
@@ -316,7 +316,7 @@ function OptionsView({ type, options, correctAnswer }: { type: string; options: 
   }
 
   if (type === "open_end") {
-    const meta = safeJson<Record<string, unknown>>(q.metadata, {});
+    const meta = safeJson<Record<string, unknown>>(metadata ?? null, {});
     const allowedTypes = (meta.allowedTypes as string[]) ?? ["text", "audio", "image"];
     const labels: Record<string, string> = { text: "Văn bản", audio: "Ghi âm", image: "Hình ảnh" };
     return (
@@ -392,7 +392,7 @@ function QuestionCard({ q, idx, onEdit, onDelete }: {
 
           <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{q.content}</p>
 
-          <OptionsView type={q.type} options={q.options} correctAnswer={q.correctAnswer} />
+          <OptionsView type={q.type} options={q.options} correctAnswer={q.correctAnswer} metadata={q.metadata} />
 
           {q.explanation && (
             <div className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
