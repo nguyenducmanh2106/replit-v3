@@ -962,41 +962,53 @@ function OpenEndInput({ allowedTypes, value, onChange }: { allowedTypes: string[
     let sttResult = { text: "", confidence: 0 };
     try {
       if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-        sttResult = await new Promise<{ text: string; confidence: number }>((resolve) => {
-          const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-          const recognition = new SpeechRecognition();
-          recognition.lang = "vi-VN";
-          recognition.interimResults = false;
-          recognition.maxAlternatives = 1;
-          recognition.continuous = true;
+        const runSTT = (lang: string, audioSrc: string, durationSec: number) =>
+          new Promise<{ text: string; confidence: number }>((resolve) => {
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = lang;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            recognition.continuous = true;
 
-          const audio = new Audio(localUrl);
-          const chunks: string[] = [];
-          let totalConf = 0;
-          let confCount = 0;
+            const audio = new Audio(audioSrc);
+            const chunks: string[] = [];
+            let totalConf = 0;
+            let confCount = 0;
 
-          recognition.onresult = (event: any) => {
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-              if (event.results[i].isFinal) {
-                chunks.push(event.results[i][0].transcript);
-                totalConf += event.results[i][0].confidence || 0;
-                confCount++;
+            recognition.onresult = (event: any) => {
+              for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                  chunks.push(event.results[i][0].transcript);
+                  totalConf += event.results[i][0].confidence || 0;
+                  confCount++;
+                }
               }
-            }
-          };
+            };
 
-          recognition.onend = () => {
-            resolve({ text: chunks.join(" "), confidence: confCount > 0 ? totalConf / confCount : 0 });
-          };
+            recognition.onend = () => {
+              resolve({ text: chunks.join(" "), confidence: confCount > 0 ? totalConf / confCount : 0 });
+            };
 
-          recognition.onerror = () => {
-            resolve({ text: "", confidence: 0 });
-          };
+            recognition.onerror = () => {
+              resolve({ text: "", confidence: 0 });
+            };
 
-          recognition.start();
-          audio.play().catch(() => {});
-          setTimeout(() => { try { recognition.stop(); } catch {} }, Math.max(liveDuration * 1000 + 2000, 5000));
-        });
+            recognition.start();
+            audio.play().catch(() => {});
+            setTimeout(() => { try { recognition.stop(); } catch {} }, Math.max(durationSec * 1000 + 2000, 5000));
+          });
+
+        const [viResult, enResult] = await Promise.all([
+          runSTT("vi-VN", localUrl, liveDuration),
+          runSTT("en-US", localUrl, liveDuration),
+        ]);
+
+        if (viResult.text && enResult.text) {
+          sttResult = viResult.confidence >= enResult.confidence ? viResult : enResult;
+        } else {
+          sttResult = viResult.text ? viResult : enResult;
+        }
       }
     } catch { }
 
