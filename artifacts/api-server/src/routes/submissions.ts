@@ -30,6 +30,8 @@ async function getSubmissionResult(id: number) {
   const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, submission.assignmentId));
   const [student] = await db.select().from(usersTable).where(eq(usersTable.id, submission.studentId));
   const answers = await db.select().from(submissionAnswersTable).where(eq(submissionAnswersTable.submissionId, id));
+  const aqRows = await db.select().from(assignmentQuestionsTable).where(eq(assignmentQuestionsTable.assignmentId, submission.assignmentId));
+  const aqPointsMap = new Map<number, number>(aqRows.map(q => [q.id, q.points]));
   const percentage = submission.totalPoints > 0 && submission.score != null
     ? Math.round((submission.score / submission.totalPoints) * 100 * 10) / 10
     : null;
@@ -53,6 +55,7 @@ async function getSubmissionResult(id: number) {
       correctAnswer: null as string | null,
       isCorrect: a.isCorrect === "true" ? true : a.isCorrect === "false" ? false : null,
       pointsEarned: a.pointsEarned,
+      points: aqPointsMap.get(a.questionId) ?? null,
       feedback: a.feedback ?? null,
       teacherComment: a.teacherComment ?? null,
     })),
@@ -598,6 +601,10 @@ router.patch("/submissions/:id/answers/:questionId", requireAuth, async (req, re
     updateData.teacherComment = parsed.data.teacherComment;
   }
   if (parsed.data.pointsEarned !== undefined && isEssay) {
+    const maxPoints = question?.points ?? Infinity;
+    if (parsed.data.pointsEarned < 0 || parsed.data.pointsEarned > maxPoints) {
+      res.status(400).json({ error: `Điểm phải từ 0 đến ${maxPoints}` }); return;
+    }
     updateData.pointsEarned = parsed.data.pointsEarned;
   }
 

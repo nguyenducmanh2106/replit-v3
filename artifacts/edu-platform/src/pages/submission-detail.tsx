@@ -698,15 +698,35 @@ export default function SubmissionDetailPage() {
                       <p className="text-sm text-gray-700 line-clamp-3">{answer.answer || "(Bỏ trống)"}</p>
                       {isEssay && (
                         <div className="space-y-1.5">
-                          <Label className="text-xs">Điểm</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            step={0.5}
-                            value={qg.points}
-                            onChange={e => setQuestionGrades(g => ({ ...g, [answer.questionId]: { ...qg, points: e.target.value } }))}
-                            className="w-28 h-8 text-sm"
-                          />
+                          <Label className="text-xs">
+                            Điểm
+                            {answer.points != null && (
+                              <span className="text-muted-foreground font-normal ml-1">(tối đa {answer.points})</span>
+                            )}
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={answer.points ?? undefined}
+                              step={0.5}
+                              value={qg.points}
+                              onChange={e => {
+                                const val = e.target.value;
+                                const num = parseFloat(val);
+                                const max = answer.points ?? Infinity;
+                                if (!isNaN(num) && num > max) {
+                                  setQuestionGrades(g => ({ ...g, [answer.questionId]: { ...qg, points: String(max) } }));
+                                } else {
+                                  setQuestionGrades(g => ({ ...g, [answer.questionId]: { ...qg, points: val } }));
+                                }
+                              }}
+                              className="w-28 h-8 text-sm"
+                            />
+                            {answer.points != null && (
+                              <span className="text-xs text-muted-foreground">/ {answer.points} điểm</span>
+                            )}
+                          </div>
                         </div>
                       )}
                       <div className="space-y-1.5">
@@ -724,6 +744,14 @@ export default function SubmissionDetailPage() {
                         variant="outline"
                         disabled={savingQuestion === answer.questionId}
                         onClick={async () => {
+                          if (isEssay && qg.points) {
+                            const pts = parseFloat(qg.points);
+                            const maxPts = answer.points ?? Infinity;
+                            if (isNaN(pts) || pts < 0 || pts > maxPts) {
+                              toast({ title: `Điểm không hợp lệ — phải từ 0 đến ${maxPts}`, variant: "destructive" });
+                              return;
+                            }
+                          }
                           setSavingQuestion(answer.questionId);
                           try {
                             const body: Record<string, unknown> = {};

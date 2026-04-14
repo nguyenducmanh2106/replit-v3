@@ -291,6 +291,8 @@ export interface CreateSubmissionBody {
 export interface SubmissionAnswerResult {
   questionId: number;
   answer: string;
+  /** Max points for this question */
+  points?: number | null;
   /** @nullable */
   correctAnswer?: string | null;
   /** @nullable */
