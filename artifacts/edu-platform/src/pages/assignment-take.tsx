@@ -374,9 +374,8 @@ function MatchingInput({ pairs, value, onChange }: { pairs: Array<{ left: string
     try { return JSON.parse(value); } catch { return {}; }
   }, [value]);
 
-  const shuffledRights = useMemo(
-    () => [...pairs.map(p => p.right)].sort(() => Math.random() - 0.5),
-    [pairs.length]
+  const [shuffledRights] = useState(() =>
+    [...pairs.map(p => p.right)].sort(() => Math.random() - 0.5)
   );
 
   const [draggingRight, setDraggingRight] = useState<string | null>(null);
@@ -742,7 +741,7 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 function SentenceReorderInput({ items, value, onChange }: { items: string[]; value: string; onChange: (v: string) => void }) {
-  const shuffledItems = useMemo(() => shuffleArray(items), [items]);
+  const [shuffledItems] = useState(() => shuffleArray(items));
 
   const ordered: string[] = useMemo(() => {
     if (!value) return [];
