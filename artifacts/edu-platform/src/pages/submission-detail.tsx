@@ -345,11 +345,11 @@ function AIFeedbackPanel({ submissionId }: { submissionId: number }) {
                   <p className="text-sm text-gray-800 leading-relaxed">{feedback.overallMessage}</p>
                 </div>
 
-                {feedback.strengths.length > 0 && (
+                {(feedback.strengths ?? []).length > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-green-700 mb-2 uppercase tracking-wide">✅ Điểm mạnh</p>
                     <ul className="space-y-1">
-                      {feedback.strengths.map((s: any, i: number) => (
+                      {(feedback.strengths ?? []).map((s: any, i: number) => (
                         <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                           <span className="text-green-500 mt-0.5">•</span> {s}
                         </li>
@@ -358,11 +358,11 @@ function AIFeedbackPanel({ submissionId }: { submissionId: number }) {
                   </div>
                 )}
 
-                {feedback.areasForImprovement.length > 0 && (
+                {(feedback.areasForImprovement ?? []).length > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-orange-700 mb-2 uppercase tracking-wide">📈 Cần cải thiện</p>
                     <ul className="space-y-1">
-                      {feedback.areasForImprovement.map((a: any, i: number) => (
+                      {(feedback.areasForImprovement ?? []).map((a: any, i: number) => (
                         <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                           <span className="text-orange-400 mt-0.5">•</span> {a}
                         </li>
@@ -371,11 +371,11 @@ function AIFeedbackPanel({ submissionId }: { submissionId: number }) {
                   </div>
                 )}
 
-                {feedback.nextSteps.length > 0 && (
+                {(feedback.nextSteps ?? []).length > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">🎯 Bước tiếp theo</p>
                     <ul className="space-y-1">
-                      {feedback.nextSteps.map((s: any, i: number) => (
+                      {(feedback.nextSteps ?? []).map((s: any, i: number) => (
                         <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                           <span className="text-blue-400 mt-0.5">{i + 1}.</span> {s}
                         </li>

@@ -251,7 +251,7 @@ function CourseReportTab() {
             <CardHeader><CardTitle className="text-base">Bảng điểm học sinh</CardTitle></CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100">
-                {report.studentScores.map((s: any) => (
+                {(report.studentScores ?? []).map((s: any) => (
                   <div key={s.studentId} className="flex items-center justify-between px-5 py-3">
                     <div>
                       <p className="text-sm font-medium">{s.studentName}</p>

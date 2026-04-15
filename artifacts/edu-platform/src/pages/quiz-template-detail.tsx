@@ -783,7 +783,7 @@ export default function QuizTemplateDetailPage() {
     <div className="text-center py-12 text-muted-foreground">Không tìm thấy bộ quiz</div>
   );
 
-  const totalPoints = template.questions.reduce((s: number, q: any) => s + q.points, 0);
+  const totalPoints = (template.questions ?? []).reduce((s: number, q: any) => s + q.points, 0);
 
   return (
     <div className="space-y-6">
@@ -816,7 +816,7 @@ export default function QuizTemplateDetailPage() {
 
       <div className="flex items-center justify-between bg-gray-50 rounded-xl px-5 py-3 border">
         <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-          <span>{template.questions.length} Questions</span>
+          <span>{(template.questions ?? []).length} Questions</span>
           <span className="text-gray-300">·</span>
           <span>{totalPoints} Points</span>
         </div>
@@ -831,7 +831,7 @@ export default function QuizTemplateDetailPage() {
       </div>
 
       <div className="space-y-4">
-        {template.questions.map((q: any, idx: number) => (
+        {(template.questions ?? []).map((q: any, idx: number) => (
           <QuestionCard
             key={q.id}
             q={q}
@@ -840,7 +840,7 @@ export default function QuizTemplateDetailPage() {
             onDelete={() => handleDeleteQuestion(q.id)}
           />
         ))}
-        {template.questions.length === 0 && (
+        {(template.questions ?? []).length === 0 && (
           <Card><CardContent className="p-12 text-center text-muted-foreground">
             <Download className="w-10 h-10 mx-auto mb-3 text-gray-300" />
             <h3 className="font-semibold text-gray-700 mb-1">Chưa có câu hỏi</h3>

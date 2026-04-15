@@ -25,7 +25,7 @@ export default function EnterprisePage() {
   const { data: report, isLoading: loadingReport } = useGetDepartmentReport();
   const { data: matrix, isLoading: loadingMatrix } = useGetCompetencyMatrix();
 
-  const deptChartData = report?.departments.map((d: any) => ({
+  const deptChartData = (report?.departments ?? []).map((d: any) => ({
     name: d.department.length > 12 ? d.department.slice(0, 12) + "…" : d.department,
     fullName: d.department,
     "Hoàn thành": d.completionRate,
@@ -67,7 +67,7 @@ export default function EnterprisePage() {
             </Card>
             <Card>
               <CardContent className="pt-5 text-center">
-                <p className="text-2xl font-bold text-amber-600">{report.departments.length}</p>
+                <p className="text-2xl font-bold text-amber-600">{(report.departments ?? []).length}</p>
                 <p className="text-xs text-muted-foreground mt-1">Phòng ban</p>
               </CardContent>
             </Card>
@@ -116,7 +116,7 @@ export default function EnterprisePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {report.departments.map((dept: any) => (
+                    {(report.departments ?? []).map((dept: any) => (
                       <tr key={dept.department} className="border-b hover:bg-gray-50">
                         <td className="py-3 pr-4 font-medium text-gray-800">{dept.department}</td>
                         <td className="py-3 pr-4 text-gray-600">{dept.totalMembers}</td>
@@ -136,7 +136,7 @@ export default function EnterprisePage() {
 
             <TabsContent value="top" className="mt-4">
               <div className="space-y-2">
-                {report.topPerformers.map((p: any) => (
+                {(report.topPerformers ?? []).map((p: any) => (
                   <div key={p.userId} className="flex items-center gap-4 p-3 rounded-xl border bg-white">
                     <span className="text-xl">{p.rank === 1 ? "🥇" : p.rank === 2 ? "🥈" : p.rank === 3 ? "🥉" : `#${p.rank}`}</span>
                     <div className="flex-1">
