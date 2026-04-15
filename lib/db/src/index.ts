@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
-
+import "dotenv/config"; // ← thêm dòng này lên đầu tiên
 const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
