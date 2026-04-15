@@ -172,8 +172,8 @@ function RubricGradingPanel({ submissionId }: { submissionId: number }) {
   const [selectedRubricId, setSelectedRubricId] = useState<string>("");
   const [gradeInputs, setGradeInputs] = useState<Record<number, { score: number; comment: string }>>({});
 
-  const selectedRubric = (rubrics ?? []).find(r => r.id === parseInt(selectedRubricId));
-  const existingMap = Object.fromEntries((existingGrades ?? []).map(g => [g.criterionId, g]));
+  const selectedRubric = (rubrics ?? []).find((r: any) => r.id === parseInt(selectedRubricId));
+  const existingMap = Object.fromEntries((existingGrades ?? []).map((g: any) => [g.criterionId, g]));
 
   function initGradeInputs(rubric: NonNullable<typeof selectedRubric>) {
     const initial: Record<number, { score: number; comment: string }> = {};
@@ -192,7 +192,7 @@ function RubricGradingPanel({ submissionId }: { submissionId: number }) {
       await saveGrades({
         id: submissionId,
         data: {
-          grades: selectedRubric.criteria.map(c => ({
+          grades: selectedRubric.criteria.map((c: any) => ({
             criterionId: c.id,
             score: gradeInputs[c.id]?.score ?? 0,
             comment: gradeInputs[c.id]?.comment || undefined,
@@ -207,10 +207,10 @@ function RubricGradingPanel({ submissionId }: { submissionId: number }) {
   }
 
   const totalScore = selectedRubric
-    ? selectedRubric.criteria.reduce((sum, c) => sum + (gradeInputs[c.id]?.score ?? 0), 0)
+    ? selectedRubric.criteria.reduce((sum: number, c: any) => sum + (gradeInputs[c.id]?.score ?? 0), 0)
     : 0;
   const maxScore = selectedRubric
-    ? selectedRubric.criteria.reduce((sum, c) => sum + c.maxPoints, 0)
+    ? selectedRubric.criteria.reduce((sum: number, c: any) => sum + c.maxPoints, 0)
     : 0;
 
   return (
@@ -221,7 +221,7 @@ function RubricGradingPanel({ submissionId }: { submissionId: number }) {
           value={selectedRubricId}
           onValueChange={v => {
             setSelectedRubricId(v);
-            const r = (rubrics ?? []).find(r => r.id === parseInt(v));
+            const r = (rubrics ?? []).find((r: any) => r.id === parseInt(v));
             if (r) initGradeInputs(r);
           }}
         >
@@ -229,7 +229,7 @@ function RubricGradingPanel({ submissionId }: { submissionId: number }) {
             <SelectValue placeholder="Chọn rubric..." />
           </SelectTrigger>
           <SelectContent>
-            {(rubrics ?? []).map(r => (
+            {(rubrics ?? []).map((r: any) => (
               <SelectItem key={r.id} value={String(r.id)}>
                 {r.title} ({r.skill})
               </SelectItem>
@@ -241,7 +241,7 @@ function RubricGradingPanel({ submissionId }: { submissionId: number }) {
       {existingGrades && existingGrades.length > 0 && !selectedRubricId && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-gray-700">Điểm rubric đã lưu:</p>
-          {existingGrades.map(g => (
+          {existingGrades.map((g: any) => (
             <div key={g.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 border">
               <div>
                 <p className="text-sm font-medium">{g.criterionName}</p>
@@ -255,7 +255,7 @@ function RubricGradingPanel({ submissionId }: { submissionId: number }) {
 
       {selectedRubric && (
         <div className="space-y-3">
-          {selectedRubric.criteria.map(c => (
+          {selectedRubric.criteria.map((c: any) => (
             <div key={c.id} className="p-3 border rounded-lg space-y-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -349,7 +349,7 @@ function AIFeedbackPanel({ submissionId }: { submissionId: number }) {
                   <div>
                     <p className="text-xs font-semibold text-green-700 mb-2 uppercase tracking-wide">✅ Điểm mạnh</p>
                     <ul className="space-y-1">
-                      {feedback.strengths.map((s, i) => (
+                      {feedback.strengths.map((s: any, i: number) => (
                         <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                           <span className="text-green-500 mt-0.5">•</span> {s}
                         </li>
@@ -362,7 +362,7 @@ function AIFeedbackPanel({ submissionId }: { submissionId: number }) {
                   <div>
                     <p className="text-xs font-semibold text-orange-700 mb-2 uppercase tracking-wide">📈 Cần cải thiện</p>
                     <ul className="space-y-1">
-                      {feedback.areasForImprovement.map((a, i) => (
+                      {feedback.areasForImprovement.map((a: any, i: number) => (
                         <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                           <span className="text-orange-400 mt-0.5">•</span> {a}
                         </li>
@@ -375,7 +375,7 @@ function AIFeedbackPanel({ submissionId }: { submissionId: number }) {
                   <div>
                     <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">🎯 Bước tiếp theo</p>
                     <ul className="space-y-1">
-                      {feedback.nextSteps.map((s, i) => (
+                      {feedback.nextSteps.map((s: any, i: number) => (
                         <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                           <span className="text-blue-400 mt-0.5">{i + 1}.</span> {s}
                         </li>
@@ -440,7 +440,7 @@ export default function SubmissionDetailPage() {
   const percentage = submission.percentage ?? 0;
 
   const annotationsForAnswer = (questionId: number) =>
-    (annotations ?? []).filter(a => a.questionId === questionId);
+    (annotations ?? []).filter((a: any) => a.questionId === questionId);
 
   async function handleAnnotate(questionId: number, start: number, end: number, color: string, comment: string) {
     try {
@@ -564,7 +564,7 @@ export default function SubmissionDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(submission.answers ?? []).map((answer, index) => {
+                {(submission.answers ?? []).map((answer: any, index: number) => {
                   const isEssay = answer.isCorrect === undefined || answer.isCorrect === null;
                   const anns = annotationsForAnswer(answer.questionId);
                   const isGradedEssay = isEssay && (
@@ -659,7 +659,7 @@ export default function SubmissionDetailPage() {
                                     return isTeacher ? (
                                       <AnnotatedText
                                         text={answer.answer || "(Bỏ trống)"}
-                                        annotations={anns.map(a => ({
+                                        annotations={anns.map((a: any) => ({
                                           id: a.id,
                                           startOffset: a.startOffset,
                                           endOffset: a.endOffset,
@@ -675,7 +675,7 @@ export default function SubmissionDetailPage() {
                                   })()}
                                   {anns.length > 0 && (
                                     <div className="mt-2 space-y-1">
-                                      {anns.map(a => (
+                                      {anns.map((a: any) => (
                                         <div key={a.id} className="flex items-center justify-between px-2 py-1 rounded bg-white border text-xs">
                                           <div className="flex items-center gap-2">
                                             <MessageSquare className="w-3 h-3 text-muted-foreground" />
@@ -748,7 +748,7 @@ export default function SubmissionDetailPage() {
                 <CardTitle className="text-base">Chấm điểm từng câu</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {(submission.answers ?? []).map((answer, index) => {
+                {(submission.answers ?? []).map((answer: any, index: number) => {
                   const isEssay = answer.isCorrect === undefined || answer.isCorrect === null;
                   const qg = questionGrades[answer.questionId] ?? { points: String(answer.pointsEarned), comment: answer.teacherComment ?? "" };
                   return (

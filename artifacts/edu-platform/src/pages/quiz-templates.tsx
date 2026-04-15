@@ -67,7 +67,7 @@ export default function QuizTemplatesPage() {
         </CardContent></Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {templates.map(t => (
+          {templates.map((t: any) => (
             <Card key={t.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">

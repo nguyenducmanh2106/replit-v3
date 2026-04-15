@@ -820,7 +820,7 @@ export default function AssignmentDetailPage() {
 
   function handleImportTemplate(templateId: number) {
     importFromTemplate({ assignmentId, data: { templateId } }, {
-      onSuccess: (res) => {
+      onSuccess: (res: any) => {
         toast({ title: "Nhập thành công", description: `Đã nhập ${res.imported} câu hỏi từ bộ quiz` });
         invalidate();
         setImportTemplateOpen(false);
@@ -887,8 +887,8 @@ export default function AssignmentDetailPage() {
   if (isLoading) return <div className="space-y-6"><Skeleton className="h-10 w-80" /><Skeleton className="h-48 rounded-xl" /></div>;
   if (!assignment) return <div className="text-center py-20 text-muted-foreground">Không tìm thấy bài tập</div>;
 
-  const assignedQuestionIds = new Set(assignment.questions?.map((aq) => aq.questionId) ?? []);
-  const availableQuestions = (allQuestions ?? []).filter((q) => !assignedQuestionIds.has(q.id));
+  const assignedQuestionIds = new Set(assignment.questions?.map((aq: any) => aq.questionId) ?? []);
+  const availableQuestions = (allQuestions ?? []).filter((q: any) => !assignedQuestionIds.has(q.id));
   const canPublish = !!assignment.courseId;
 
   return (
@@ -1016,7 +1016,7 @@ export default function AssignmentDetailPage() {
                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm bg-white"
                   >
                     <option value="">— Chưa chọn —</option>
-                    {(courses ?? []).map(c => (
+                    {(courses ?? []).map((c: any) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
@@ -1065,7 +1065,7 @@ export default function AssignmentDetailPage() {
                   </div>
                 </div>
                 {(() => {
-                  const blockedEssays = (assignment.questions ?? []).filter(aq => {
+                  const blockedEssays = (assignment.questions ?? []).filter((aq: any) => {
                     if (aq.question.type !== "essay" && aq.question.type !== "open_end") return false;
                     try {
                       const meta = aq.question.metadata ? JSON.parse(aq.question.metadata) : {};
@@ -1186,7 +1186,7 @@ export default function AssignmentDetailPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {assignment.questions.map((aq, index) => {
+              {assignment.questions.map((aq: any, index: number) => {
                 const q = aq.question;
                 return (
                   <QuestionCard
@@ -1245,7 +1245,7 @@ export default function AssignmentDetailPage() {
             {availableQuestions.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">Tất cả câu hỏi đã được thêm vào bài tập</p>
             ) : (
-              availableQuestions.map((q) => (
+              availableQuestions.map((q: any) => (
                 <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg border hover:border-primary/40 hover:bg-blue-50/30 transition-colors">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap gap-1.5 mb-1">
@@ -1292,7 +1292,7 @@ export default function AssignmentDetailPage() {
                   Chưa có bộ quiz nào. <Link href="/quiz-templates" className="text-primary underline">Tạo bộ quiz mới</Link>
                 </p>
               ) : (
-                templates.map(t => (
+                templates.map((t: any) => (
                   <div key={t.id} className="flex items-center gap-3 p-3 rounded-lg border hover:border-primary/40 transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm">{t.title}</p>

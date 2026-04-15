@@ -85,11 +85,11 @@ export default function QuestionsPage() {
   const { data: allQuestions, isLoading } = useListQuestions(params);
   const { mutate: deleteQuestion, isPending: deleting } = useDeleteQuestion();
 
-  const questions = allQuestions?.filter(q =>
+  const questions = allQuestions?.filter((q: any) =>
     !search || q.content.toLowerCase().includes(search.toLowerCase())
   );
 
-  const typeCounts = (allQuestions ?? []).reduce<Record<string, number>>((acc, q) => {
+  const typeCounts = (allQuestions ?? []).reduce<Record<string, number>>((acc: Record<string, number>, q: any) => {
     acc[q.type] = (acc[q.type] ?? 0) + 1;
     return acc;
   }, {});
@@ -268,7 +268,7 @@ export default function QuestionsPage() {
         </div>
       ) : questions && questions.length > 0 ? (
         <div className="space-y-3">
-          {questions.map((q) => {
+          {questions.map((q: any) => {
             const cfg = TYPE_CONFIG[q.type] ?? TYPE_CONFIG.essay;
             const options: string[] = q.options ? (() => {
               try {

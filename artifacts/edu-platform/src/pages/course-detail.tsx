@@ -118,7 +118,7 @@ function ScheduleTab({ courseId, canManage }: { courseId: number; canManage: boo
         </div>
       ) : (
         <div className="space-y-2">
-          {(events ?? []).map(e => (
+          {(events ?? []).map((e: any) => (
             <div key={e.id} className="flex items-center justify-between px-4 py-3 border rounded-lg bg-white hover:bg-gray-50">
               <div className="flex items-center gap-3">
                 <div className="flex-shrink-0">
@@ -300,7 +300,7 @@ function DocumentsTab({ courseId, canManage }: { courseId: number; canManage: bo
         </div>
       ) : (
         <div className="space-y-2">
-          {(docs ?? []).map(d => (
+          {(docs ?? []).map((d: any) => (
             <div key={d.id} className="flex items-center justify-between px-4 py-3 border rounded-lg bg-white hover:bg-gray-50">
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />
@@ -717,7 +717,7 @@ export default function CourseDetailPage() {
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y divide-gray-100">
-                  {members.map((m) => (
+                  {members.map((m: any) => (
                     <div key={m.id} className="flex items-center justify-between px-5 py-3.5">
                       <div>
                         <p className="font-medium text-sm">{m.userName}</p>

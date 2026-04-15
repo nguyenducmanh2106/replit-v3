@@ -100,7 +100,7 @@ export default function AssignmentsPage() {
         </div>
       ) : assignments && assignments.length > 0 ? (
         <div className="space-y-3">
-          {assignments.map((a) => {
+          {assignments.map((a: any) => {
             const myAttempts = a.myAttemptCount ?? 0;
             const maxAttempts = a.maxAttempts ?? 0;
             const exceededLimit = !isTeacher && maxAttempts > 0 && myAttempts >= maxAttempts;
@@ -211,7 +211,7 @@ export default function AssignmentsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Không gắn khóa học</SelectItem>
-                  {courses?.map((c) => (
+                  {courses?.map((c: any) => (
                     <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>

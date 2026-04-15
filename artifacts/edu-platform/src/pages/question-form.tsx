@@ -47,7 +47,7 @@ const QUESTION_TYPES = [
 interface McqOption { text: string; isCorrect: boolean; }
 interface MatchingPair { left: string; right: string; }
 interface DragZone { label: string; accepts: string[]; }
-interface SubQuestion { question: string; choices: string[]; correctAnswer: string; }
+interface SubQuestion { question: string; choices: string[]; correctAnswer: string; points?: number; }
 interface VideoQuestion { timestamp: number; type?: "note" | "question"; content?: string; question: string; choices: string[]; correctAnswer: string; points?: number; }
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
@@ -1333,7 +1333,7 @@ export default function QuestionFormPage() {
 
     if (existingQ.type === "mcq") {
       const strOpts = opts as string[];
-      const corrects = (existingQ.correctAnswer ?? "").split(",").map(s => s.trim());
+      const corrects = (existingQ.correctAnswer ?? "").split(",").map((s: string) => s.trim());
       const am = (meta.allowMultiple as boolean) ?? false;
       setAllowMultiple(am);
       setMcqOptions(strOpts.map(t => ({ text: t, isCorrect: corrects.includes(t) })));

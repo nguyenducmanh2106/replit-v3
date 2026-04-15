@@ -34,7 +34,7 @@ export default function SubmissionsPage() {
         </div>
       ) : submissions && submissions.length > 0 ? (
         <div className="space-y-3">
-          {submissions.map((s) => (
+          {submissions.map((s: any) => (
             <Link key={s.id} href={`/submissions/${s.id}`}>
               <Card className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all">
                 <CardContent className="py-4 px-5">

@@ -35,14 +35,14 @@ export default function FraudPage() {
   const { data: events, isLoading } = useListFraudEvents();
   const [search, setSearch] = useState("");
 
-  const filtered = (events ?? []).filter((e) =>
+  const filtered = (events ?? []).filter((e: any) =>
     !search ||
     e.studentName.toLowerCase().includes(search.toLowerCase()) ||
     e.assignmentTitle.toLowerCase().includes(search.toLowerCase())
   );
 
-  const highCount = (events ?? []).filter(e => e.severity === "high").length;
-  const medCount = (events ?? []).filter(e => e.severity === "medium").length;
+  const highCount = (events ?? []).filter((e: any) => e.severity === "high").length;
+  const medCount = (events ?? []).filter((e: any) => e.severity === "medium").length;
 
   return (
     <div className="space-y-6">
@@ -97,7 +97,7 @@ export default function FraudPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filtered.map((event) => (
+              {filtered.map((event: any) => (
                 <div
                   key={event.id}
                   className="flex items-center gap-4 p-3 rounded-xl border bg-white"

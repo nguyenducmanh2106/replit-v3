@@ -288,7 +288,7 @@ function TeacherDashboard() {
               <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
             ) : activity && activity.length > 0 ? (
               <div className="space-y-3">
-                {activity.map((item) => (
+                {activity.map((item: any) => (
                   <div key={item.id} className="flex gap-3 items-start">
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <FileCheck className="w-4 h-4 text-primary" />
@@ -450,7 +450,7 @@ function AdminDashboard({ role }: { role: string }) {
               <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
             ) : activity && activity.length > 0 ? (
               <div className="space-y-3">
-                {activity.map((item) => (
+                {activity.map((item: any) => (
                   <div key={item.id} className="flex gap-3 items-start">
                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <FileCheck className="w-4 h-4 text-primary" />

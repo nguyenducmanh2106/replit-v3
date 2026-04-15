@@ -783,7 +783,7 @@ export default function QuizTemplateDetailPage() {
     <div className="text-center py-12 text-muted-foreground">Không tìm thấy bộ quiz</div>
   );
 
-  const totalPoints = template.questions.reduce((s, q) => s + q.points, 0);
+  const totalPoints = template.questions.reduce((s: number, q: any) => s + q.points, 0);
 
   return (
     <div className="space-y-6">
@@ -831,7 +831,7 @@ export default function QuizTemplateDetailPage() {
       </div>
 
       <div className="space-y-4">
-        {template.questions.map((q, idx) => (
+        {template.questions.map((q: any, idx: number) => (
           <QuestionCard
             key={q.id}
             q={q}
@@ -872,7 +872,7 @@ export default function QuizTemplateDetailPage() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader><DialogTitle>Chọn câu hỏi từ ngân hàng</DialogTitle></DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-            {bankQuestions && bankQuestions.length > 0 ? bankQuestions.map(q => (
+            {bankQuestions && bankQuestions.length > 0 ? bankQuestions.map((q: any) => (
               <label key={q.id} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedQIds.includes(q.id) ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"}`}>
                 <input type="checkbox" checked={selectedQIds.includes(q.id)} onChange={() => toggleSelect(q.id)} className="mt-1" />
                 <div className="flex-1 min-w-0">

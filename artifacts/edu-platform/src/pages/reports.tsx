@@ -52,7 +52,7 @@ function OverviewTab() {
 
   if (!overview) return <div className="text-center py-10 text-muted-foreground">Không có dữ liệu</div>;
 
-  const comparisonData = (overview.courseComparison ?? []).map(c => ({
+  const comparisonData = (overview.courseComparison ?? []).map((c: any) => ({
     name: c.courseName.length > 15 ? c.courseName.slice(0, 15) + "…" : c.courseName,
     "Điểm TB": c.averageScore,
     "Tỷ lệ nộp": c.completionRate,
@@ -123,7 +123,7 @@ function OverviewTab() {
           <CardContent>
             <SkillRadar data={overview.skillAverages} />
             <div className="grid grid-cols-2 gap-2 mt-2">
-              {(Object.entries(SKILL_LABELS) as [keyof SkillProgress, string][]).map(([key, label]) => (
+              {(Object.entries(SKILL_LABELS) as [string, string][]).map(([key, label]) => (
                 <div key={key} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{label}</span>
                   <span className="font-semibold">{overview.skillAverages[key]?.toFixed(1)}%</span>
@@ -189,7 +189,7 @@ function CourseReportTab() {
             <SelectValue placeholder="Chọn khoá học" />
           </SelectTrigger>
           <SelectContent>
-            {(courses ?? []).map(c => (
+            {(courses ?? []).map((c: any) => (
               <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
             ))}
           </SelectContent>
@@ -251,7 +251,7 @@ function CourseReportTab() {
             <CardHeader><CardTitle className="text-base">Bảng điểm học sinh</CardTitle></CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100">
-                {report.studentScores.map(s => (
+                {report.studentScores.map((s: any) => (
                   <div key={s.studentId} className="flex items-center justify-between px-5 py-3">
                     <div>
                       <p className="text-sm font-medium">{s.studentName}</p>
@@ -302,7 +302,7 @@ function StudentReportTab() {
               <SelectValue placeholder="Chọn học sinh" />
             </SelectTrigger>
             <SelectContent>
-              {(users ?? []).map(u => (
+              {(users ?? []).map((u: any) => (
                 <SelectItem key={u.id} value={String(u.id)}>{u.name} ({u.email})</SelectItem>
               ))}
             </SelectContent>
@@ -333,7 +333,7 @@ function StudentReportTab() {
               <CardContent>
                 <SkillRadar data={report.skillAverages} />
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  {(Object.entries(SKILL_LABELS) as [keyof SkillProgress, string][]).map(([key, label]) => (
+                  {(Object.entries(SKILL_LABELS) as [string, string][]).map(([key, label]) => (
                     <div key={key} className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{label}</span>
                       <span className="font-semibold">{report.skillAverages[key]?.toFixed(1)}%</span>
@@ -349,7 +349,7 @@ function StudentReportTab() {
                 {(report.scoreHistory?.length ?? 0) > 0 ? (
                   <ChartErrorBoundary>
                     <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={(report.scoreHistory ?? []).map((h, i) => ({
+                      <LineChart data={(report.scoreHistory ?? []).map((h: any, i: number) => ({
                         name: `#${i + 1}`,
                         "%": h.percentage ?? 0,
                       }))} margin={{ left: -20 }}>
@@ -372,7 +372,7 @@ function StudentReportTab() {
             <CardHeader><CardTitle className="text-base">Chi tiết bài nộp</CardTitle></CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100">
-                {report.scoreHistory.slice(0, 10).map((h, i) => (
+                {report.scoreHistory.slice(0, 10).map((h: any, i: number) => (
                   <div key={i} className="flex items-center justify-between px-5 py-3">
                     <div>
                       <p className="text-sm font-medium">{h.assignmentTitle}</p>

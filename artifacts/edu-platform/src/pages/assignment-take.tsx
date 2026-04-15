@@ -2271,14 +2271,14 @@ export default function AssignmentTakePage() {
 
   const handleSubmit = useCallback(() => {
     if (!assignment) return;
-    const answerPayload = (assignment.questions ?? []).map((aq) => ({
+    const answerPayload = (assignment.questions ?? []).map((aq: any) => ({
       questionId: aq.id,
       answer: answers[aq.id] ?? "",
     }));
     createSubmission(
       { data: { assignmentId, answers: answerPayload, ...(isPreview ? { isPreview: true } : {}) } },
       {
-        onSuccess: (result) => {
+        onSuccess: (result: any) => {
           setSubmitted(true);
           if (sessionId) {
             fetch(`/api/assignments/${assignmentId}/session/submit`, {
@@ -2444,7 +2444,7 @@ export default function AssignmentTakePage() {
     } catch { return false; }
   };
 
-  const answeredCount = questions.filter(aq => {
+  const answeredCount = questions.filter((aq: any) => {
     const ans = answers[aq.id] ?? "";
     const qType = aq.question?.type ?? "";
     if (qType === "open_end") return isOpenEndAnswered(ans);
@@ -2525,7 +2525,7 @@ export default function AssignmentTakePage() {
         <aside className="w-64 border-r border-gray-200/80 bg-white/90 backdrop-blur-sm p-5 overflow-y-auto flex-shrink-0">
           <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Danh sách câu hỏi</p>
           <div className="space-y-1.5">
-            {questions.map((aq, i) => {
+            {questions.map((aq: any, i: number) => {
               const answered = isAnswered(aq.id, aq.question?.type ?? "");
               const qCfg = TYPE_CONFIG[aq.question?.type ?? ""] || TYPE_CONFIG.essay;
               const QIcon = qCfg.icon;
@@ -2772,7 +2772,7 @@ export default function AssignmentTakePage() {
                 Câu trước
               </Button>
               <div className="flex items-center gap-3">
-                {questions.slice(Math.max(0, currentIdx - 2), Math.min(questions.length, currentIdx + 3)).map((_, relIdx) => {
+                {questions.slice(Math.max(0, currentIdx - 2), Math.min(questions.length, currentIdx + 3)).map((_: any, relIdx: number) => {
                   const absIdx = Math.max(0, currentIdx - 2) + relIdx;
                   return (
                     <button

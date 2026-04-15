@@ -137,7 +137,7 @@ export default function GamificationPage() {
   const { data: streak, isLoading: loadingStreak } = useGetMyStreak();
   const { data: leaderboard, isLoading: loadingLeaderboard } = useGetLeaderboard();
 
-  const earnedBadges = badges?.filter((b) => b.earned).length ?? 0;
+  const earnedBadges = badges?.filter((b: any) => b.earned).length ?? 0;
   const totalBadges = badges?.length ?? 0;
 
   return (

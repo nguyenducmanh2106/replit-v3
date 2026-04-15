@@ -90,7 +90,7 @@ function UsersTab() {
         <Card>
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
-              {(users ?? []).map(u => (
+              {(users ?? []).map((u: any) => (
                 <div key={u.id} className="flex items-center justify-between px-5 py-3.5">
                   <div>
                     <p className="font-medium text-sm">{u.name}</p>
@@ -178,7 +178,7 @@ function SettingsTab() {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  const settingsMap = Object.fromEntries((settings ?? []).map(s => [s.key, s.value]));
+  const settingsMap = Object.fromEntries((settings ?? []).map((s: any) => [s.key, s.value]));
 
   async function handleSave(key: string, description?: string) {
     try {
@@ -258,7 +258,7 @@ function AuditLogTab() {
         <Card>
           <CardContent className="p-0">
             <div className="divide-y divide-gray-100">
-              {(logs ?? []).map(log => (
+              {(logs ?? []).map((log: any) => (
                 <div key={log.id} className="flex items-start justify-between px-5 py-3.5">
                   <div>
                     <div className="flex items-center gap-2">

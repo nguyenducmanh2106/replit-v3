@@ -34,12 +34,12 @@ export default function ProfilePage() {
   ] : [];
 
   const scoreHistory = (submissions ?? [])
-    .filter((s) => s.percentage !== null && s.percentage !== undefined)
+    .filter((s: any) => s.percentage !== null && s.percentage !== undefined)
     .slice(-10)
-    .map((s, i) => ({ name: `Bài ${i + 1}`, score: s.percentage ?? 0, title: s.assignmentTitle }));
+    .map((s: any, i: number) => ({ name: `Bài ${i + 1}`, score: s.percentage ?? 0, title: s.assignmentTitle }));
 
   const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    ? user.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
 
   return (
@@ -141,7 +141,7 @@ export default function ProfilePage() {
         <CardContent>
           {submissions && submissions.length > 0 ? (
             <div className="space-y-3">
-              {submissions.slice(0, 5).map((s) => (
+              {submissions.slice(0, 5).map((s: any) => (
                 <Link key={s.id} href={`/submissions/${s.id}`}>
                   <div className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-primary/30 hover:bg-blue-50/20 transition-colors cursor-pointer">
                     <div>

@@ -62,7 +62,7 @@ export default function RubricsPage() {
     { name: "", description: "", maxPoints: 10 },
   ]);
 
-  const filtered = filterSkill === "all" ? (rubrics ?? []) : (rubrics ?? []).filter(r => r.skill === filterSkill);
+  const filtered = filterSkill === "all" ? (rubrics ?? []) : (rubrics ?? []).filter((r: any) => r.skill === filterSkill);
 
   async function handleCreate() {
     if (!form.title.trim()) { toast({ title: "Lỗi", description: "Tên rubric không được để trống", variant: "destructive" }); return; }
@@ -143,7 +143,7 @@ export default function RubricsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(rubric => (
+          {filtered.map((rubric: any) => (
             <Card key={rubric.id}>
               <CardContent className="py-4 px-5">
                 <div className="flex items-center justify-between">
@@ -159,7 +159,7 @@ export default function RubricsPage() {
                         <p className="text-xs text-muted-foreground mt-0.5">{rubric.description}</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {rubric.criteria.length} tiêu chí · Tổng {rubric.criteria.reduce((s, c) => s + c.maxPoints, 0)} điểm
+                        {rubric.criteria.length} tiêu chí · Tổng {rubric.criteria.reduce((s: number, c: any) => s + c.maxPoints, 0)} điểm
                       </p>
                     </div>
                   </div>
@@ -184,7 +184,7 @@ export default function RubricsPage() {
 
                 {expandedId === rubric.id && rubric.criteria.length > 0 && (
                   <div className="mt-4 border-t border-gray-100 pt-4 space-y-2">
-                    {rubric.criteria.map(c => (
+                    {rubric.criteria.map((c: any) => (
                       <div key={c.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
                         <div>
                           <p className="text-sm font-medium">{c.name}</p>
