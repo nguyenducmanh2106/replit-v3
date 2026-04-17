@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+
+- All canvas coordinates must be normalized (scale independent)
+- Use requestAnimationFrame for animation, never setInterval
+- Always separate:
+  - render()
+  - interaction()
+  - state
+- Text rendering must set:
+  - textAlign
+  - textBaseline

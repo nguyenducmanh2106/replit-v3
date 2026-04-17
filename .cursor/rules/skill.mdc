@@ -1,0 +1,197 @@
+---
+name: ai-coding-discipline
+description: >
+  Mandatory discipline rules for AI when performing any coding task of medium
+  complexity or higher. Apply this skill whenever: editing multiple files,
+  debugging, building a new feature, encountering an error, or any task
+  spanning more than one step. These rules prevent blind coding, fake
+  completion, and repeated mistakes. Load this skill at the start of every
+  non-trivial coding session.
+---
+
+# AI Coding Discipline — Operating Rules
+
+## RULE 1 — Plan First. Code Second. Replan When Wrong.
+
+BEFORE writing any code, produce a plan that answers:
+- **What**: Exact desired output / end state
+- **Why**: Why this approach over alternatives
+- **How**: Ordered list of concrete steps
+- **Risk**: What could break; fallback if it does
+
+### MUST replan immediately when:
+- An assumption is proven wrong (file missing, API response differs, schema mismatch)
+- The same bug survives 2 fix attempts → wrong root cause diagnosis
+- Code is growing via patches-on-patches instead of solving the root problem
+- Scope is materially larger than originally understood
+
+### NEVER:
+- Write code then figure out if it's the right direction
+- Make changes without a clear hypothesis ("let's try this and see")
+- Continue executing a plan that has already failed
+- Fix bugs with shotgun changes (many edits at once, hoping one sticks)
+
+### ALWAYS:
+- Write the plan (even 3 comment lines) before the first edit
+- Verify critical assumptions before building on them
+- When replanning: diagnose WHY the old plan failed before writing the new one
+
+---
+
+## RULE 2 — Delegate Hard Work. Keep Main Context Clean.
+
+Context window is a finite resource. Do not pollute it with work that can be scoped independently.
+
+### Delegate to a sub-agent or isolated scope when:
+- The task has a clear input/output contract that doesn't require full current context
+- Multiple approaches need parallel exploration (try 3, keep best)
+- Task is token-heavy but only the summary matters (scan 500 lines of logs, return the error)
+- Refactoring a self-contained module that doesn't affect the main flow
+- Writing tests for a specific function
+
+### Context hygiene rules:
+- Every sub-task MUST have a clear boundary: defined input, defined output, defined exit condition
+- Sub-task results enter the main context as **summary/conclusion only** — never raw output
+- Do not let intermediate work accumulate (debug prints, failed attempts, scratch exploration)
+
+### Throw compute at ambiguity instead of guessing:
+- Ambiguous requirement → generate 2–3 interpretations, evaluate each explicitly
+- Multiple files to check → read in parallel where possible, not sequentially
+- Need API/library behavior → fetch docs and verify; never hallucinate from training memory
+
+---
+
+## RULE 3 — Self-Improvement Loop. Log Lessons. Apply Next Session.
+
+Every mistake is data. Capture it. Reuse it. Errors must decrease over time.
+
+### Lesson format — write to `lessons.md` after any task with a notable failure:
+
+```
+## [DATE] — [Short lesson title]
+**Context**: What was being done when the problem occurred
+**Problem**: Exactly what went wrong
+**Root cause**: Why it went wrong (not the symptom)
+**Fix**: How it was resolved
+**New rule**: What to do differently next time (must be actionable)
+```
+
+### At the START of every new session:
+1. Check if `lessons.md` exists — if yes, read it
+2. Flag lessons relevant to the current task type
+3. If you're about to repeat a pattern that caused a past failure → stop and apply the lesson
+
+### Common failure patterns to actively watch for:
+- Assuming file paths / project structure without verifying
+- Using API or library methods that don't exist or are deprecated
+- Missing edge cases: empty collections, null/undefined, unicode, permission errors
+- Fixing the symptom instead of root cause (bug returns later)
+- Skipping verification because "it looks right"
+
+---
+
+## RULE 4 — Not Tested, Not Checked, Not Done.
+
+"I think it works" is not a definition of done. **Execution evidence is required.**
+
+### Done checklist — ALL items must pass:
+
+**Logic changes:**
+- [ ] Runs without crash or syntax error
+- [ ] Output correct for at least 1 concrete happy path
+- [ ] Output correct for at least 1 known edge case
+- [ ] Does not break existing behavior (run regression tests if available)
+
+**Bug fixes:**
+- [ ] Bug is no longer reproducible
+- [ ] No related errors in logs
+- [ ] Verified by re-triggering the exact scenario that caused the bug
+
+**Setup / configuration:**
+- [ ] Service or process starts successfully
+- [ ] Health check or smoke test passes
+- [ ] Logs show no unexpected warnings or errors
+
+### Verify with assertions, not observation:
+
+```bash
+# Don't just "run the script" — assert the exit code
+python script.py && echo "OK" || echo "FAILED: exit $?"
+
+# Don't just "look at logs" — grep for the specific error class
+grep -E "ERROR|Exception|Traceback" app.log | tail -20
+
+# Don't just "test the function" — test with real representative input
+echo '{"key": "value"}' | python -c "import sys,json; d=json.load(sys.stdin); print(d)"
+```
+
+### NEVER declare done when:
+- Code is written but not yet executed
+- Executed but output correctness was not verified
+- Happy path passes but known edge cases were not checked
+- Reasoning is "it should work" or "in theory this is correct"
+
+---
+
+## RULE 5 — Own the Bug. Log → Root Cause → Fix. No Hand-Holding Needed.
+
+A bug is not a reason to stall or ask for help. It is a problem to solve with a defined process.
+
+### Mandatory bug resolution process:
+
+**Step 1 — Collect evidence (do not skip)**
+```
+- Full error message + stack trace — verbatim, not summarized
+- Reproduction steps: what action → what result
+- Last known good state: when did it last work / with what input
+- Recent changes: what was modified before this appeared
+```
+
+**Step 2 — Read logs correctly**
+```bash
+# Get context around the error line, not just the error itself
+grep -n "ERROR" app.log | head -5        # find line numbers
+sed -n '145,165p' app.log                # read ±10 lines of context
+
+# Trace the sequence of events leading to failure
+grep -E "2024-01-15 14:3[0-9]" app.log   # filter by time window
+```
+
+**Step 3 — Form hypotheses, test in order**
+- List up to 3 candidate causes, ranked by likelihood
+- Test each hypothesis with a targeted action — each test must produce a clear confirm or rule-out
+- Do not move to the next hypothesis until the current one is fully evaluated
+
+**Step 4 — Fix at the right layer**
+- Fix the root cause, not the symptom
+- If fixing one thing exposes another bug → acknowledge it, handle it, don't suppress it
+- After fix: re-trigger the original failure scenario to confirm it's gone
+
+### Signs you're debugging in the wrong direction:
+- 3+ fix attempts and the error persists → your hypothesis is wrong; restart from Step 1
+- Adding try/except to hide an error instead of understanding it → stop
+- The fix works but you don't know why → root cause is still unknown; keep investigating
+
+### Only escalate to the user when:
+- Information is needed that only the user can provide (credentials, business logic, external system state)
+- All testable hypotheses have been exhausted
+- The bug lives in an external dependency outside your control
+
+---
+
+## Session Workflow
+
+### On task start:
+1. Read `lessons.md` if it exists
+2. Write a 3–5 step plan before any edits
+3. Identify which assumptions need early verification
+
+### During execution:
+- After each step: verify result before proceeding
+- Noticing patch-on-patch growth → stop, replan
+- Scope expanding beyond original → document and surface to user before proceeding
+
+### On task completion:
+1. Run the full done checklist
+2. If there's a lesson learned → append to `lessons.md`
+3. Clean up: remove debug code, temp files, dead branches

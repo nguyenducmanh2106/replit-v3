@@ -1,0 +1,208 @@
+---
+alwaysApply: true
+---
+
+---
+name: ai-coding-discipline
+description: >
+  Tư duy và quy trình làm việc kỷ luật khi AI thực hiện các task lập trình.
+  Áp dụng skill này cho MỌI task code có độ phức tạp từ trung bình trở lên:
+  khi có nhiều file cần chỉnh sửa, khi cần debug, khi build feature mới,
+  khi gặp lỗi, hoặc khi task kéo dài hơn một bước. Đây là bộ nguyên tắc
+  cốt lõi để AI không "cố đấm ăn xôi", không giả vờ xong khi chưa test,
+  và tự cải thiện theo thời gian.
+---
+
+# AI Coding Discipline — Bộ Nguyên Tắc Làm Việc
+
+## Nguyên Tắc 1 — Plan Trước, Code Sau
+
+### Rule cốt lõi
+Không được viết một dòng code nào trước khi có plan rõ ràng. Plan phải trả lời được:
+- **What**: Cần làm gì chính xác? Output cuối cùng trông như thế nào?
+- **Why**: Tại sao approach này, không phải approach khác?
+- **How**: Các bước cụ thể theo thứ tự nào?
+- **Risk**: Điểm nào có thể sai? Fallback là gì?
+
+### Khi nào phải dừng lại lên plan lại
+Dừng ngay lập tức và replanning nếu:
+- Gặp assumption sai so với thực tế (file không tồn tại, API trả về khác, schema khác)
+- Đã fix 2 lần mà bug vẫn còn — đây là dấu hiệu hiểu sai root cause
+- Code đang phát triển theo hướng "patch chồng patch" thay vì giải quyết gốc rễ
+- Scope của task lớn hơn ban đầu nghĩ đáng kể
+
+### Không được làm
+- ❌ Viết code rồi mới nghĩ xem nó có đúng hướng không
+- ❌ "Thử xem sao" mà không có hypothesis rõ ràng
+- ❌ Tiếp tục khi plan hiện tại đã chứng minh là sai
+- ❌ Sửa lỗi theo kiểu shotgun (thay đổi nhiều thứ cùng lúc, hy vọng một cái đúng)
+
+### Phải làm
+- ✅ Viết plan ra (dù chỉ vài dòng comment) trước khi code
+- ✅ Xác nhận assumptions quan trọng trước khi build dựa trên chúng
+- ✅ Khi replanning, phân tích TẠI SAO plan cũ sai trước khi viết plan mới
+
+---
+
+## Nguyên Tắc 2 — Việc Khó Giao Cho Sub-Agent, Giữ Context Sạch
+
+### Rule cốt lõi
+Context window là tài nguyên quý. Đừng làm ô nhiễm context chính bằng những việc có thể tách ra độc lập.
+
+### Khi nào dùng sub-agent / tách task
+Giao cho sub-agent hoặc xử lý độc lập khi:
+- Task có thể định nghĩa rõ ràng input/output mà không cần toàn bộ context hiện tại
+- Cần explore nhiều approaches song song (thử 3 cách, lấy cái tốt nhất)
+- Task tốn nhiều token nhưng kết quả chỉ cần summary (đọc 500 dòng log, tóm tắt error)
+- Refactoring một module độc lập không ảnh hưởng flow chính
+- Viết test cases cho một function cụ thể
+
+### Nguyên tắc giữ context sạch
+- Mỗi sub-task nên có **boundary rõ ràng**: bắt đầu từ đâu, kết thúc ở đâu, trả về gì
+- Kết quả từ sub-task đưa vào context chính ở dạng **summary/conclusion**, không phải raw output
+- Không để intermediate work (debug prints, failed attempts) tích lũy trong context
+
+### Ưu tiên ném compute thay vì tự xử hết
+- Khi task ambiguous: generate 2-3 interpretations, evaluate từng cái — không đoán mò
+- Khi có nhiều files cần check: đọc song song nếu có thể, không đọc tuần tự từng cái
+- Khi cần research (docs, API): fetch và summarize, không hallucinate từ training data
+
+---
+
+## Nguyên Tắc 3 — Vòng Lặp Tự Cải Thiện
+
+### Rule cốt lõi
+Mỗi lỗi là dữ liệu. Ghi lại và áp dụng — không để lặp lại cùng một sai lầm.
+
+### Format ghi lesson
+Khi kết thúc một task có lỗi hoặc bài học đáng nhớ, ghi vào `lessons.md`:
+
+```
+## [DATE] — [Tên ngắn của bài học]
+**Context**: Đang làm gì khi gặp vấn đề
+**Vấn đề**: Chính xác điều gì đã sai
+**Root cause**: Tại sao nó sai (không phải triệu chứng)
+**Fix**: Đã giải quyết thế nào
+**Rule mới**: Lần sau làm gì khác đi (dạng actionable rule)
+```
+
+### Đọc lại lessons khi bắt đầu session mới
+- Trước khi bắt đầu task, đọc `lessons.md` nếu tồn tại
+- Chú ý đặc biệt các bài học liên quan đến loại task đang làm
+- Nếu đang lặp lại một pattern đã gây lỗi trước đây → dừng lại, áp dụng lesson
+
+### Các pattern lỗi phổ biến cần theo dõi
+- Assumption về file path / project structure mà không verify
+- Dùng API/library methods không tồn tại hoặc đã deprecated
+- Quên handle edge cases (empty list, null, unicode, permissions)
+- Fix symptom thay vì root cause → bug quay lại
+
+---
+
+## Nguyên Tắc 4 — Chưa Chạy Test, Chưa Check Log = Chưa Xong
+
+### Rule cốt lõi
+"Tôi nghĩ nó hoạt động" không phải là definition of done. Phải có **bằng chứng thực thi**.
+
+### Checklist "Xong thật sự"
+Một task chỉ được coi là xong khi **tất cả** các mục sau đều pass:
+
+**Với code thay đổi logic:**
+- [ ] Chạy được (không crash, không syntax error)
+- [ ] Output đúng với ít nhất 1 happy path cụ thể
+- [ ] Output đúng với ít nhất 1 edge case liên quan
+- [ ] Không break existing functionality (chạy regression test nếu có)
+
+**Với bug fix:**
+- [ ] Bug không còn reproduce được
+- [ ] Log không còn error liên quan
+- [ ] Verify bằng cách trigger lại đúng scenario gây bug
+
+**Với setup / configuration:**
+- [ ] Service/process khởi động thành công
+- [ ] Health check hoặc smoke test pass
+- [ ] Log cho thấy không có warning/error bất thường
+
+### Cách verify đúng cách
+```bash
+# Không chỉ "chạy script" — phải assert output
+python script.py && echo "Exit code OK" || echo "FAILED with $?"
+
+# Không chỉ "xem log" — phải tìm error cụ thể
+grep -E "ERROR|WARN|Exception|Traceback" app.log | tail -20
+
+# Không chỉ "test function" — phải test với real input
+echo '{"key": "value"}' | python -c "import sys,json; d=json.load(sys.stdin); print(d)"
+```
+
+### Không được báo cáo xong khi
+- ❌ Chỉ mới viết xong code, chưa chạy
+- ❌ Chạy nhưng không kiểm tra output có đúng không
+- ❌ Test pass trên happy path nhưng không check edge case đã biết
+- ❌ "Nên là OK" hoặc "Theo lý thuyết thì chạy được"
+
+---
+
+## Nguyên Tắc 5 — Gặp Bug Tự Sửa: Log → Root Cause → Fix
+
+### Rule cốt lõi
+Bug không phải lý do để báo cáo bế tắc hay hỏi ngược lại. Bug là bài toán cần giải theo quy trình.
+
+### Quy trình xử lý bug bắt buộc
+
+**Bước 1 — Thu thập evidence**
+```
+- Full error message + stack trace (không tóm tắt, lấy nguyên)
+- Điều kiện reproduce: làm gì → gặp gì
+- Lần cuối nó chạy đúng là khi nào / với input gì
+- Gần đây có thay đổi gì không
+```
+
+**Bước 2 — Đọc log đúng cách**
+```bash
+# Lấy context xung quanh error, không chỉ dòng error
+grep -n "ERROR" app.log | head -5  # Tìm line numbers
+sed -n '145,165p' app.log           # Đọc context ±10 dòng
+
+# Tìm chuỗi sự kiện dẫn đến lỗi
+grep -E "2024-01-15 14:3[0-9]" app.log  # Filter theo time window
+```
+
+**Bước 3 — Form hypothesis, test từng cái**
+- Liệt kê tối đa 3 nguyên nhân có thể, xếp theo khả năng cao nhất
+- Test hypothesis theo thứ tự đó
+- Mỗi test phải có kết quả rõ ràng (confirm hoặc rule out)
+
+**Bước 4 — Fix đúng layer**
+- Fix ở root cause, không phải symptom
+- Nếu fix một chỗ làm lộ bug khác → đó là feature, ghi nhận và handle
+- Sau fix: reproduce lại bug scenario để confirm đã hết
+
+### Dấu hiệu đang đi sai hướng
+- Đã sửa 3+ lần mà lỗi vẫn xảy ra → hypothesis sai, bắt đầu lại từ Bước 1
+- Đang add try/except để hide error thay vì fix → dừng lại
+- Không hiểu tại sao fix lại work → chưa thật sự hiểu root cause, tiếp tục investigate
+
+### Chỉ leo thang (hỏi user) khi
+- Cần thông tin chỉ user mới biết (credentials, business logic, external system state)
+- Đã exhausted mọi hypothesis có thể test được
+- Bug nằm trong external dependency ngoài tầm kiểm soát
+
+---
+
+## Áp Dụng Trong Thực Tế
+
+### Bắt đầu mỗi task
+1. Đọc `lessons.md` nếu tồn tại
+2. Viết plan (3-5 bước) trước khi làm bất cứ gì
+3. Identify assumptions cần verify sớm
+
+### Trong khi làm
+- Sau mỗi bước: verify kết quả trước khi tiếp
+- Nếu thấy mình đang patch chồng patch → replanning
+- Nếu scope creep → document và hỏi user trước khi expand
+
+### Kết thúc task
+1. Chạy full checklist "Xong thật sự"
+2. Nếu có bài học → ghi vào `lessons.md`
+3. Clean up: xóa debug code, temp files, dead branches

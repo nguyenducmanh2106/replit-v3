@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+- Use TypeScript strict mode
+- Naming:
+  - camelCase: variables, functions
+  - PascalCase: React components
+- Avoid any, prefer explicit types

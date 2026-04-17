@@ -1,6 +1,16 @@
-import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
-import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
-import { QueryClientProvider, useQueryClient, QueryClient } from "@tanstack/react-query";
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth, useUser } from "@clerk/react";
+import {
+  Switch,
+  Route,
+  useLocation,
+  Router as WouterRouter,
+  Redirect,
+} from "wouter";
+import {
+  QueryClientProvider,
+  useQueryClient,
+  QueryClient,
+} from "@tanstack/react-query";
 import { useEffect, useRef, type ComponentType } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,16 +39,19 @@ import QuizTemplatesPage from "./pages/quiz-templates";
 import QuizTemplateDetailPage from "./pages/quiz-template-detail";
 import NotFound from "./pages/not-found";
 import { AppLayout } from "./components/layout";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function stripBase(path: string): string {
-  return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || "/" : path;
+  return basePath && path.startsWith(basePath)
+    ? path.slice(basePath.length) || "/"
+    : path;
 }
 
-if (!clerkPubKey) throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY');
+if (!clerkPubKey) throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,7 +69,11 @@ function ClerkQueryClientCacheInvalidator() {
   useEffect(() => {
     const unsubscribe = addListener(({ user }) => {
       const userId = user?.id ?? null;
-      if (prevUserIdRef.current !== undefined && prevUserIdRef.current !== userId) queryClient.clear();
+      if (
+        prevUserIdRef.current !== undefined &&
+        prevUserIdRef.current !== userId
+      )
+        queryClient.clear();
       prevUserIdRef.current = userId;
     });
     return unsubscribe;
@@ -67,7 +84,11 @@ function ClerkQueryClientCacheInvalidator() {
 function SignInPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      <SignIn
+        routing="path"
+        path={`${basePath}/sign-in`}
+        signUpUrl={`${basePath}/sign-up`}
+      />
     </div>
   );
 }
@@ -75,7 +96,11 @@ function SignInPage() {
 function SignUpPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      <SignUp
+        routing="path"
+        path={`${basePath}/sign-up`}
+        signInUrl={`${basePath}/sign-in`}
+      />
     </div>
   );
 }
@@ -93,7 +118,11 @@ function HomeRedirect() {
   );
 }
 
-function ProtectedRoute({ component: Component }: { component: ComponentType }) {
+function ProtectedRoute({
+  component: Component,
+}: {
+  component: ComponentType;
+}) {
   return (
     <>
       <Show when="signed-in">
@@ -108,7 +137,11 @@ function ProtectedRoute({ component: Component }: { component: ComponentType }) 
   );
 }
 
-function TakeAssignmentRoute({ component: Component }: { component: ComponentType }) {
+function TakeAssignmentRoute({
+  component: Component,
+}: {
+  component: ComponentType;
+}) {
   return (
     <>
       <Show when="signed-in">
@@ -127,33 +160,110 @@ function Router() {
       <Route path="/" component={HomeRedirect} />
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
-      <Route path="/onboarding" component={() => <ProtectedRoute component={OnboardingPage} />} />
-      <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
-      <Route path="/courses" component={() => <ProtectedRoute component={CoursesPage} />} />
-      <Route path="/courses/:id" component={() => <ProtectedRoute component={CourseDetailPage} />} />
-      <Route path="/questions" component={() => <ProtectedRoute component={QuestionsPage} />} />
-      <Route path="/questions/new" component={() => <ProtectedRoute component={QuestionFormPage} />} />
-      <Route path="/questions/:id/edit" component={() => <ProtectedRoute component={QuestionFormPage} />} />
-      <Route path="/assignments" component={() => <ProtectedRoute component={AssignmentsPage} />} />
-      <Route path="/assignments/:id" component={() => <ProtectedRoute component={AssignmentDetailPage} />} />
-      <Route path="/assignments/:id/take" component={() => <TakeAssignmentRoute component={AssignmentTakePage} />} />
-      <Route path="/submissions" component={() => <ProtectedRoute component={SubmissionsPage} />} />
-      <Route path="/submissions/:id" component={() => <ProtectedRoute component={SubmissionDetailPage} />} />
-      <Route path="/reports" component={() => <ProtectedRoute component={ReportsPage} />} />
-      <Route path="/rubrics" component={() => <ProtectedRoute component={RubricsPage} />} />
-      <Route path="/system" component={() => <ProtectedRoute component={SystemSettingsPage} />} />
-      <Route path="/profile" component={() => <ProtectedRoute component={ProfilePage} />} />
-      <Route path="/gamification" component={() => <ProtectedRoute component={GamificationPage} />} />
-      <Route path="/enterprise" component={() => <ProtectedRoute component={EnterprisePage} />} />
-      <Route path="/lms" component={() => <ProtectedRoute component={LmsPage} />} />
-      <Route path="/fraud" component={() => <ProtectedRoute component={FraudPage} />} />
-      <Route path="/quiz-templates" component={() => <ProtectedRoute component={QuizTemplatesPage} />} />
-      <Route path="/quiz-templates/:id" component={() => <ProtectedRoute component={QuizTemplateDetailPage} />} />
+      <Route
+        path="/onboarding"
+        component={() => <ProtectedRoute component={OnboardingPage} />}
+      />
+      <Route
+        path="/dashboard"
+        component={() => <ProtectedRoute component={DashboardPage} />}
+      />
+      <Route
+        path="/courses"
+        component={() => <ProtectedRoute component={CoursesPage} />}
+      />
+      <Route
+        path="/courses/:id"
+        component={() => <ProtectedRoute component={CourseDetailPage} />}
+      />
+      <Route
+        path="/questions"
+        component={() => <ProtectedRoute component={QuestionsPage} />}
+      />
+      <Route
+        path="/questions/new"
+        component={() => <ProtectedRoute component={QuestionFormPage} />}
+      />
+      <Route
+        path="/questions/:id/edit"
+        component={() => <ProtectedRoute component={QuestionFormPage} />}
+      />
+      <Route
+        path="/assignments"
+        component={() => <ProtectedRoute component={AssignmentsPage} />}
+      />
+      <Route
+        path="/assignments/:id"
+        component={() => <ProtectedRoute component={AssignmentDetailPage} />}
+      />
+      <Route
+        path="/assignments/:id/take"
+        component={() => <TakeAssignmentRoute component={AssignmentTakePage} />}
+      />
+      <Route
+        path="/submissions"
+        component={() => <ProtectedRoute component={SubmissionsPage} />}
+      />
+      <Route
+        path="/submissions/:id"
+        component={() => <ProtectedRoute component={SubmissionDetailPage} />}
+      />
+      <Route
+        path="/reports"
+        component={() => <ProtectedRoute component={ReportsPage} />}
+      />
+      <Route
+        path="/rubrics"
+        component={() => <ProtectedRoute component={RubricsPage} />}
+      />
+      <Route
+        path="/system"
+        component={() => <ProtectedRoute component={SystemSettingsPage} />}
+      />
+      <Route
+        path="/profile"
+        component={() => <ProtectedRoute component={ProfilePage} />}
+      />
+      <Route
+        path="/gamification"
+        component={() => <ProtectedRoute component={GamificationPage} />}
+      />
+      <Route
+        path="/enterprise"
+        component={() => <ProtectedRoute component={EnterprisePage} />}
+      />
+      <Route
+        path="/lms"
+        component={() => <ProtectedRoute component={LmsPage} />}
+      />
+      <Route
+        path="/fraud"
+        component={() => <ProtectedRoute component={FraudPage} />}
+      />
+      <Route
+        path="/quiz-templates"
+        component={() => <ProtectedRoute component={QuizTemplatesPage} />}
+      />
+      <Route
+        path="/quiz-templates/:id"
+        component={() => <ProtectedRoute component={QuizTemplateDetailPage} />}
+      />
       <Route component={NotFound} />
     </Switch>
   );
 }
-
+function AuthTokenManager() {
+  const { isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
+  useEffect(() => {
+    if (isSignedIn && user) {
+      setAuthTokenGetter(() => getToken());
+    } else {
+      setAuthTokenGetter(null);
+    }
+  }, [isSignedIn, user, getToken]);
+  return null;
+}
 function App() {
   const [, setLocation] = useLocation();
 
@@ -168,6 +278,7 @@ function App() {
         <TooltipProvider>
           <WouterRouter base={basePath}>
             <ClerkQueryClientCacheInvalidator />
+            <AuthTokenManager />  {/* ← THÊM DÒNG NÀY */}
             <Router />
           </WouterRouter>
           <Toaster />
