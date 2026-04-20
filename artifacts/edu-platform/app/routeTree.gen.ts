@@ -15,28 +15,28 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthSystemRouteImport } from './routes/_auth.system'
-import { Route as AuthSubmissionsRouteImport } from './routes/_auth.submissions'
-import { Route as AuthRubricsRouteImport } from './routes/_auth.rubrics'
-import { Route as AuthReportsRouteImport } from './routes/_auth.reports'
-import { Route as AuthQuizTemplatesRouteImport } from './routes/_auth.quiz-templates'
-import { Route as AuthQuestionsRouteImport } from './routes/_auth.questions'
-import { Route as AuthProfileRouteImport } from './routes/_auth.profile'
-import { Route as AuthOnboardingRouteImport } from './routes/_auth.onboarding'
-import { Route as AuthLmsRouteImport } from './routes/_auth.lms'
-import { Route as AuthGamificationRouteImport } from './routes/_auth.gamification'
-import { Route as AuthFraudRouteImport } from './routes/_auth.fraud'
-import { Route as AuthEnterpriseRouteImport } from './routes/_auth.enterprise'
-import { Route as AuthDashboardRouteImport } from './routes/_auth.dashboard'
-import { Route as AuthCoursesRouteImport } from './routes/_auth.courses'
-import { Route as AuthAssignmentsRouteImport } from './routes/_auth.assignments'
-import { Route as AssignmentsIdTakeRouteImport } from './routes/assignments.$id.take'
-import { Route as AuthSubmissionsIdRouteImport } from './routes/_auth.submissions.$id'
-import { Route as AuthQuizTemplatesIdRouteImport } from './routes/_auth.quiz-templates.$id'
-import { Route as AuthQuestionsNewRouteImport } from './routes/_auth.questions.new'
-import { Route as AuthCoursesIdRouteImport } from './routes/_auth.courses.$id'
-import { Route as AuthAssignmentsIdRouteImport } from './routes/_auth.assignments.$id'
-import { Route as AuthQuestionsIdEditRouteImport } from './routes/_auth.questions.$id.edit'
+import { Route as AuthSystemRouteImport } from './routes/_auth/system'
+import { Route as AuthRubricsRouteImport } from './routes/_auth/rubrics'
+import { Route as AuthReportsRouteImport } from './routes/_auth/reports'
+import { Route as AuthProfileRouteImport } from './routes/_auth/profile'
+import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
+import { Route as AuthLmsRouteImport } from './routes/_auth/lms'
+import { Route as AuthGamificationRouteImport } from './routes/_auth/gamification'
+import { Route as AuthFraudRouteImport } from './routes/_auth/fraud'
+import { Route as AuthEnterpriseRouteImport } from './routes/_auth/enterprise'
+import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
+import { Route as AuthSubmissionsIndexRouteImport } from './routes/_auth/submissions/index'
+import { Route as AuthQuizTemplatesIndexRouteImport } from './routes/_auth/quiz-templates/index'
+import { Route as AuthQuestionsIndexRouteImport } from './routes/_auth/questions/index'
+import { Route as AuthCoursesIndexRouteImport } from './routes/_auth/courses/index'
+import { Route as AuthAssignmentsIndexRouteImport } from './routes/_auth/assignments/index'
+import { Route as AuthSubmissionsIdRouteImport } from './routes/_auth/submissions/$id'
+import { Route as AuthQuizTemplatesIdRouteImport } from './routes/_auth/quiz-templates/$id'
+import { Route as AuthQuestionsNewRouteImport } from './routes/_auth/questions/new'
+import { Route as AuthCoursesIdRouteImport } from './routes/_auth/courses/$id'
+import { Route as AuthAssignmentsIdRouteImport } from './routes/_auth/assignments/$id'
+import { Route as AuthQuestionsIdEditRouteImport } from './routes/_auth/questions/$id_.edit'
+import { Route as AuthAssignmentsIdTakeRouteImport } from './routes/_auth/assignments/$id_.take'
 
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
@@ -72,11 +72,6 @@ const AuthSystemRoute = AuthSystemRouteImport.update({
   path: '/system',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthSubmissionsRoute = AuthSubmissionsRouteImport.update({
-  id: '/submissions',
-  path: '/submissions',
-  getParentRoute: () => AuthRoute,
-} as any)
 const AuthRubricsRoute = AuthRubricsRouteImport.update({
   id: '/rubrics',
   path: '/rubrics',
@@ -85,16 +80,6 @@ const AuthRubricsRoute = AuthRubricsRouteImport.update({
 const AuthReportsRoute = AuthReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthQuizTemplatesRoute = AuthQuizTemplatesRouteImport.update({
-  id: '/quiz-templates',
-  path: '/quiz-templates',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthQuestionsRoute = AuthQuestionsRouteImport.update({
-  id: '/questions',
-  path: '/questions',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthProfileRoute = AuthProfileRouteImport.update({
@@ -132,50 +117,65 @@ const AuthDashboardRoute = AuthDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthCoursesRoute = AuthCoursesRouteImport.update({
-  id: '/courses',
-  path: '/courses',
+const AuthSubmissionsIndexRoute = AuthSubmissionsIndexRouteImport.update({
+  id: '/submissions/',
+  path: '/submissions/',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthAssignmentsRoute = AuthAssignmentsRouteImport.update({
-  id: '/assignments',
-  path: '/assignments',
+const AuthQuizTemplatesIndexRoute = AuthQuizTemplatesIndexRouteImport.update({
+  id: '/quiz-templates/',
+  path: '/quiz-templates/',
   getParentRoute: () => AuthRoute,
 } as any)
-const AssignmentsIdTakeRoute = AssignmentsIdTakeRouteImport.update({
-  id: '/assignments/$id/take',
-  path: '/assignments/$id/take',
-  getParentRoute: () => rootRouteImport,
+const AuthQuestionsIndexRoute = AuthQuestionsIndexRouteImport.update({
+  id: '/questions/',
+  path: '/questions/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthCoursesIndexRoute = AuthCoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthAssignmentsIndexRoute = AuthAssignmentsIndexRouteImport.update({
+  id: '/assignments/',
+  path: '/assignments/',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthSubmissionsIdRoute = AuthSubmissionsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthSubmissionsRoute,
+  id: '/submissions/$id',
+  path: '/submissions/$id',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthQuizTemplatesIdRoute = AuthQuizTemplatesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthQuizTemplatesRoute,
+  id: '/quiz-templates/$id',
+  path: '/quiz-templates/$id',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthQuestionsNewRoute = AuthQuestionsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthQuestionsRoute,
+  id: '/questions/new',
+  path: '/questions/new',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthCoursesIdRoute = AuthCoursesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthCoursesRoute,
+  id: '/courses/$id',
+  path: '/courses/$id',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthAssignmentsIdRoute = AuthAssignmentsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthAssignmentsRoute,
+  id: '/assignments/$id',
+  path: '/assignments/$id',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthQuestionsIdEditRoute = AuthQuestionsIdEditRouteImport.update({
-  id: '/$id/edit',
-  path: '/$id/edit',
-  getParentRoute: () => AuthQuestionsRoute,
+  id: '/questions/$id_/edit',
+  path: '/questions/$id/edit',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthAssignmentsIdTakeRoute = AuthAssignmentsIdTakeRouteImport.update({
+  id: '/assignments/$id_/take',
+  path: '/assignments/$id/take',
+  getParentRoute: () => AuthRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -184,8 +184,6 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/assignments': typeof AuthAssignmentsRouteWithChildren
-  '/courses': typeof AuthCoursesRouteWithChildren
   '/dashboard': typeof AuthDashboardRoute
   '/enterprise': typeof AuthEnterpriseRoute
   '/fraud': typeof AuthFraudRoute
@@ -193,18 +191,20 @@ export interface FileRoutesByFullPath {
   '/lms': typeof AuthLmsRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/profile': typeof AuthProfileRoute
-  '/questions': typeof AuthQuestionsRouteWithChildren
-  '/quiz-templates': typeof AuthQuizTemplatesRouteWithChildren
   '/reports': typeof AuthReportsRoute
   '/rubrics': typeof AuthRubricsRoute
-  '/submissions': typeof AuthSubmissionsRouteWithChildren
   '/system': typeof AuthSystemRoute
   '/assignments/$id': typeof AuthAssignmentsIdRoute
   '/courses/$id': typeof AuthCoursesIdRoute
   '/questions/new': typeof AuthQuestionsNewRoute
   '/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
   '/submissions/$id': typeof AuthSubmissionsIdRoute
-  '/assignments/$id/take': typeof AssignmentsIdTakeRoute
+  '/assignments/': typeof AuthAssignmentsIndexRoute
+  '/courses/': typeof AuthCoursesIndexRoute
+  '/questions/': typeof AuthQuestionsIndexRoute
+  '/quiz-templates/': typeof AuthQuizTemplatesIndexRoute
+  '/submissions/': typeof AuthSubmissionsIndexRoute
+  '/assignments/$id/take': typeof AuthAssignmentsIdTakeRoute
   '/questions/$id/edit': typeof AuthQuestionsIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -213,8 +213,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/assignments': typeof AuthAssignmentsRouteWithChildren
-  '/courses': typeof AuthCoursesRouteWithChildren
   '/dashboard': typeof AuthDashboardRoute
   '/enterprise': typeof AuthEnterpriseRoute
   '/fraud': typeof AuthFraudRoute
@@ -222,18 +220,20 @@ export interface FileRoutesByTo {
   '/lms': typeof AuthLmsRoute
   '/onboarding': typeof AuthOnboardingRoute
   '/profile': typeof AuthProfileRoute
-  '/questions': typeof AuthQuestionsRouteWithChildren
-  '/quiz-templates': typeof AuthQuizTemplatesRouteWithChildren
   '/reports': typeof AuthReportsRoute
   '/rubrics': typeof AuthRubricsRoute
-  '/submissions': typeof AuthSubmissionsRouteWithChildren
   '/system': typeof AuthSystemRoute
   '/assignments/$id': typeof AuthAssignmentsIdRoute
   '/courses/$id': typeof AuthCoursesIdRoute
   '/questions/new': typeof AuthQuestionsNewRoute
   '/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
   '/submissions/$id': typeof AuthSubmissionsIdRoute
-  '/assignments/$id/take': typeof AssignmentsIdTakeRoute
+  '/assignments': typeof AuthAssignmentsIndexRoute
+  '/courses': typeof AuthCoursesIndexRoute
+  '/questions': typeof AuthQuestionsIndexRoute
+  '/quiz-templates': typeof AuthQuizTemplatesIndexRoute
+  '/submissions': typeof AuthSubmissionsIndexRoute
+  '/assignments/$id/take': typeof AuthAssignmentsIdTakeRoute
   '/questions/$id/edit': typeof AuthQuestionsIdEditRoute
 }
 export interface FileRoutesById {
@@ -244,8 +244,6 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
-  '/_auth/assignments': typeof AuthAssignmentsRouteWithChildren
-  '/_auth/courses': typeof AuthCoursesRouteWithChildren
   '/_auth/dashboard': typeof AuthDashboardRoute
   '/_auth/enterprise': typeof AuthEnterpriseRoute
   '/_auth/fraud': typeof AuthFraudRoute
@@ -253,19 +251,21 @@ export interface FileRoutesById {
   '/_auth/lms': typeof AuthLmsRoute
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_auth/profile': typeof AuthProfileRoute
-  '/_auth/questions': typeof AuthQuestionsRouteWithChildren
-  '/_auth/quiz-templates': typeof AuthQuizTemplatesRouteWithChildren
   '/_auth/reports': typeof AuthReportsRoute
   '/_auth/rubrics': typeof AuthRubricsRoute
-  '/_auth/submissions': typeof AuthSubmissionsRouteWithChildren
   '/_auth/system': typeof AuthSystemRoute
   '/_auth/assignments/$id': typeof AuthAssignmentsIdRoute
   '/_auth/courses/$id': typeof AuthCoursesIdRoute
   '/_auth/questions/new': typeof AuthQuestionsNewRoute
   '/_auth/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
   '/_auth/submissions/$id': typeof AuthSubmissionsIdRoute
-  '/assignments/$id/take': typeof AssignmentsIdTakeRoute
-  '/_auth/questions/$id/edit': typeof AuthQuestionsIdEditRoute
+  '/_auth/assignments/': typeof AuthAssignmentsIndexRoute
+  '/_auth/courses/': typeof AuthCoursesIndexRoute
+  '/_auth/questions/': typeof AuthQuestionsIndexRoute
+  '/_auth/quiz-templates/': typeof AuthQuizTemplatesIndexRoute
+  '/_auth/submissions/': typeof AuthSubmissionsIndexRoute
+  '/_auth/assignments/$id_/take': typeof AuthAssignmentsIdTakeRoute
+  '/_auth/questions/$id_/edit': typeof AuthQuestionsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -275,8 +275,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
-    | '/assignments'
-    | '/courses'
     | '/dashboard'
     | '/enterprise'
     | '/fraud'
@@ -284,17 +282,19 @@ export interface FileRouteTypes {
     | '/lms'
     | '/onboarding'
     | '/profile'
-    | '/questions'
-    | '/quiz-templates'
     | '/reports'
     | '/rubrics'
-    | '/submissions'
     | '/system'
     | '/assignments/$id'
     | '/courses/$id'
     | '/questions/new'
     | '/quiz-templates/$id'
     | '/submissions/$id'
+    | '/assignments/'
+    | '/courses/'
+    | '/questions/'
+    | '/quiz-templates/'
+    | '/submissions/'
     | '/assignments/$id/take'
     | '/questions/$id/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -304,8 +304,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
-    | '/assignments'
-    | '/courses'
     | '/dashboard'
     | '/enterprise'
     | '/fraud'
@@ -313,17 +311,19 @@ export interface FileRouteTypes {
     | '/lms'
     | '/onboarding'
     | '/profile'
-    | '/questions'
-    | '/quiz-templates'
     | '/reports'
     | '/rubrics'
-    | '/submissions'
     | '/system'
     | '/assignments/$id'
     | '/courses/$id'
     | '/questions/new'
     | '/quiz-templates/$id'
     | '/submissions/$id'
+    | '/assignments'
+    | '/courses'
+    | '/questions'
+    | '/quiz-templates'
+    | '/submissions'
     | '/assignments/$id/take'
     | '/questions/$id/edit'
   id:
@@ -334,8 +334,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
-    | '/_auth/assignments'
-    | '/_auth/courses'
     | '/_auth/dashboard'
     | '/_auth/enterprise'
     | '/_auth/fraud'
@@ -343,19 +341,21 @@ export interface FileRouteTypes {
     | '/_auth/lms'
     | '/_auth/onboarding'
     | '/_auth/profile'
-    | '/_auth/questions'
-    | '/_auth/quiz-templates'
     | '/_auth/reports'
     | '/_auth/rubrics'
-    | '/_auth/submissions'
     | '/_auth/system'
     | '/_auth/assignments/$id'
     | '/_auth/courses/$id'
     | '/_auth/questions/new'
     | '/_auth/quiz-templates/$id'
     | '/_auth/submissions/$id'
-    | '/assignments/$id/take'
-    | '/_auth/questions/$id/edit'
+    | '/_auth/assignments/'
+    | '/_auth/courses/'
+    | '/_auth/questions/'
+    | '/_auth/quiz-templates/'
+    | '/_auth/submissions/'
+    | '/_auth/assignments/$id_/take'
+    | '/_auth/questions/$id_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -365,7 +365,6 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
-  AssignmentsIdTakeRoute: typeof AssignmentsIdTakeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -419,13 +418,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSystemRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/submissions': {
-      id: '/_auth/submissions'
-      path: '/submissions'
-      fullPath: '/submissions'
-      preLoaderRoute: typeof AuthSubmissionsRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/_auth/rubrics': {
       id: '/_auth/rubrics'
       path: '/rubrics'
@@ -438,20 +430,6 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof AuthReportsRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/quiz-templates': {
-      id: '/_auth/quiz-templates'
-      path: '/quiz-templates'
-      fullPath: '/quiz-templates'
-      preLoaderRoute: typeof AuthQuizTemplatesRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/_auth/questions': {
-      id: '/_auth/questions'
-      path: '/questions'
-      fullPath: '/questions'
-      preLoaderRoute: typeof AuthQuestionsRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/profile': {
@@ -503,136 +481,94 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/courses': {
-      id: '/_auth/courses'
+    '/_auth/submissions/': {
+      id: '/_auth/submissions/'
+      path: '/submissions'
+      fullPath: '/submissions/'
+      preLoaderRoute: typeof AuthSubmissionsIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/quiz-templates/': {
+      id: '/_auth/quiz-templates/'
+      path: '/quiz-templates'
+      fullPath: '/quiz-templates/'
+      preLoaderRoute: typeof AuthQuizTemplatesIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/questions/': {
+      id: '/_auth/questions/'
+      path: '/questions'
+      fullPath: '/questions/'
+      preLoaderRoute: typeof AuthQuestionsIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/courses/': {
+      id: '/_auth/courses/'
       path: '/courses'
-      fullPath: '/courses'
-      preLoaderRoute: typeof AuthCoursesRouteImport
+      fullPath: '/courses/'
+      preLoaderRoute: typeof AuthCoursesIndexRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/assignments': {
-      id: '/_auth/assignments'
+    '/_auth/assignments/': {
+      id: '/_auth/assignments/'
       path: '/assignments'
-      fullPath: '/assignments'
-      preLoaderRoute: typeof AuthAssignmentsRouteImport
+      fullPath: '/assignments/'
+      preLoaderRoute: typeof AuthAssignmentsIndexRouteImport
       parentRoute: typeof AuthRoute
-    }
-    '/assignments/$id/take': {
-      id: '/assignments/$id/take'
-      path: '/assignments/$id/take'
-      fullPath: '/assignments/$id/take'
-      preLoaderRoute: typeof AssignmentsIdTakeRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_auth/submissions/$id': {
       id: '/_auth/submissions/$id'
-      path: '/$id'
+      path: '/submissions/$id'
       fullPath: '/submissions/$id'
       preLoaderRoute: typeof AuthSubmissionsIdRouteImport
-      parentRoute: typeof AuthSubmissionsRoute
+      parentRoute: typeof AuthRoute
     }
     '/_auth/quiz-templates/$id': {
       id: '/_auth/quiz-templates/$id'
-      path: '/$id'
+      path: '/quiz-templates/$id'
       fullPath: '/quiz-templates/$id'
       preLoaderRoute: typeof AuthQuizTemplatesIdRouteImport
-      parentRoute: typeof AuthQuizTemplatesRoute
+      parentRoute: typeof AuthRoute
     }
     '/_auth/questions/new': {
       id: '/_auth/questions/new'
-      path: '/new'
+      path: '/questions/new'
       fullPath: '/questions/new'
       preLoaderRoute: typeof AuthQuestionsNewRouteImport
-      parentRoute: typeof AuthQuestionsRoute
+      parentRoute: typeof AuthRoute
     }
     '/_auth/courses/$id': {
       id: '/_auth/courses/$id'
-      path: '/$id'
+      path: '/courses/$id'
       fullPath: '/courses/$id'
       preLoaderRoute: typeof AuthCoursesIdRouteImport
-      parentRoute: typeof AuthCoursesRoute
+      parentRoute: typeof AuthRoute
     }
     '/_auth/assignments/$id': {
       id: '/_auth/assignments/$id'
-      path: '/$id'
+      path: '/assignments/$id'
       fullPath: '/assignments/$id'
       preLoaderRoute: typeof AuthAssignmentsIdRouteImport
-      parentRoute: typeof AuthAssignmentsRoute
+      parentRoute: typeof AuthRoute
     }
-    '/_auth/questions/$id/edit': {
-      id: '/_auth/questions/$id/edit'
-      path: '/$id/edit'
+    '/_auth/questions/$id_/edit': {
+      id: '/_auth/questions/$id_/edit'
+      path: '/questions/$id/edit'
       fullPath: '/questions/$id/edit'
       preLoaderRoute: typeof AuthQuestionsIdEditRouteImport
-      parentRoute: typeof AuthQuestionsRoute
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/assignments/$id_/take': {
+      id: '/_auth/assignments/$id_/take'
+      path: '/assignments/$id/take'
+      fullPath: '/assignments/$id/take'
+      preLoaderRoute: typeof AuthAssignmentsIdTakeRouteImport
+      parentRoute: typeof AuthRoute
     }
   }
 }
 
-interface AuthAssignmentsRouteChildren {
-  AuthAssignmentsIdRoute: typeof AuthAssignmentsIdRoute
-}
-
-const AuthAssignmentsRouteChildren: AuthAssignmentsRouteChildren = {
-  AuthAssignmentsIdRoute: AuthAssignmentsIdRoute,
-}
-
-const AuthAssignmentsRouteWithChildren = AuthAssignmentsRoute._addFileChildren(
-  AuthAssignmentsRouteChildren,
-)
-
-interface AuthCoursesRouteChildren {
-  AuthCoursesIdRoute: typeof AuthCoursesIdRoute
-}
-
-const AuthCoursesRouteChildren: AuthCoursesRouteChildren = {
-  AuthCoursesIdRoute: AuthCoursesIdRoute,
-}
-
-const AuthCoursesRouteWithChildren = AuthCoursesRoute._addFileChildren(
-  AuthCoursesRouteChildren,
-)
-
-interface AuthQuestionsRouteChildren {
-  AuthQuestionsNewRoute: typeof AuthQuestionsNewRoute
-  AuthQuestionsIdEditRoute: typeof AuthQuestionsIdEditRoute
-}
-
-const AuthQuestionsRouteChildren: AuthQuestionsRouteChildren = {
-  AuthQuestionsNewRoute: AuthQuestionsNewRoute,
-  AuthQuestionsIdEditRoute: AuthQuestionsIdEditRoute,
-}
-
-const AuthQuestionsRouteWithChildren = AuthQuestionsRoute._addFileChildren(
-  AuthQuestionsRouteChildren,
-)
-
-interface AuthQuizTemplatesRouteChildren {
-  AuthQuizTemplatesIdRoute: typeof AuthQuizTemplatesIdRoute
-}
-
-const AuthQuizTemplatesRouteChildren: AuthQuizTemplatesRouteChildren = {
-  AuthQuizTemplatesIdRoute: AuthQuizTemplatesIdRoute,
-}
-
-const AuthQuizTemplatesRouteWithChildren =
-  AuthQuizTemplatesRoute._addFileChildren(AuthQuizTemplatesRouteChildren)
-
-interface AuthSubmissionsRouteChildren {
-  AuthSubmissionsIdRoute: typeof AuthSubmissionsIdRoute
-}
-
-const AuthSubmissionsRouteChildren: AuthSubmissionsRouteChildren = {
-  AuthSubmissionsIdRoute: AuthSubmissionsIdRoute,
-}
-
-const AuthSubmissionsRouteWithChildren = AuthSubmissionsRoute._addFileChildren(
-  AuthSubmissionsRouteChildren,
-)
-
 interface AuthRouteChildren {
-  AuthAssignmentsRoute: typeof AuthAssignmentsRouteWithChildren
-  AuthCoursesRoute: typeof AuthCoursesRouteWithChildren
   AuthDashboardRoute: typeof AuthDashboardRoute
   AuthEnterpriseRoute: typeof AuthEnterpriseRoute
   AuthFraudRoute: typeof AuthFraudRoute
@@ -640,17 +576,24 @@ interface AuthRouteChildren {
   AuthLmsRoute: typeof AuthLmsRoute
   AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthProfileRoute: typeof AuthProfileRoute
-  AuthQuestionsRoute: typeof AuthQuestionsRouteWithChildren
-  AuthQuizTemplatesRoute: typeof AuthQuizTemplatesRouteWithChildren
   AuthReportsRoute: typeof AuthReportsRoute
   AuthRubricsRoute: typeof AuthRubricsRoute
-  AuthSubmissionsRoute: typeof AuthSubmissionsRouteWithChildren
   AuthSystemRoute: typeof AuthSystemRoute
+  AuthAssignmentsIdRoute: typeof AuthAssignmentsIdRoute
+  AuthCoursesIdRoute: typeof AuthCoursesIdRoute
+  AuthQuestionsNewRoute: typeof AuthQuestionsNewRoute
+  AuthQuizTemplatesIdRoute: typeof AuthQuizTemplatesIdRoute
+  AuthSubmissionsIdRoute: typeof AuthSubmissionsIdRoute
+  AuthAssignmentsIndexRoute: typeof AuthAssignmentsIndexRoute
+  AuthCoursesIndexRoute: typeof AuthCoursesIndexRoute
+  AuthQuestionsIndexRoute: typeof AuthQuestionsIndexRoute
+  AuthQuizTemplatesIndexRoute: typeof AuthQuizTemplatesIndexRoute
+  AuthSubmissionsIndexRoute: typeof AuthSubmissionsIndexRoute
+  AuthAssignmentsIdTakeRoute: typeof AuthAssignmentsIdTakeRoute
+  AuthQuestionsIdEditRoute: typeof AuthQuestionsIdEditRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthAssignmentsRoute: AuthAssignmentsRouteWithChildren,
-  AuthCoursesRoute: AuthCoursesRouteWithChildren,
   AuthDashboardRoute: AuthDashboardRoute,
   AuthEnterpriseRoute: AuthEnterpriseRoute,
   AuthFraudRoute: AuthFraudRoute,
@@ -658,12 +601,21 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthLmsRoute: AuthLmsRoute,
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthProfileRoute: AuthProfileRoute,
-  AuthQuestionsRoute: AuthQuestionsRouteWithChildren,
-  AuthQuizTemplatesRoute: AuthQuizTemplatesRouteWithChildren,
   AuthReportsRoute: AuthReportsRoute,
   AuthRubricsRoute: AuthRubricsRoute,
-  AuthSubmissionsRoute: AuthSubmissionsRouteWithChildren,
   AuthSystemRoute: AuthSystemRoute,
+  AuthAssignmentsIdRoute: AuthAssignmentsIdRoute,
+  AuthCoursesIdRoute: AuthCoursesIdRoute,
+  AuthQuestionsNewRoute: AuthQuestionsNewRoute,
+  AuthQuizTemplatesIdRoute: AuthQuizTemplatesIdRoute,
+  AuthSubmissionsIdRoute: AuthSubmissionsIdRoute,
+  AuthAssignmentsIndexRoute: AuthAssignmentsIndexRoute,
+  AuthCoursesIndexRoute: AuthCoursesIndexRoute,
+  AuthQuestionsIndexRoute: AuthQuestionsIndexRoute,
+  AuthQuizTemplatesIndexRoute: AuthQuizTemplatesIndexRoute,
+  AuthSubmissionsIndexRoute: AuthSubmissionsIndexRoute,
+  AuthAssignmentsIdTakeRoute: AuthAssignmentsIdTakeRoute,
+  AuthQuestionsIdEditRoute: AuthQuestionsIdEditRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -675,7 +627,6 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
-  AssignmentsIdTakeRoute: AssignmentsIdTakeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

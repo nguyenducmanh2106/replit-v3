@@ -37,7 +37,7 @@ pnpm monorepo with TypeScript project references.
 
 Better Auth replaces Clerk everywhere:
 - **Frontend**: `src/lib/auth-client.ts` exports `authClient` (createAuthClient from `better-auth/react`)
-- **Routes**: File-based routing in `app/routes/` — public (sign-in, sign-up), `_auth.*` (protected via `_auth.tsx` layout)
+- **Routes**: File-based routing in `app/routes/` — public (sign-in, sign-up, forgot-password, reset-password); protected routes in `_auth/` subfolder (grouped by feature: courses/, assignments/, submissions/, questions/, quiz-templates/) under `_auth.tsx` layout
 - **API Server**: `artifacts/api-server/src/lib/auth.ts` — betterAuth with Drizzle adapter; mounted at `/api/auth` in app.ts
 - **Session**: Cookie-based; `requireAuth` middleware reads session from Better Auth and resolves `req.dbUser`
 - **BA Tables**: `ba_user`, `ba_session`, `ba_account`, `ba_verification` (prefixed to avoid collision with app `users` table)
