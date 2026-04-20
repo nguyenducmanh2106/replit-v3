@@ -3,13 +3,26 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db, baUser, baSession, baAccount, baVerification } from "@workspace/db";
 
 const buildTrustedOrigins = (): string[] => {
-  const origins: string[] = [];
-  if (process.env["REPLIT_DEV_DOMAIN"]) {
-    origins.push(`https://${process.env["REPLIT_DEV_DOMAIN"]}`);
+  const origins: string[] = [
+    "http://localhost:3000",
+    "http://localhost:5000",
+  ];
+
+  const replitDomains = process.env["REPLIT_DOMAINS"] ?? process.env["REPLIT_DEV_DOMAIN"];
+  if (replitDomains) {
+    replitDomains.split(",").map(d => d.trim()).filter(Boolean).forEach(domain => {
+      origins.push(`https://${domain}`);
+      origins.push(`https://${domain}:80`);
+      origins.push(`https://${domain}:443`);
+      origins.push(`https://${domain}:5000`);
+      origins.push(`https://${domain}:3000`);
+    });
   }
+
   if (process.env["CORS_ORIGIN"]) {
     process.env["CORS_ORIGIN"].split(",").map(o => o.trim()).filter(Boolean).forEach(o => origins.push(o));
   }
+
   return origins;
 };
 
