@@ -10,7 +10,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@clerk/express": "^2.0.11",
     "@google-cloud/storage": "^7.19.0",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/semantic-conventions": "^1.40.0",
@@ -24,7 +23,6 @@
     "drizzle-orm": "catalog:",
     "express": "^5",
     "google-auth-library": "^10.6.2",
-    "http-proxy-middleware": "^3.0.5",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.5",
     "pino": "^9",

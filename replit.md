@@ -29,7 +29,7 @@ pnpm monorepo with TypeScript project references.
 
 - **Web Frontend**: React 18, Vite, Tailwind CSS v4, shadcn/ui, TanStack Router (file-based routing), Better Auth (client), recharts, react-hook-form, date-fns
 - **Mobile App**: Expo SDK 54, Expo Router, React Native, React Query
-- **Backend**: Express.js 5, Drizzle ORM, PostgreSQL, Better Auth (server)
+- **Backend**: Express.js 5, Drizzle ORM, PostgreSQL, Better Auth (server, email+Google OAuth)
 - **AI**: OpenAI GPT-4o-mini via Replit AI Integrations proxy (lazy-loaded)
 - **Fonts**: Be Vietnam Pro + Inter (web), Inter (mobile)
 
