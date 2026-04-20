@@ -83,16 +83,6 @@ export const auth = betterAuth({
       maxAge: 5 * 60,
     },
   },
-  user: {
-    additionalFields: {
-      role: {
-        type: "string",
-        required: false,
-        defaultValue: null,
-        input: false,
-      },
-    },
-  },
 });
 
 export type Auth = typeof auth;
