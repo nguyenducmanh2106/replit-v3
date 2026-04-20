@@ -107,3 +107,4 @@ defaultBucketID = "replit-objstore-32a8cf50-0b40-40d5-a370-98c8a934d2f2"
 
 [userenv.shared]
 PG_EXTERNAL_URL = "postgresql://root:12345678%40Abc@103.216.116.36:5432/replit"
+GMAIL_USER = "nguyenducmanh2106@gmail.com"
