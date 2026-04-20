@@ -3,9 +3,12 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db, baUser, baSession, baAccount, baVerification } from "@workspace/db";
 import { sendVerificationEmail, sendPasswordResetEmail } from "./mailer";
 
+// In Replit dev, the frontend (Vite on port 3000) is exposed at external port 5000.
+// Google OAuth callback must go through Vite's /api proxy, so we use port 5000 (not api-server port).
+// In production (BETTER_AUTH_URL set), use that directly.
 const API_BASE_URL = process.env["BETTER_AUTH_URL"]
   ?? (process.env["REPLIT_DOMAINS"]
-    ? `https://${process.env["REPLIT_DOMAINS"].split(",")[0].trim()}`
+    ? `https://${process.env["REPLIT_DOMAINS"].split(",")[0].trim()}:5000`
     : `http://localhost:${process.env["PORT"] ?? 3001}`);
 
 const buildTrustedOrigins = (): string[] => {
