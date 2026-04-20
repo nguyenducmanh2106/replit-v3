@@ -1,18 +1,24 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation } from "@/lib/routing";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { LayoutDashboard, BookOpen, Library, PenSquare, FileCheck, UserCircle, LogOut, BarChart2, Target, Settings, Trophy, Building2, Link2, ShieldAlert, FolderOpen } from "lucide-react";
-import { useClerk } from "@clerk/react";
+import { authClient } from "@/lib/auth-client";
 import { useGetMe } from "@workspace/api-client-react";
+import { useNavigate } from "@tanstack/react-router";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  const { signOut } = useClerk();
+  const navigate = useNavigate();
   const { data: user } = useGetMe();
 
   const isTeacherOrAdmin = user?.role && ["teacher", "center_admin", "school_admin", "system_admin", "enterprise_admin"].includes(user.role);
   const isSystemAdmin = user?.role === "system_admin";
   const isEnterpriseOrAdmin = user?.role && ["center_admin", "school_admin", "system_admin", "enterprise_admin"].includes(user.role);
+
+  async function handleSignOut() {
+    await authClient.signOut();
+    navigate({ to: "/sign-in" });
+  }
 
   return (
     <SidebarProvider>
@@ -172,7 +178,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               </div>
             )}
             <button
-              onClick={() => signOut()}
+              onClick={handleSignOut}
               className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
             >
               <LogOut className="h-4 w-4" />

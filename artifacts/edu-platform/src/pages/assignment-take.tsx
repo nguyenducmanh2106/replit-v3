@@ -1,4 +1,4 @@
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation } from "@/lib/routing";
 import { useGetAssignment, useCreateSubmission, useReportFraudEvent, useRequestUploadUrl, getGetAssignmentQueryKey, getListSubmissionsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";

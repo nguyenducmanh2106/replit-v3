@@ -27,11 +27,21 @@ pnpm monorepo with TypeScript project references.
 
 ## Tech Stack
 
-- **Web Frontend**: React 18, Vite, Tailwind CSS v4, shadcn/ui, wouter (routing), Clerk auth, recharts, react-hook-form, date-fns
+- **Web Frontend**: React 18, Vite, Tailwind CSS v4, shadcn/ui, TanStack Router (file-based routing), Better Auth (client), recharts, react-hook-form, date-fns
 - **Mobile App**: Expo SDK 54, Expo Router, React Native, React Query
-- **Backend**: Express.js, Drizzle ORM, PostgreSQL, Clerk SDK
-- **AI**: OpenAI GPT-4o-mini via Replit AI Integrations proxy
+- **Backend**: Express.js 5, Drizzle ORM, PostgreSQL, Better Auth (server)
+- **AI**: OpenAI GPT-4o-mini via Replit AI Integrations proxy (lazy-loaded)
 - **Fonts**: Be Vietnam Pro + Inter (web), Inter (mobile)
+
+## Auth Architecture
+
+Better Auth replaces Clerk everywhere:
+- **Frontend**: `src/lib/auth-client.ts` exports `authClient` (createAuthClient from `better-auth/react`)
+- **Routes**: File-based routing in `app/routes/` — public (sign-in, sign-up), `_auth.*` (protected via `_auth.tsx` layout)
+- **API Server**: `artifacts/api-server/src/lib/auth.ts` — betterAuth with Drizzle adapter; mounted at `/api/auth` in app.ts
+- **Session**: Cookie-based; `requireAuth` middleware reads session from Better Auth and resolves `req.dbUser`
+- **BA Tables**: `ba_user`, `ba_session`, `ba_account`, `ba_verification` (prefixed to avoid collision with app `users` table)
+- **User linking**: `users.better_auth_user_id` → `ba_user.id`
 
 ## Design System
 
@@ -242,13 +252,17 @@ Streak and badges are updated on each submission.
 
 ## Environment Variables
 
-- `DATABASE_URL` — PostgreSQL connection string
-- `VITE_CLERK_PUBLISHABLE_KEY` — Clerk frontend key
-- `CLERK_SECRET_KEY` — Clerk backend key
-- `VITE_CLERK_PROXY_URL` — Clerk proxy URL for Replit
+- `PG_EXTERNAL_URL` — External PostgreSQL connection string (user's own DB at 103.216.116.36:5432/replit)
+- `DATABASE_URL` — (fallback) Replit managed PostgreSQL
 - `PORT` — Port for each artifact (set by Replit)
-- `AI_INTEGRATIONS_OPENAI_BASE_URL` — Auto-provisioned by Replit AI Integrations
-- `AI_INTEGRATIONS_OPENAI_API_KEY` — Auto-provisioned by Replit AI Integrations
+- `BETTER_AUTH_URL` — Optional: full URL of api-server for Better Auth callbacks (defaults to localhost:PORT)
+- `AI_INTEGRATIONS_OPENAI_BASE_URL` — Auto-provisioned by Replit AI Integrations (lazy-loaded, optional)
+- `AI_INTEGRATIONS_OPENAI_API_KEY` — Auto-provisioned by Replit AI Integrations (lazy-loaded, optional)
+
+## Workflows
+
+- **Start application**: `PORT=3000 BASE_PATH=/ pnpm --filter @workspace/edu-platform run dev` (Vite on port 3000)
+- **Start api-server**: `PORT=3001 pnpm --filter @workspace/api-server run dev` (Express + Better Auth on port 3001)
 
 ## Codegen
 

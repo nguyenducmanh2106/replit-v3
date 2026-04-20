@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useListCourses, useCreateCourse, getListCoursesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link } from "@/lib/routing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useLocation } from "wouter";
+import { useLocation } from "@/lib/routing";
 import { useListQuestions, useDeleteQuestion, getListQuestionsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { Users, BookOpen, PenSquare, FileCheck, Clock, TrendingUp, Star, GraduationCap, Building2, type LucideIcon } from "lucide-react";
-import { Link } from "wouter";
+import { Link } from "@/lib/routing";
 import { format, parseISO } from "date-fns";
 
 function StatCard({ title, value, icon: Icon, color }: { title: string; value: number | string; icon: LucideIcon; color: string }) {

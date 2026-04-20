@@ -1,7 +1,8 @@
 import { type Request, type Response, type NextFunction } from "express";
-import { getAuth } from "@clerk/express";
+import { fromNodeHeaders } from "better-auth/node";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { auth } from "../lib/auth";
 import { logger } from "../lib/logger";
 
 declare global {
@@ -9,26 +10,27 @@ declare global {
     interface Request {
       dbUser?: typeof usersTable.$inferSelect;
       userId?: string;
+      betterAuthUser?: { id: string; email: string; name: string };
     }
   }
 }
 
 export const requireAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const auth = getAuth(req);
-  const clerkId = auth?.userId;
-  if (!clerkId) {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session?.user?.id) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  req.userId = clerkId;
+  req.userId = session.user.id;
+  req.betterAuthUser = { id: session.user.id, email: session.user.email, name: session.user.name };
 
   try {
-    const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.betterAuthUserId, session.user.id));
     if (user) {
       req.dbUser = user;
     }
   } catch (err) {
-    logger.error({ err, clerkId }, "DB user lookup failed in requireAuth");
+    logger.error({ err, userId: session.user.id }, "DB user lookup failed in requireAuth");
     res.status(500).json({ error: "Internal server error during authentication" });
     return;
   }
@@ -36,15 +38,15 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 };
 
 export const optionalAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
-  const auth = getAuth(req);
-  const clerkId = auth?.userId;
-  if (clerkId) {
-    req.userId = clerkId;
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (session?.user?.id) {
+    req.userId = session.user.id;
+    req.betterAuthUser = { id: session.user.id, email: session.user.email, name: session.user.name };
     try {
-      const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+      const [user] = await db.select().from(usersTable).where(eq(usersTable.betterAuthUserId, session.user.id));
       if (user) req.dbUser = user;
     } catch (err) {
-      logger.error({ err, clerkId }, "DB user lookup failed in optionalAuth");
+      logger.error({ err, userId: session.user.id }, "DB user lookup failed in optionalAuth");
     }
   }
   next();

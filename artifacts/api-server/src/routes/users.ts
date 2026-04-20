@@ -1,6 +1,5 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { getAuth } from "@clerk/express";
 import { db, usersTable } from "@workspace/db";
 import {
   GetMeResponse,
@@ -17,30 +16,22 @@ import { isTeacherOrAdmin } from "../middlewares/requireRole";
 const router: IRouter = Router();
 
 router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
-  const clerkId = req.userId!;
-  let [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId));
+  const betterAuthUserId = req.userId!;
+  let [user] = await db.select().from(usersTable).where(eq(usersTable.betterAuthUserId, betterAuthUserId));
 
   if (!user) {
-    // Use Clerk SDK to get user info — no `any` cast needed
-    const auth = getAuth(req);
-    const clerkEmail = typeof auth?.sessionClaims?.email === "string"
-      ? auth.sessionClaims.email
-      : `${clerkId}@placeholder.com`;
-    const clerkName = typeof auth?.sessionClaims?.name === "string"
-      ? auth.sessionClaims.name
-      : (typeof auth?.sessionClaims?.username === "string" ? auth.sessionClaims.username : "New User");
-
+    const baUser = req.betterAuthUser!;
     [user] = await db.insert(usersTable).values({
-      clerkId,
-      email: clerkEmail,
-      name: clerkName,
+      betterAuthUserId,
+      email: baUser.email,
+      name: baUser.name,
       role: "student",
     }).returning();
   }
 
   res.json(GetMeResponse.parse({
     id: user.id,
-    clerkId: user.clerkId,
+    betterAuthUserId: user.betterAuthUserId ?? null,
     email: user.email,
     name: user.name,
     role: user.role,
@@ -51,7 +42,7 @@ router.get("/users/me", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.patch("/users/me", requireAuth, async (req, res): Promise<void> => {
-  const clerkId = req.userId!;
+  const betterAuthUserId = req.userId!;
   const parsed = UpdateMeBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -63,20 +54,16 @@ router.patch("/users/me", requireAuth, async (req, res): Promise<void> => {
   if (parsed.data.organization != null) updates.organization = parsed.data.organization;
   if (parsed.data.avatarUrl != null) updates.avatarUrl = parsed.data.avatarUrl;
 
-  // Role change: only allowed during onboarding (current role is "student")
-  // and only to non-system-admin roles. All other transitions require admin action.
   if (parsed.data.role != null) {
     const dbUser = req.dbUser;
     const currentRole = dbUser?.role ?? "student";
     const requestedRole = parsed.data.role;
 
-    // Only students going through onboarding may self-select a role
     if (currentRole !== "student") {
       res.status(403).json({ error: "Role can only be changed by an administrator" });
       return;
     }
 
-    // Block self-assignment to system_admin under all circumstances
     if (requestedRole === "system_admin") {
       res.status(403).json({ error: "Cannot self-assign system admin role" });
       return;
@@ -85,7 +72,7 @@ router.patch("/users/me", requireAuth, async (req, res): Promise<void> => {
     updates.role = requestedRole;
   }
 
-  const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.clerkId, clerkId)).returning();
+  const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.betterAuthUserId, betterAuthUserId)).returning();
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
@@ -93,7 +80,7 @@ router.patch("/users/me", requireAuth, async (req, res): Promise<void> => {
 
   res.json(UpdateMeResponse.parse({
     id: user.id,
-    clerkId: user.clerkId,
+    betterAuthUserId: user.betterAuthUserId ?? null,
     email: user.email,
     name: user.name,
     role: user.role,
@@ -110,7 +97,6 @@ router.get("/users", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  // Only teachers/admins can list all users
   if (!isTeacherOrAdmin(dbUser.role)) {
     res.status(403).json({ error: "Forbidden" });
     return;
@@ -130,7 +116,7 @@ router.get("/users", requireAuth, async (req, res): Promise<void> => {
   const users = await query;
   res.json(ListUsersResponse.parse(users.map(u => ({
     id: u.id,
-    clerkId: u.clerkId,
+    betterAuthUserId: u.betterAuthUserId ?? null,
     email: u.email,
     name: u.name,
     role: u.role,
@@ -154,7 +140,6 @@ router.get("/users/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  // Students can only view their own profile via /users/me; teachers can view any user
   if (!isTeacherOrAdmin(dbUser.role) && dbUser.id !== params.data.id) {
     res.status(403).json({ error: "Forbidden" });
     return;
@@ -168,7 +153,7 @@ router.get("/users/:id", requireAuth, async (req, res): Promise<void> => {
 
   res.json(GetUserByIdResponse.parse({
     id: user.id,
-    clerkId: user.clerkId,
+    betterAuthUserId: user.betterAuthUserId ?? null,
     email: user.email,
     name: user.name,
     role: user.role,

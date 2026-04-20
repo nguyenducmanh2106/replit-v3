@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useParams } from "wouter";
+import { useParams } from "@/lib/routing";
 import {
   useGetSubmission, useGradeSubmission,
   useGetSubmissionAnnotations, getGetSubmissionAnnotationsQueryKey, useCreateAnnotation, useDeleteAnnotation,

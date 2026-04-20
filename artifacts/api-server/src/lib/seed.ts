@@ -9,7 +9,6 @@ export async function seedIfEmpty() {
   logger.info("Seeding demo data...");
 
   const [teacher] = await db.insert(usersTable).values({
-    clerkId: "demo_teacher_1",
     email: "teacher@edu.vn",
     name: "Nguyễn Minh Anh",
     role: "teacher",
@@ -17,7 +16,6 @@ export async function seedIfEmpty() {
   }).onConflictDoNothing().returning();
 
   const [student1] = await db.insert(usersTable).values({
-    clerkId: "demo_student_1",
     email: "student1@edu.vn",
     name: "Trần Văn Bình",
     role: "student",
@@ -25,7 +23,6 @@ export async function seedIfEmpty() {
   }).onConflictDoNothing().returning();
 
   const [student2] = await db.insert(usersTable).values({
-    clerkId: "demo_student_2",
     email: "student2@edu.vn",
     name: "Lê Thị Cẩm",
     role: "student",

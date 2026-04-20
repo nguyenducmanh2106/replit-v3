@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useParams } from "wouter";
+import { useLocation, useParams } from "@/lib/routing";
 import {
   useCreateQuestion, useUpdateQuestion,
   getListQuestionsQueryKey, getGetQuestionQueryKey, getQuestion,

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useListQuizTemplates, useCreateQuizTemplate, useDeleteQuizTemplate, getListQuizTemplatesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link } from "@/lib/routing";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

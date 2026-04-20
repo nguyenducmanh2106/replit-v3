@@ -1,5 +1,5 @@
 import { useListSubmissions } from "@workspace/api-client-react";
-import { Link } from "wouter";
+import { Link } from "@/lib/routing";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";

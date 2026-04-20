@@ -1,4 +1,4 @@
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation } from "@/lib/routing";
 import {
   useGetAssignment, useUpdateAssignment, useListQuestions,
   useAddQuestionToAssignment, useRemoveQuestionFromAssignment,
@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link } from "@/lib/routing";
 import { useGetMe } from "@workspace/api-client-react";
 import {
   Play, Plus, CheckSquare, Clock, Calendar, Trash2, Eye, Pencil,

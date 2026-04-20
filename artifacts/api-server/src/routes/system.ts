@@ -36,7 +36,7 @@ router.get("/system/users", requireAuth, async (req, res): Promise<void> => {
 
   res.json(users.map(u => ({
     id: u.id,
-    clerkId: u.clerkId,
+    betterAuthUserId: u.betterAuthUserId ?? null,
     email: u.email,
     name: u.name,
     role: u.role,
@@ -78,7 +78,7 @@ router.patch("/system/users/:id", requireAuth, async (req, res): Promise<void> =
   const [updated] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   res.json({
     id: updated!.id,
-    clerkId: updated!.clerkId,
+    betterAuthUserId: updated!.betterAuthUserId ?? null,
     email: updated!.email,
     name: updated!.name,
     role: updated!.role,

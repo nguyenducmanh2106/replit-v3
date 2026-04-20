@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "wouter";
+import { useParams } from "@/lib/routing";
 import {
   useGetCourse, useGetCourseMembers, useListAssignments,
   useGetCourseSchedule, useCreateScheduleEvent, useDeleteScheduleEvent,
@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation } from "@/lib/routing";
 import { Users, PenSquare, Calendar, Plus, Trash2, FileText, Upload, Clock, Play, RefreshCw, Ban, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";

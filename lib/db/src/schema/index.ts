@@ -1,4 +1,5 @@
 export * from "./users";
+export * from "./better-auth";
 export * from "./questions";
 export * from "./assignments";
 export * from "./submissions";

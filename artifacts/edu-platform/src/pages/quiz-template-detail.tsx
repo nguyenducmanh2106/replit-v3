@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation } from "@/lib/routing";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetQuizTemplate,

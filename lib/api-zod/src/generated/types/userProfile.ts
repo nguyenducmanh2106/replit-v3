@@ -8,7 +8,7 @@
 
 export interface UserProfile {
   id: number;
-  clerkId: string;
+  betterAuthUserId?: string | null;
   email: string;
   name: string;
   /** teacher | center_admin | school_admin | system_admin | enterprise_admin | student */

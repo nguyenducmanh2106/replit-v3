@@ -20,7 +20,7 @@ export const HealthCheckResponse = zod.object({
  */
 export const GetMeResponse = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
+  betterAuthUserId: zod.string().nullable().optional(),
   email: zod.string(),
   name: zod.string(),
   role: zod
@@ -45,7 +45,7 @@ export const UpdateMeBody = zod.object({
 
 export const UpdateMeResponse = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
+  betterAuthUserId: zod.string().nullable().optional(),
   email: zod.string(),
   name: zod.string(),
   role: zod
@@ -68,7 +68,7 @@ export const ListUsersQueryParams = zod.object({
 
 export const ListUsersResponseItem = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
+  betterAuthUserId: zod.string().nullable().optional(),
   email: zod.string(),
   name: zod.string(),
   role: zod
@@ -91,7 +91,7 @@ export const GetUserByIdParams = zod.object({
 
 export const GetUserByIdResponse = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
+  betterAuthUserId: zod.string().nullable().optional(),
   email: zod.string(),
   name: zod.string(),
   role: zod
@@ -1330,7 +1330,7 @@ export const ListSystemUsersQueryParams = zod.object({
 
 export const ListSystemUsersResponseItem = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
+  betterAuthUserId: zod.string().nullable().optional(),
   email: zod.string(),
   name: zod.string(),
   role: zod.string(),
@@ -1355,7 +1355,7 @@ export const UpdateSystemUserBody = zod.object({
 
 export const UpdateSystemUserResponse = zod.object({
   id: zod.number(),
-  clerkId: zod.string(),
+  betterAuthUserId: zod.string().nullable().optional(),
   email: zod.string(),
   name: zod.string(),
   role: zod.string(),

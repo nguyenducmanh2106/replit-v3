@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
 const rawPort = process.env.PORT;
 
@@ -18,17 +19,17 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+const basePath = process.env.BASE_PATH ?? "/";
+const apiPort = process.env.API_PORT ? parseInt(process.env.API_PORT) : 3001;
 
 export default defineConfig({
   base: basePath,
   plugins: [
+    TanStackRouterVite({
+      routesDirectory: path.resolve(import.meta.dirname, "app/routes"),
+      generatedRouteTree: path.resolve(import.meta.dirname, "app/routeTree.gen.ts"),
+      autoCodeSplitting: true,
+    }),
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
@@ -71,6 +72,12 @@ export default defineConfig({
     port,
     host: "0.0.0.0",
     allowedHosts: true,
+    proxy: {
+      "/api": {
+        target: `http://localhost:${apiPort}`,
+        changeOrigin: true,
+      },
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],

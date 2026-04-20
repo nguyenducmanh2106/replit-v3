@@ -1,8 +1,8 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import { clerkMiddleware } from "@clerk/express";
-import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./lib/auth";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -28,7 +28,12 @@ app.use(
   }),
 );
 
-app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+app.use((req, res, next) => {
+  if (req.url.startsWith("/api/auth")) {
+    return toNodeHandler(auth)(req as any, res as any);
+  }
+  return next();
+});
 
 const buildAllowedOrigins = (): Set<string> => {
   const origins = new Set<string>();
@@ -65,8 +70,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.text({ type: "text/plain" }));
 app.use(express.urlencoded({ extended: true }));
-
-app.use(clerkMiddleware());
 
 app.use("/api", router);
 
