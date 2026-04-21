@@ -27,6 +27,16 @@ export function useImportFromTemplate<TError = ErrorType<unknown>, TContext = un
   });
 }
 
+export function useRemoveQuestionFromAssignment<TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<void, TError, { id: number; questionId: number }, TContext> },
+) {
+  return useMutation<void, TError, { id: number; questionId: number }, TContext>({
+    mutationKey: ["removeQuestionFromAssignment"],
+    mutationFn: ({ id, questionId }) => customFetch(`/api/assignments/${id}/questions/${questionId}`, { method: "DELETE" }),
+    ...options?.mutation,
+  });
+}
+
 export function useUpdateAssignmentQuestion<TError = ErrorType<unknown>, TContext = unknown>(
   options?: { mutation?: UseMutationOptions<unknown, TError, { assignmentId: number; questionId: number; data: Record<string, unknown> }, TContext> },
 ) {

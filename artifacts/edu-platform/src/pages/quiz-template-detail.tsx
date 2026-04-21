@@ -8,7 +8,7 @@ import {
   useImportQuestionsToTemplate,
   useUpdateQuizTemplateQuestion,
   useDeleteQuizTemplateQuestion,
-  getQuizTemplateQueryKey,
+  getGetQuizTemplateQueryKey,
   getListQuizTemplatesQueryKey,
 } from "@workspace/api-client-react";
 import { useListQuestions } from "@workspace/api-client-react";
@@ -716,7 +716,7 @@ export default function QuizTemplateDetailPage() {
   const { data: bankQuestions } = useListQuestions(undefined, { query: { enabled: importOpen } });
 
   function invalidate() {
-    queryClient.invalidateQueries({ queryKey: getQuizTemplateQueryKey(id) });
+    queryClient.invalidateQueries({ queryKey: getGetQuizTemplateQueryKey(id) });
     queryClient.invalidateQueries({ queryKey: getListQuizTemplatesQueryKey() });
   }
 
