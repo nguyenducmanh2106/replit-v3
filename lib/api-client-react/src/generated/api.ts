@@ -55,6 +55,8 @@ import type {
   ErrorResponse,
   EssayGradingResult,
   FraudEvent,
+  GenerateQuestionsBody,
+  GenerateQuestionsResult,
   GetAuditLogParams,
   GetLeaderboardParams,
   GetLmsStatusResponse,
@@ -2908,6 +2910,77 @@ export const useSuggestQuestions = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSuggestQuestionsMutationOptions(options));
+    }
+
+/**
+ * @summary AI-generate brand-new question drafts (not yet saved to DB)
+ */
+export const getGenerateQuestionsUrl = () => {
+
+
+
+
+  return `/api/ai/generate-questions`
+}
+
+export const generateQuestions = async (generateQuestionsBody: GenerateQuestionsBody, options?: RequestInit): Promise<GenerateQuestionsResult> => {
+
+  return customFetch<GenerateQuestionsResult>(getGenerateQuestionsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      generateQuestionsBody,)
+  }
+);}
+
+
+
+
+export const getGenerateQuestionsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateQuestions>>, TError,{data: BodyType<GenerateQuestionsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateQuestions>>, TError,{data: BodyType<GenerateQuestionsBody>}, TContext> => {
+
+const mutationKey = ['generateQuestions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateQuestions>>, {data: BodyType<GenerateQuestionsBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateQuestions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateQuestionsMutationResult = NonNullable<Awaited<ReturnType<typeof generateQuestions>>>
+    export type GenerateQuestionsMutationBody = BodyType<GenerateQuestionsBody>
+    export type GenerateQuestionsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary AI-generate brand-new question drafts (not yet saved to DB)
+ */
+export const useGenerateQuestions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateQuestions>>, TError,{data: BodyType<GenerateQuestionsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateQuestions>>,
+        TError,
+        {data: BodyType<GenerateQuestionsBody>},
+        TContext
+      > => {
+      return useMutation(getGenerateQuestionsMutationOptions(options));
     }
 
 /**

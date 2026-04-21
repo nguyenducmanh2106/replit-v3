@@ -9,6 +9,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/markdown-editor";
+import { AIQuestionGeneratorDialog } from "@/components/ai-question-generator-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -172,8 +174,8 @@ function McqForm({ content, setContent, options, setOptions, allowMultiple, setA
     <div className="space-y-5">
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nội dung câu hỏi *</Label>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="Nhập nội dung câu hỏi..." rows={3} className="text-sm" />
+        <MarkdownEditor value={content} onChange={setContent} rows={4}
+          placeholder="Nhập nội dung câu hỏi (hỗ trợ Markdown)..." />
       </div>
 
       <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
@@ -227,8 +229,8 @@ function McqForm({ content, setContent, options, setOptions, allowMultiple, setA
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
-          placeholder="Giải thích tại sao đây là đáp án đúng..." rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3}
+          placeholder="Giải thích tại sao đây là đáp án đúng (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -241,8 +243,8 @@ function TrueFalseForm({ content, setContent, correctAnswer, setCorrectAnswer, e
     <div className="space-y-5">
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nhận định *</Label>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="Nhập nhận định cần đánh giá đúng/sai..." rows={3} className="text-sm" />
+        <MarkdownEditor value={content} onChange={setContent} rows={3}
+          placeholder="Nhập nhận định cần đánh giá đúng/sai (hỗ trợ Markdown)..." />
       </div>
 
       <div>
@@ -267,8 +269,8 @@ function TrueFalseForm({ content, setContent, correctAnswer, setCorrectAnswer, e
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
-          placeholder="Giải thích tại sao nhận định này đúng/sai..." rows={3} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3}
+          placeholder="Giải thích tại sao nhận định này đúng/sai (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -346,7 +348,7 @@ function FillBlankForm({ content, setContent, blanksAnswers, setBlanksAnswers, e
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -419,7 +421,7 @@ function WordSelectionForm({ instruction, setInstruction, passage, setPassage, s
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -486,7 +488,7 @@ function MatchingForm({ content, setContent, pairs, setPairs, explanation, setEx
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -581,7 +583,7 @@ function DragDropForm({ content, setContent, items, setItems, zones, setZones, e
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -667,7 +669,7 @@ function SentenceReorderForm({ content, setContent, sentences, setSentences, exp
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -694,7 +696,7 @@ function ReadingForm({ passage, setPassage, subQuestions, setSubQuestions, expla
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -759,7 +761,7 @@ function ListeningForm({ audioUrl, setAudioUrl, passage, setPassage, subQuestion
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -1151,7 +1153,7 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -1163,13 +1165,13 @@ function EssayForm({ content, setContent, explanation, setExplanation, autoGrade
     <div className="space-y-5">
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi *</Label>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="Nhập đề bài hoặc câu hỏi cho bài luận..." rows={4} className="text-sm" />
+        <MarkdownEditor value={content} onChange={setContent} rows={5}
+          placeholder="Nhập đề bài hoặc câu hỏi cho bài luận (hỗ trợ Markdown)..." />
       </div>
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Rubric chấm điểm (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
-          placeholder="Bài mẫu hoặc tiêu chí chấm điểm cho giáo viên..." rows={5} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={6}
+          placeholder="Bài mẫu hoặc tiêu chí chấm điểm cho giáo viên (hỗ trợ Markdown)..." />
       </div>
       {setAutoGrade && (
         <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
@@ -1203,8 +1205,8 @@ function OpenEndForm({ content, setContent, explanation, setExplanation, allowed
     <div className="space-y-5">
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi *</Label>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="Nhập câu hỏi mở..." rows={4} className="text-sm" />
+        <MarkdownEditor value={content} onChange={setContent} rows={5}
+          placeholder="Nhập câu hỏi mở (hỗ trợ Markdown)..." />
       </div>
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-2">Hình thức trả lời cho phép *</Label>
@@ -1229,8 +1231,8 @@ function OpenEndForm({ content, setContent, explanation, setExplanation, allowed
       </div>
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Tiêu chí chấm (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
-          placeholder="Tiêu chí chấm điểm cho giáo viên..." rows={3} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={4}
+          placeholder="Tiêu chí chấm điểm cho giáo viên (hỗ trợ Markdown)..." />
       </div>
     </div>
   );
@@ -1316,6 +1318,67 @@ export default function QuestionFormPage() {
 
   // Open End
   const [openEndAllowedTypes, setOpenEndAllowedTypes] = useState<string[]>(["text", "audio"]);
+
+  // AI generator dialog
+  const [aiOpen, setAiOpen] = useState(false);
+
+  const applyAIDraft = (draft: {
+    type: string; skill: string; level: string; content: string;
+    explanation: string | null; options: string | null;
+    correctAnswer: string | null; passage: string | null; points: number;
+  }) => {
+    setQType(draft.type);
+    setSkill(draft.skill);
+    setLevel(draft.level);
+    setPoints(draft.points || 1);
+    setContent(draft.content);
+    setExplanation(draft.explanation ?? "");
+
+    const opts = draft.options ? safeJson<unknown>(draft.options, null) : null;
+
+    if (draft.type === "mcq" && Array.isArray(opts)) {
+      const optList = opts as Array<{ id?: string; text?: string; isCorrect?: boolean }>;
+      const correctId = (draft.correctAnswer ?? "").trim().toLowerCase();
+      setMcqOptions(optList.map(o => ({
+        text: o.text ?? "",
+        isCorrect: o.isCorrect === true || (o.id ?? "").toLowerCase() === correctId,
+      })));
+      setAllowMultiple(false);
+    } else if (draft.type === "true_false") {
+      setTfAnswer((draft.correctAnswer ?? "").toLowerCase() === "true" ? "true" : "false");
+    } else if (draft.type === "fill_blank") {
+      // Convert ___ markers to __BLANK__ for the existing renderer
+      setContent(draft.content.replace(/_{3,}/g, "__BLANK__"));
+      const ans = draft.correctAnswer ? safeJson<string[]>(draft.correctAnswer, []) : [];
+      setBlanksAnswers(Array.isArray(ans) ? ans : []);
+    } else if (draft.type === "reading") {
+      setReadPassage(draft.passage ?? "");
+      if (Array.isArray(opts)) {
+        const subs = (opts as any[]).map(s => {
+          const choices: string[] = Array.isArray(s.options)
+            ? s.options.map((o: any) => o.text ?? "")
+            : Array.isArray(s.choices) ? s.choices : ["", "", "", ""];
+          let correct = "";
+          if (Array.isArray(s.options)) {
+            const c = s.options.find((o: any) => o.isCorrect);
+            correct = c?.text ?? "";
+          } else if (s.correctAnswer) {
+            correct = String(s.correctAnswer);
+          }
+          return {
+            question: String(s.question ?? ""),
+            choices: (choices.length >= 2 ? choices : ["", "", "", ""]) as string[],
+            correctAnswer: correct,
+            points: typeof s.points === "number" ? s.points : 1,
+          } as SubQuestion;
+        });
+        setReadSubQs(subs.length > 0 ? subs : [newSubQuestion()]);
+      }
+    } else if (draft.type === "open_end" && draft.correctAnswer) {
+      // Show model answer in explanation field as well for clarity
+      // (open_end doesn't have a dedicated answer field in form)
+    }
+  };
 
   // ── Load existing question ────────────────────────────────────────────────
   useEffect(() => {
@@ -1608,10 +1671,19 @@ export default function QuestionFormPage() {
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-5 pb-4 border-b border-gray-100">
               <span className="text-2xl">{typeCfg?.icon}</span>
-              <div>
+              <div className="flex-1">
                 <h2 className="text-base font-bold text-gray-900">Nội dung câu hỏi — {typeCfg?.label}</h2>
                 <p className="text-xs text-gray-500">{typeCfg?.desc}</p>
               </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setAiOpen(true)}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white gap-1.5 shadow-sm"
+              >
+                <Sparkles className="h-4 w-4" />
+                Sinh bằng AI
+              </Button>
             </div>
 
             {qType === "mcq" && (
@@ -1703,6 +1775,15 @@ export default function QuestionFormPage() {
               />
             )}
           </div>
+
+          <AIQuestionGeneratorDialog
+            open={aiOpen}
+            onOpenChange={setAiOpen}
+            defaultType={qType}
+            defaultSkill={skill}
+            defaultLevel={level}
+            onApply={applyAIDraft}
+          />
 
           {/* Bottom save */}
           <div className="flex justify-end gap-3 pb-8">

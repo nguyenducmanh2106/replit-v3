@@ -3,6 +3,8 @@ import { useGetAssignment, useCreateSubmission, useReportFraudEvent, useRequestU
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { MarkdownView } from "@/components/markdown-view";
+import { ReadingPassageViewer } from "@/components/reading-passage-viewer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -1319,7 +1321,7 @@ function SentenceReorderInput({ items, value, onChange }: { items: string[]; val
 }
 
 // ─── Reading (Split Pane) ─────────────────────────────────────────────────────
-function ReadingInput({ passage, options, value, onChange }: { passage?: string | null; options?: unknown[]; value: string; onChange: (v: string) => void }) {
+function ReadingInput({ passage, options, value, onChange, questionId }: { passage?: string | null; options?: unknown[]; value: string; onChange: (v: string) => void; questionId?: number | string }) {
   type SubQ = { question: string; choices: string[]; correctAnswer: string };
   const subQuestions: SubQ[] = useMemo(() => {
     if (!options || options.length === 0) return [];
@@ -1351,11 +1353,14 @@ function ReadingInput({ passage, options, value, onChange }: { passage?: string 
           <BookOpen className="w-3.5 h-3.5 text-white" />
         </div>
         <span className="text-sm font-bold text-emerald-700">Bài đọc</span>
+        <span className="text-[10px] text-gray-500 ml-auto">Bôi đen để highlight · Bấm vào highlight để ghi chú</span>
       </div>
-      <div className="flex-1 p-5 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-2xl overflow-y-auto" style={{ maxHeight: "480px" }}>
-        <div className="text-sm text-gray-800 leading-[1.9] whitespace-pre-wrap font-serif">{passage}</div>
+      <div className="flex-1 overflow-y-auto" style={{ maxHeight: "520px" }}>
+        <ReadingPassageViewer
+          passage={passage}
+          storageKey={questionId != null ? String(questionId) : undefined}
+        />
       </div>
-      <p className="text-xs text-emerald-600 mt-2 text-center">↕ Cuộn để đọc toàn bộ bài</p>
     </div>
   ) : null;
 
@@ -2613,7 +2618,9 @@ export default function AssignmentTakePage() {
                         {isFlagged(currentIdx) ? "Đã đánh dấu" : "Đánh dấu"}
                       </button>
                     </div>
-                    <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">{currentQ.content}</p>
+                    <div className="text-base font-semibold text-gray-900 leading-relaxed">
+                      <MarkdownView source={currentQ.content} />
+                    </div>
                   </div>
                 </div>
 
@@ -2719,7 +2726,7 @@ export default function AssignmentTakePage() {
                   )}
 
                   {currentQ.type === "reading" && (
-                    <ReadingInput passage={currentQ?.passage} options={rawOptionsArray} value={currentAnswer} onChange={setAnswer} />
+                    <ReadingInput passage={currentQ?.passage} options={rawOptionsArray} value={currentAnswer} onChange={setAnswer} questionId={currentQ?.id} />
                   )}
 
                   {currentQ.type === "listening" && (
@@ -2753,7 +2760,9 @@ export default function AssignmentTakePage() {
                     <Lightbulb className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-bold text-amber-700 mb-1">Gợi ý giải thích</p>
-                      <p className="text-sm text-amber-800 leading-relaxed">{currentQ?.explanation}</p>
+                      <div className="text-sm text-amber-800 leading-relaxed">
+                        <MarkdownView source={currentQ.explanation ?? ""} compact />
+                      </div>
                     </div>
                   </div>
                 )}

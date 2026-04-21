@@ -780,6 +780,35 @@ export const SuggestQuestionsResponse = zod.object({
 
 
 /**
+ * @summary AI-generate brand-new question drafts (not yet saved to DB)
+ */
+export const GenerateQuestionsBody = zod.object({
+  "topic": zod.string().describe('Chủ đề\/ngữ cảnh để sinh câu hỏi'),
+  "type": zod.string().describe('Loại câu hỏi (mcq, true_false, fill_blank, reading, ...)'),
+  "skill": zod.string(),
+  "level": zod.string(),
+  "count": zod.number(),
+  "language": zod.string().optional().describe('Ngôn ngữ sinh nội dung (vi, en)'),
+  "instructions": zod.string().nullish().describe('Hướng dẫn bổ sung cho AI')
+})
+
+export const GenerateQuestionsResponse = zod.object({
+  "questions": zod.array(zod.object({
+  "type": zod.string(),
+  "skill": zod.string(),
+  "level": zod.string(),
+  "content": zod.string(),
+  "explanation": zod.string().nullish(),
+  "options": zod.string().nullish().describe('JSON string of options (for mcq) or sub-questions (for reading)'),
+  "correctAnswer": zod.string().nullish(),
+  "passage": zod.string().nullish(),
+  "points": zod.number()
+})),
+  "notes": zod.string().nullish()
+})
+
+
+/**
  * @summary Get AI personalized feedback for a student's submission
  */
 export const GetPersonalizedFeedbackParams = zod.object({

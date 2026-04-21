@@ -8,6 +8,8 @@ import {
   SuggestQuestionsResponse,
   GetPersonalizedFeedbackParams,
   GetPersonalizedFeedbackResponse,
+  GenerateQuestionsBody,
+  GenerateQuestionsResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { openai } from "@workspace/integrations-openai-ai-server";
@@ -326,6 +328,115 @@ router.post("/ai/transcribe", requireAuth, transcribeUpload.single("audio"), asy
   } catch (err) {
     console.error("Transcription error:", err);
     res.status(500).json({ error: "Transcription failed" });
+  }
+});
+
+router.post("/ai/generate-questions", requireAuth, async (req, res): Promise<void> => {
+  const dbUser = req.dbUser;
+  if (!dbUser) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (!TEACHER_ROLES.includes(dbUser.role)) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const parsed = GenerateQuestionsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { topic, type, skill, level, count, language, instructions } = parsed.data;
+  const lang = language ?? "vi";
+  const targetCount = Math.min(Math.max(count, 1), 10);
+
+  const langName = lang === "vi" ? "Vietnamese" : "English";
+
+  const typeSpec: Record<string, string> = {
+    mcq: `Multiple choice with EXACTLY 4 options. Use this JSON in the "options" field as a STRING:
+"[{\\"id\\":\\"a\\",\\"text\\":\\"...\\",\\"isCorrect\\":true},{\\"id\\":\\"b\\",\\"text\\":\\"...\\",\\"isCorrect\\":false},{\\"id\\":\\"c\\",\\"text\\":\\"...\\",\\"isCorrect\\":false},{\\"id\\":\\"d\\",\\"text\\":\\"...\\",\\"isCorrect\\":false}]"
+Set "correctAnswer" to the id of the correct option (e.g. "a"). Only one correct answer.`,
+    true_false: `True/False question. Set "correctAnswer" to "true" or "false". Leave "options" null.`,
+    fill_blank: `Fill in the blank. Use ___ (3 underscores) in "content" to mark blanks. Set "correctAnswer" to a JSON string array of answers, e.g. "[\\"answer1\\",\\"answer2\\"]". Leave "options" null.`,
+    reading: `Reading comprehension. Put the reading text in "passage" (200-400 words appropriate for the level). In "content" put short instructions. In "options" put a JSON STRING of sub-questions:
+"[{\\"id\\":1,\\"question\\":\\"...\\",\\"type\\":\\"mcq\\",\\"options\\":[{\\"id\\":\\"a\\",\\"text\\":\\"...\\",\\"isCorrect\\":true},{\\"id\\":\\"b\\",\\"text\\":\\"...\\",\\"isCorrect\\":false}]}]"
+Generate 3-5 sub-questions. Leave "correctAnswer" null.`,
+    essay: `Essay/open-ended question. Leave "options" and "correctAnswer" null. The "explanation" should describe ideal answer points.`,
+    open_end: `Short open-ended question. Leave "options" null. Put model answer in "correctAnswer".`,
+  };
+
+  const spec = typeSpec[type] ?? `Generate a "${type}" question. Use sensible defaults for options/correctAnswer.`;
+
+  const prompt = `You are an expert ${langName} language teacher creating CEFR-level ${level} ${skill} questions.
+
+Topic / context: ${topic}
+Question type: ${type}
+Number of questions: ${targetCount}
+Output language: ${langName}
+${instructions ? `Additional instructions: ${instructions}` : ""}
+
+Type specification:
+${spec}
+
+Write "content" and "explanation" in Markdown (use **bold**, *italic*, lists, code, etc. when helpful).
+The "explanation" should explain WHY the correct answer is correct — useful for students reviewing.
+
+Return ONLY valid JSON (no prose, no markdown fences):
+{
+  "questions": [
+    {
+      "type": "${type}",
+      "skill": "${skill}",
+      "level": "${level}",
+      "content": "<markdown question text>",
+      "explanation": "<markdown explanation>",
+      "options": <string or null per spec above>,
+      "correctAnswer": <string or null per spec above>,
+      "passage": <string or null>,
+      "points": 1
+    }
+  ],
+  "notes": "<brief note in ${langName} about the generated set>"
+}`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5.2",
+      max_completion_tokens: 8192,
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+    });
+
+    const rawContent = response.choices[0]?.message?.content ?? "{}";
+    let aiResult: { questions?: any[]; notes?: string };
+    try {
+      aiResult = JSON.parse(rawContent);
+    } catch {
+      const m = rawContent.match(/\{[\s\S]*\}/);
+      aiResult = m ? JSON.parse(m[0]) : { questions: [] };
+    }
+
+    const questions = (aiResult.questions ?? []).slice(0, targetCount).map((q: any) => ({
+      type: String(q.type ?? type),
+      skill: String(q.skill ?? skill),
+      level: String(q.level ?? level),
+      content: String(q.content ?? ""),
+      explanation: q.explanation ? String(q.explanation) : null,
+      options: q.options == null ? null : (typeof q.options === "string" ? q.options : JSON.stringify(q.options)),
+      correctAnswer: q.correctAnswer == null ? null : (typeof q.correctAnswer === "string" ? q.correctAnswer : JSON.stringify(q.correctAnswer)),
+      passage: q.passage ? String(q.passage) : null,
+      points: typeof q.points === "number" ? q.points : 1,
+    }));
+
+    res.json(GenerateQuestionsResponse.parse({
+      questions,
+      notes: aiResult.notes ?? null,
+    }));
+  } catch (err) {
+    console.error("AI generate questions error:", err);
+    res.status(500).json({ error: "AI generation failed", detail: err instanceof Error ? err.message : String(err) });
   }
 });
 

@@ -33,6 +33,7 @@ import {
   type McqOption, type MatchingPair, type DragZone, type SubQuestion, type VideoQuestion,
 } from "@/components/question-type-forms";
 import { CreateQuestionDialog, type QuestionData } from "@/components/create-question-dialog";
+import { MarkdownView } from "@/components/markdown-view";
 import { useToast } from "@/hooks/use-toast";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -390,14 +391,18 @@ function QuestionCard({ q, idx, onEdit, onDelete }: {
             </div>
           )}
 
-          <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{q.content}</p>
+          <div className="text-sm text-gray-800 leading-relaxed">
+            <MarkdownView source={q.content} compact />
+          </div>
 
           <OptionsView type={q.type} options={q.options} correctAnswer={q.correctAnswer} metadata={q.metadata} />
 
           {q.explanation && (
             <div className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-              <span className="font-medium text-yellow-700">Giải thích:</span>{" "}
-              <span className="text-yellow-800">{q.explanation}</span>
+              <div className="font-medium text-yellow-700 mb-1">Giải thích:</div>
+              <div className="text-yellow-800">
+                <MarkdownView source={q.explanation} compact />
+              </div>
             </div>
           )}
         </div>

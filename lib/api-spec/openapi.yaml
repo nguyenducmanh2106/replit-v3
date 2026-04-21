@@ -779,6 +779,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuggestQuestionsResult"
 
+  /ai/generate-questions:
+    post:
+      operationId: generateQuestions
+      tags: [ai]
+      summary: AI-generate brand-new question drafts (not yet saved to DB)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateQuestionsBody"
+      responses:
+        "200":
+          description: Generated question drafts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateQuestionsResult"
+
   /ai/personalized-feedback/{submissionId}:
     post:
       operationId: getPersonalizedFeedback
@@ -3026,6 +3045,75 @@ components:
         - questions
         - reasoning
         - recommendedLevel
+
+    GenerateQuestionsBody:
+      type: object
+      properties:
+        topic:
+          type: string
+          description: Chủ đề/ngữ cảnh để sinh câu hỏi
+        type:
+          type: string
+          description: Loại câu hỏi (mcq, true_false, fill_blank, reading, ...)
+        skill:
+          type: string
+        level:
+          type: string
+        count:
+          type: integer
+        language:
+          type: string
+          description: Ngôn ngữ sinh nội dung (vi, en)
+        instructions:
+          type: ["string", "null"]
+          description: Hướng dẫn bổ sung cho AI
+      required:
+        - topic
+        - type
+        - skill
+        - level
+        - count
+
+    GeneratedQuestionDraft:
+      type: object
+      properties:
+        type:
+          type: string
+        skill:
+          type: string
+        level:
+          type: string
+        content:
+          type: string
+        explanation:
+          type: ["string", "null"]
+        options:
+          type: ["string", "null"]
+          description: JSON string of options (for mcq) or sub-questions (for reading)
+        correctAnswer:
+          type: ["string", "null"]
+        passage:
+          type: ["string", "null"]
+        points:
+          type: integer
+      required:
+        - type
+        - skill
+        - level
+        - content
+        - points
+
+    GenerateQuestionsResult:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratedQuestionDraft"
+        notes:
+          type: ["string", "null"]
+      required:
+        - questions
 
     PersonalizedFeedback:
       type: object

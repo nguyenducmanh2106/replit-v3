@@ -449,6 +449,48 @@ export interface SuggestQuestionsResult {
   recommendedLevel: string;
 }
 
+export interface GenerateQuestionsBody {
+  /** Chủ đề/ngữ cảnh để sinh câu hỏi */
+  topic: string;
+  /** Loại câu hỏi (mcq, true_false, fill_blank, reading, ...) */
+  type: string;
+  skill: string;
+  level: string;
+  count: number;
+  /** Ngôn ngữ sinh nội dung (vi, en) */
+  language?: string;
+  /**
+     * Hướng dẫn bổ sung cho AI
+     * @nullable
+     */
+  instructions?: string | null;
+}
+
+export interface GeneratedQuestionDraft {
+  type: string;
+  skill: string;
+  level: string;
+  content: string;
+  /** @nullable */
+  explanation?: string | null;
+  /**
+     * JSON string of options (for mcq) or sub-questions (for reading)
+     * @nullable
+     */
+  options?: string | null;
+  /** @nullable */
+  correctAnswer?: string | null;
+  /** @nullable */
+  passage?: string | null;
+  points: number;
+}
+
+export interface GenerateQuestionsResult {
+  questions: GeneratedQuestionDraft[];
+  /** @nullable */
+  notes?: string | null;
+}
+
 export interface PersonalizedFeedback {
   submissionId: number;
   studentName: string;
