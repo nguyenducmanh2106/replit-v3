@@ -15,8 +15,29 @@ declare global {
   }
 }
 
+function buildRequestForAuth(req: Request): { headers: Headers } {
+  const headers = fromNodeHeaders(req.headers);
+  const proto = req.headers["x-forwarded-proto"] as string | undefined
+    ?? (req.secure ? "https" : "http");
+  if (!headers.has("x-forwarded-proto")) {
+    headers.set("x-forwarded-proto", proto);
+  }
+  return { headers };
+}
+
+async function resolveSession(req: Request) {
+  try {
+    const ctx = buildRequestForAuth(req);
+    const session = await auth.api.getSession(ctx);
+    if (session?.user?.id) return session;
+  } catch (err) {
+    logger.warn({ err }, "auth.api.getSession threw, skipping");
+  }
+  return null;
+}
+
 export const requireAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  const session = await resolveSession(req);
   if (!session?.user?.id) {
     res.status(401).json({ error: "Unauthorized" });
     return;
@@ -38,7 +59,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 };
 
 export const optionalAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
-  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  const session = await resolveSession(req);
   if (session?.user?.id) {
     req.userId = session.user.id;
     req.betterAuthUser = { id: session.user.id, email: session.user.email, name: session.user.name };

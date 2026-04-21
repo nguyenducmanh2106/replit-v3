@@ -77,6 +77,9 @@ export default defineConfig({
         target: `http://localhost:${apiPort}`,
         changeOrigin: true,
         cookieDomainRewrite: "",
+        headers: process.env.REPLIT_DOMAINS
+          ? { "x-forwarded-proto": "https" }
+          : {},
       },
     },
     fs: {
