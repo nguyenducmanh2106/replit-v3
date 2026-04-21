@@ -247,16 +247,20 @@ function gradeAnswer(question: QuestionLike, studentAnswer: string): { isCorrect
     const subQs = safeJson<SubQ[]>(opts, []);
     if (subQs.length === 0) return { isCorrect: null, pointsEarned: 0 };
     const studentSubs = safeJson<Record<string, string>>(studentAnswer, {});
-    let correct = 0;
+    // Each sub-question awards its own `points` when correct (no proportional scaling).
+    // Fallback: if sub-q has no `points`, use equal share of question.points.
+    const fallbackShare = question.points / subQs.length;
+    let pointsEarned = 0;
     let allCorrect = true;
     for (let i = 0; i < subQs.length; i++) {
       const isSubCorrect = (studentSubs[String(i)] ?? "").trim().toLowerCase() === (subQs[i].correctAnswer ?? "").trim().toLowerCase();
-      if (isSubCorrect) correct++;
-      else allCorrect = false;
+      if (isSubCorrect) {
+        pointsEarned += typeof subQs[i].points === "number" ? subQs[i].points! : fallbackShare;
+      } else {
+        allCorrect = false;
+      }
     }
-    // Đúng câu nào tính điểm câu đó: scale by ratio of correct sub-questions to total
-    const pointsEarned = Math.round((correct / subQs.length) * question.points);
-    return { isCorrect: allCorrect, pointsEarned };
+    return { isCorrect: allCorrect, pointsEarned: Math.round(pointsEarned) };
   }
 
   if (question.type === "video_interactive") {
