@@ -69,7 +69,7 @@ function gradePlacementAnswer(q: { type: string; options: unknown; correctAnswer
 
 // GET /placement-tests
 router.get("/placement-tests", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const rows = await db
     .select({
@@ -94,7 +94,7 @@ router.get("/placement-tests", requireAuth, async (req, res): Promise<void> => {
 
 // POST /placement-tests
 router.post("/placement-tests", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const body = req.body as {
     title: string;
@@ -137,7 +137,7 @@ router.post("/placement-tests", requireAuth, async (req, res): Promise<void> => 
 
 // GET /placement-tests/:id (teacher view with full details)
 router.get("/placement-tests/:id", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const id = Number(req.params["id"]);
   const [test] = await db.select().from(placementTestsTable).where(eq(placementTestsTable.id, id)).limit(1);
@@ -152,7 +152,7 @@ router.get("/placement-tests/:id", requireAuth, async (req, res): Promise<void> 
 
 // PATCH /placement-tests/:id
 router.patch("/placement-tests/:id", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const id = Number(req.params["id"]);
   const body = req.body as Partial<{
@@ -178,7 +178,7 @@ router.patch("/placement-tests/:id", requireAuth, async (req, res): Promise<void
 
 // DELETE /placement-tests/:id
 router.delete("/placement-tests/:id", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const id = Number(req.params["id"]);
   await db.delete(placementTestsTable).where(eq(placementTestsTable.id, id));
@@ -187,7 +187,7 @@ router.delete("/placement-tests/:id", requireAuth, async (req, res): Promise<voi
 
 // POST /placement-tests/:id/publish
 router.post("/placement-tests/:id/publish", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const id = Number(req.params["id"]);
   // recompute max_score from questions
@@ -211,7 +211,7 @@ router.post("/placement-tests/:id/publish", requireAuth, async (req, res): Promi
 
 // POST /placement-tests/:id/questions  (add single question)
 router.post("/placement-tests/:id/questions", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const testId = Number(req.params["id"]);
   const body = req.body as {
@@ -247,7 +247,7 @@ router.post("/placement-tests/:id/questions", requireAuth, async (req, res): Pro
 
 // POST /placement-tests/:id/questions/bulk-import  (import from question bank IDs)
 router.post("/placement-tests/:id/questions/bulk-import", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const testId = Number(req.params["id"]);
   const body = req.body as { questionIds: number[] };
@@ -280,7 +280,7 @@ router.post("/placement-tests/:id/questions/bulk-import", requireAuth, async (re
 
 // PATCH /placement-test-questions/:qid
 router.patch("/placement-test-questions/:qid", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const qid = Number(req.params["qid"]);
   const body = req.body as Partial<{
@@ -297,7 +297,7 @@ router.patch("/placement-test-questions/:qid", requireAuth, async (req, res): Pr
 
 // DELETE /placement-test-questions/:qid
 router.delete("/placement-test-questions/:qid", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const qid = Number(req.params["qid"]);
   await db.delete(placementTestQuestionsTable).where(eq(placementTestQuestionsTable.id, qid));
@@ -306,7 +306,7 @@ router.delete("/placement-test-questions/:qid", requireAuth, async (req, res): P
 
 // POST /placement-tests/:id/questions/reorder
 router.post("/placement-tests/:id/questions/reorder", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const body = req.body as { questionIds: number[] };
   if (!Array.isArray(body.questionIds)) { res.status(400).json({ error: "questionIds array required" }); return; }
@@ -324,7 +324,7 @@ router.post("/placement-tests/:id/questions/reorder", requireAuth, async (req, r
 
 // GET /placement-tests/:id/submissions
 router.get("/placement-tests/:id/submissions", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const id = Number(req.params["id"]);
   const rows = await db
@@ -337,7 +337,7 @@ router.get("/placement-tests/:id/submissions", requireAuth, async (req, res): Pr
 
 // GET /placement-submissions/:sid (full detail for grading)
 router.get("/placement-submissions/:sid", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const sid = Number(req.params["sid"]);
   const [sub] = await db.select().from(placementSubmissionsTable).where(eq(placementSubmissionsTable.id, sid)).limit(1);
@@ -357,7 +357,7 @@ router.get("/placement-submissions/:sid", requireAuth, async (req, res): Promise
 
 // PATCH /placement-submissions/:sid/grade (teacher grading)
 router.patch("/placement-submissions/:sid/grade", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const sid = Number(req.params["sid"]);
   const body = req.body as {
@@ -406,7 +406,7 @@ router.patch("/placement-submissions/:sid/grade", requireAuth, async (req, res):
 
 // POST /placement-submissions/:sid/send-result
 router.post("/placement-submissions/:sid/send-result", requireAuth, async (req, res): Promise<void> => {
-  const user = res.locals.user;
+  const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const sid = Number(req.params["sid"]);
   const [sub] = await db.select().from(placementSubmissionsTable).where(eq(placementSubmissionsTable.id, sid)).limit(1);
