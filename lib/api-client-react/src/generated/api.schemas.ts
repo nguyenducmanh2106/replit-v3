@@ -15,7 +15,7 @@ export interface ErrorResponse {
 
 export interface UserProfile {
   id: number;
-  clerkId: string;
+  betterAuthUserId: string;
   email: string;
   name: string;
   /** teacher | center_admin | school_admin | system_admin | enterprise_admin | student */
@@ -745,7 +745,7 @@ export interface SaveRubricGradesBody {
 
 export interface SystemUser {
   id: number;
-  clerkId: string;
+  betterAuthUserId: string;
   email: string;
   name: string;
   role: string;

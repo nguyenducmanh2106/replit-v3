@@ -22,7 +22,7 @@ export const HealthCheckResponse = zod.object({
  */
 export const GetMeResponse = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "betterAuthUserId": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
   "role": zod.string().describe('teacher | center_admin | school_admin | system_admin | enterprise_admin | student'),
@@ -44,7 +44,7 @@ export const UpdateMeBody = zod.object({
 
 export const UpdateMeResponse = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "betterAuthUserId": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
   "role": zod.string().describe('teacher | center_admin | school_admin | system_admin | enterprise_admin | student'),
@@ -64,7 +64,7 @@ export const ListUsersQueryParams = zod.object({
 
 export const ListUsersResponseItem = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "betterAuthUserId": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
   "role": zod.string().describe('teacher | center_admin | school_admin | system_admin | enterprise_admin | student'),
@@ -84,7 +84,7 @@ export const GetUserByIdParams = zod.object({
 
 export const GetUserByIdResponse = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "betterAuthUserId": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
   "role": zod.string().describe('teacher | center_admin | school_admin | system_admin | enterprise_admin | student'),
@@ -1179,7 +1179,7 @@ export const ListSystemUsersQueryParams = zod.object({
 
 export const ListSystemUsersResponseItem = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "betterAuthUserId": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
   "role": zod.string(),
@@ -1205,7 +1205,7 @@ export const UpdateSystemUserBody = zod.object({
 
 export const UpdateSystemUserResponse = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "betterAuthUserId": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
   "role": zod.string(),

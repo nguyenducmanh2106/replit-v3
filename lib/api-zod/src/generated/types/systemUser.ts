@@ -8,7 +8,7 @@
 
 export interface SystemUser {
   id: number;
-  clerkId: string;
+  betterAuthUserId: string;
   email: string;
   name: string;
   role: string;

@@ -2154,7 +2154,7 @@ components:
       properties:
         id:
           type: integer
-        clerkId:
+        betterAuthUserId:
           type: string
         email:
           type: string
@@ -2172,7 +2172,7 @@ components:
           format: date-time
       required:
         - id
-        - clerkId
+        - betterAuthUserId
         - email
         - name
         - role
@@ -3735,7 +3735,7 @@ components:
       properties:
         id:
           type: integer
-        clerkId:
+        betterAuthUserId:
           type: string
         email:
           type: string
@@ -3752,7 +3752,7 @@ components:
           format: date-time
       required:
         - id
-        - clerkId
+        - betterAuthUserId
         - email
         - name
         - role
