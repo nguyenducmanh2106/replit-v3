@@ -231,17 +231,16 @@ function gradeAnswer(question: QuestionLike, studentAnswer: string): { isCorrect
     const subQs = safeJson<SubQ[]>(opts, []);
     if (subQs.length === 0) return { isCorrect: null, pointsEarned: 0 };
     const studentSubs = safeJson<Record<string, string>>(studentAnswer, {});
-    let earned = 0;
-    let total = 0;
+    let correct = 0;
     let allCorrect = true;
     for (let i = 0; i < subQs.length; i++) {
-      const subPts = subQs[i].points ?? 1;
-      total += subPts;
       const isSubCorrect = (studentSubs[String(i)] ?? "").trim().toLowerCase() === (subQs[i].correctAnswer ?? "").trim().toLowerCase();
-      if (isSubCorrect) earned += subPts;
+      if (isSubCorrect) correct++;
       else allCorrect = false;
     }
-    return { isCorrect: total > 0 && allCorrect, pointsEarned: earned };
+    // Đúng câu nào tính điểm câu đó: scale by ratio of correct sub-questions to total
+    const pointsEarned = Math.round((correct / subQs.length) * question.points);
+    return { isCorrect: allCorrect, pointsEarned };
   }
 
   if (question.type === "video_interactive") {
@@ -546,8 +545,6 @@ router.get("/submissions/:id", requireAuth, async (req, res): Promise<void> => {
   }
 
   if (isStudent) {
-    const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, result.assignmentId));
-    const allowReview = assignment?.allowReview ?? false;
     if (result.status === "pending_review") {
       res.json(GetSubmissionResponse.parse({
         ...result,
@@ -558,16 +555,8 @@ router.get("/submissions/:id", requireAuth, async (req, res): Promise<void> => {
       }));
       return;
     }
-    // For graded/published submissions, students can always see their score, their answers,
-    // teacher feedback. Only mask correct answers + explanations when teacher disabled allowReview.
-    if (!allowReview) {
-      res.json(GetSubmissionResponse.parse({
-        ...result,
-        allowReview: false,
-        answers: result.answers.map(a => ({ ...a, correctAnswer: null, questionExplanation: null, questionOptions: sanitizeOptionsForReview(a.questionType, a.questionOptions) })),
-      }));
-      return;
-    }
+    // For graded/published submissions, students can see everything: score, their answers,
+    // teacher feedback, AND correct answers + explanations.
     res.json(GetSubmissionResponse.parse({ ...result, allowReview: true }));
     return;
   }
