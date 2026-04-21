@@ -5,12 +5,24 @@
  * EduPlatform — Nền tảng Giáo dục MVP API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateAssignmentBodyStatus } from './updateAssignmentBodyStatus';
 
 export interface UpdateAssignmentBody {
   title?: string;
   description?: string;
-  courseId?: number;
-  dueDate?: Date;
-  timeLimitMinutes?: number;
-  status?: string;
+  /** @nullable */
+  courseId?: number | null;
+  /** @nullable */
+  dueDate?: Date | null;
+  /** @nullable */
+  startTime?: Date | null;
+  /** @nullable */
+  endTime?: Date | null;
+  /** @nullable */
+  timeLimitMinutes?: number | null;
+  /** @minimum 1 */
+  maxAttempts?: number;
+  allowReview?: boolean;
+  autoGrade?: boolean;
+  status?: UpdateAssignmentBodyStatus;
 }

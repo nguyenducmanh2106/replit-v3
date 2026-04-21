@@ -218,13 +218,33 @@ export interface CreateAssignmentBody {
   status?: string;
 }
 
+export type UpdateAssignmentBodyStatus = typeof UpdateAssignmentBodyStatus[keyof typeof UpdateAssignmentBodyStatus];
+
+
+export const UpdateAssignmentBodyStatus = {
+  draft: 'draft',
+  published: 'published',
+  closed: 'closed',
+} as const;
+
 export interface UpdateAssignmentBody {
   title?: string;
   description?: string;
-  courseId?: number;
-  dueDate?: string;
-  timeLimitMinutes?: number;
-  status?: string;
+  /** @nullable */
+  courseId?: number | null;
+  /** @nullable */
+  dueDate?: string | null;
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
+  timeLimitMinutes?: number | null;
+  /** @minimum 1 */
+  maxAttempts?: number;
+  allowReview?: boolean;
+  autoGrade?: boolean;
+  status?: UpdateAssignmentBodyStatus;
 }
 
 export interface AssignmentQuestion {

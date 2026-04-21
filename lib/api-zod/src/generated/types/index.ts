@@ -121,6 +121,7 @@ export * from './systemSetting';
 export * from './systemUser';
 export * from './upcomingAssignment';
 export * from './updateAssignmentBody';
+export * from './updateAssignmentBodyStatus';
 export * from './updateChapterBody';
 export * from './updateCourseBody';
 export * from './updateLessonBlockBody';

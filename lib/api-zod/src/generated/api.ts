@@ -454,13 +454,21 @@ export const UpdateAssignmentParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+
+
 export const UpdateAssignmentBody = zod.object({
   "title": zod.string().optional(),
   "description": zod.string().optional(),
-  "courseId": zod.number().optional(),
-  "dueDate": zod.coerce.date().optional(),
-  "timeLimitMinutes": zod.number().optional(),
-  "status": zod.string().optional()
+  "courseId": zod.number().nullish(),
+  "dueDate": zod.coerce.date().nullish(),
+  "startTime": zod.coerce.date().nullish(),
+  "endTime": zod.coerce.date().nullish(),
+  "timeLimitMinutes": zod.number().nullish(),
+  "maxAttempts": zod.number().min(1).optional(),
+  "allowReview": zod.boolean().optional(),
+  "autoGrade": zod.boolean().optional(),
+  "status": zod.enum(['draft', 'published', 'closed']).optional()
 })
 
 export const UpdateAssignmentResponse = zod.object({

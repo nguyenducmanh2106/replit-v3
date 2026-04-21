@@ -2535,14 +2535,28 @@ components:
         description:
           type: string
         courseId:
-          type: integer
+          type: ["integer", "null"]
         dueDate:
-          type: string
+          type: ["string", "null"]
+          format: date-time
+        startTime:
+          type: ["string", "null"]
+          format: date-time
+        endTime:
+          type: ["string", "null"]
           format: date-time
         timeLimitMinutes:
+          type: ["integer", "null"]
+        maxAttempts:
           type: integer
+          minimum: 1
+        allowReview:
+          type: boolean
+        autoGrade:
+          type: boolean
         status:
           type: string
+          enum: [draft, published, closed]
 
     AssignmentQuestion:
       type: object
