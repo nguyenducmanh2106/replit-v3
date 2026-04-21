@@ -20,8 +20,16 @@ export interface AssignmentWithQuestions {
   /** @nullable */
   dueDate?: Date | null;
   /** @nullable */
+  startTime?: Date | null;
+  /** @nullable */
+  endTime?: Date | null;
+  /** @nullable */
   timeLimitMinutes?: number | null;
+  maxAttempts?: number;
+  allowReview?: boolean;
+  autoGrade?: boolean;
   totalPoints: number;
+  questionCount?: number;
   status: string;
   submissionCount: number;
   createdAt: Date;

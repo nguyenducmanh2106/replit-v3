@@ -2484,8 +2484,20 @@ components:
         dueDate:
           type: ["string", "null"]
           format: date-time
+        startTime:
+          type: ["string", "null"]
+          format: date-time
+        endTime:
+          type: ["string", "null"]
+          format: date-time
         timeLimitMinutes:
           type: ["integer", "null"]
+        maxAttempts:
+          type: integer
+        allowReview:
+          type: boolean
+        autoGrade:
+          type: boolean
         totalPoints:
           type: integer
         questionCount:
@@ -2596,9 +2608,23 @@ components:
         dueDate:
           type: ["string", "null"]
           format: date-time
+        startTime:
+          type: ["string", "null"]
+          format: date-time
+        endTime:
+          type: ["string", "null"]
+          format: date-time
         timeLimitMinutes:
           type: ["integer", "null"]
+        maxAttempts:
+          type: integer
+        allowReview:
+          type: boolean
+        autoGrade:
+          type: boolean
         totalPoints:
+          type: integer
+        questionCount:
           type: integer
         status:
           type: string

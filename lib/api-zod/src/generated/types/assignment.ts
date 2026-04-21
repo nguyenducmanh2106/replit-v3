@@ -19,7 +19,14 @@ export interface Assignment {
   /** @nullable */
   dueDate?: Date | null;
   /** @nullable */
+  startTime?: Date | null;
+  /** @nullable */
+  endTime?: Date | null;
+  /** @nullable */
   timeLimitMinutes?: number | null;
+  maxAttempts?: number;
+  allowReview?: boolean;
+  autoGrade?: boolean;
   totalPoints: number;
   questionCount: number;
   /** draft | published | closed */

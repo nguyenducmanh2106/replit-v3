@@ -200,7 +200,14 @@ export interface Assignment {
   /** @nullable */
   dueDate?: string | null;
   /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
   timeLimitMinutes?: number | null;
+  maxAttempts?: number;
+  allowReview?: boolean;
+  autoGrade?: boolean;
   totalPoints: number;
   questionCount: number;
   /** draft | published | closed */
@@ -268,8 +275,16 @@ export interface AssignmentWithQuestions {
   /** @nullable */
   dueDate?: string | null;
   /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
   timeLimitMinutes?: number | null;
+  maxAttempts?: number;
+  allowReview?: boolean;
+  autoGrade?: boolean;
   totalPoints: number;
+  questionCount?: number;
   status: string;
   submissionCount: number;
   createdAt: string;
