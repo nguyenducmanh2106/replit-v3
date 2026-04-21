@@ -762,7 +762,7 @@ export default function QuizTemplateDetailPage() {
   function handleSaveQuestion(data: Partial<EditDraft>) {
     if (!editingQ) return;
     if (Object.keys(data).length === 0) { setEditingQ(null); return; }
-    updateQuestion({ templateId: id, questionId: editingQ.id, data: data as any }, {
+    updateQuestion({ id, qid: editingQ.id, data: data as any }, {
       onSuccess: () => { setEditingQ(null); invalidate(); },
     });
   }
