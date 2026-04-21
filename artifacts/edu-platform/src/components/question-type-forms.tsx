@@ -143,9 +143,9 @@ export function McqForm({ content, setContent, options, setOptions, allowMultipl
   return (
     <div className="space-y-5">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nội dung câu hỏi *</Label>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="Nhập nội dung câu hỏi..." rows={3} className="text-sm" />
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nội dung câu hỏi * (hỗ trợ Markdown)</Label>
+        <MarkdownEditor value={content} onChange={setContent}
+          placeholder="Nhập nội dung câu hỏi... Hỗ trợ **đậm**, *nghiêng*, danh sách, code..." rows={4} />
       </div>
 
       <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
@@ -199,8 +199,8 @@ export function McqForm({ content, setContent, options, setOptions, allowMultipl
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
-          placeholder="Giải thích tại sao đây là đáp án đúng..." rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation}
+          placeholder="Giải thích tại sao đây là đáp án đúng (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -212,9 +212,9 @@ export function TrueFalseForm({ content, setContent, correctAnswer, setCorrectAn
   return (
     <div className="space-y-5">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nhận định *</Label>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="Nhập nhận định cần đánh giá đúng/sai..." rows={3} className="text-sm" />
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nhận định * (hỗ trợ Markdown)</Label>
+        <MarkdownEditor value={content} onChange={setContent}
+          placeholder="Nhập nhận định cần đánh giá đúng/sai..." rows={4} />
       </div>
 
       <div>
@@ -239,8 +239,8 @@ export function TrueFalseForm({ content, setContent, correctAnswer, setCorrectAn
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
-          placeholder="Giải thích tại sao nhận định này đúng/sai..." rows={3} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation}
+          placeholder="Giải thích tại sao nhận định này đúng/sai (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -318,7 +318,7 @@ export function FillBlankForm({ content, setContent, blanksAnswers, setBlanksAns
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} placeholder="Giải thích cho học sinh (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -390,7 +390,7 @@ export function WordSelectionForm({ instruction, setInstruction, passage, setPas
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} placeholder="Giải thích cho học sinh (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -457,7 +457,7 @@ export function MatchingForm({ content, setContent, pairs, setPairs, explanation
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} placeholder="Giải thích cho học sinh (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -552,7 +552,7 @@ export function DragDropForm({ content, setContent, items, setItems, zones, setZ
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} placeholder="Giải thích cho học sinh (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -638,7 +638,7 @@ export function SentenceReorderForm({ content, setContent, sentences, setSentenc
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} placeholder="Giải thích cho học sinh (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -669,7 +669,7 @@ export function ReadingForm({ passage, setPassage, subQuestions, setSubQuestions
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} placeholder="Giải thích cho học sinh (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -738,7 +738,7 @@ export function ListeningForm({ audioUrl, setAudioUrl, passage, setPassage, subQ
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} placeholder="Giải thích cho học sinh (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -1114,7 +1114,7 @@ export function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, se
 
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)} rows={2} className="text-sm" />
+        <MarkdownEditor value={explanation} onChange={setExplanation} placeholder="Giải thích cho học sinh (hỗ trợ Markdown)..." rows={3} />
       </div>
     </div>
   );
@@ -1137,9 +1137,9 @@ export function OpenEndForm({ content, setContent, explanation, setExplanation, 
   return (
     <div className="space-y-5">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi *</Label>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="Nhập câu hỏi mở..." rows={4} className="text-sm" />
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi * (hỗ trợ Markdown)</Label>
+        <MarkdownEditor value={content} onChange={setContent}
+          placeholder="Nhập câu hỏi mở... Hỗ trợ Markdown để định dạng đề bài." rows={5} />
       </div>
       <div>
         <Label className="text-sm font-semibold text-gray-700 block mb-2">Hình thức trả lời cho phép *</Label>
@@ -1163,9 +1163,9 @@ export function OpenEndForm({ content, setContent, explanation, setExplanation, 
         <p className="text-xs text-gray-500 mt-1.5">Chọn ít nhất 1 hình thức. Học sinh sẽ chọn cách trả lời khi làm bài.</p>
       </div>
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Tiêu chí chấm (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
-          placeholder="Tiêu chí chấm điểm cho giáo viên..." rows={3} className="text-sm" />
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Tiêu chí chấm (tuỳ chọn, hỗ trợ Markdown)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation}
+          placeholder="Tiêu chí chấm điểm cho giáo viên..." rows={4} />
       </div>
     </div>
   );
@@ -1176,14 +1176,14 @@ export function EssayForm({ content, setContent, explanation, setExplanation, au
   return (
     <div className="space-y-5">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi *</Label>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="Nhập đề bài hoặc câu hỏi cho bài luận..." rows={4} className="text-sm" />
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi * (hỗ trợ Markdown)</Label>
+        <MarkdownEditor value={content} onChange={setContent}
+          placeholder="Nhập đề bài hoặc câu hỏi cho bài luận..." rows={5} />
       </div>
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Rubric chấm điểm (tuỳ chọn)</Label>
-        <Textarea value={explanation} onChange={e => setExplanation(e.target.value)}
-          placeholder="Bài mẫu hoặc tiêu chí chấm điểm cho giáo viên..." rows={5} className="text-sm" />
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Rubric chấm điểm (tuỳ chọn, hỗ trợ Markdown)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation}
+          placeholder="Bài mẫu hoặc tiêu chí chấm điểm cho giáo viên..." rows={6} />
       </div>
       {setAutoGrade && (
         <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
