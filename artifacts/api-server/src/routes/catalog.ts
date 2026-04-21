@@ -8,7 +8,7 @@ import {
   chaptersTable,
   lessonsTable,
 } from "@workspace/db";
-import { requireAuth } from "../middlewares/requireAuth";
+import { requireAuth, optionalAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
@@ -78,7 +78,7 @@ router.get("/catalog/courses", async (req, res): Promise<void> => {
   })));
 });
 
-router.get("/catalog/courses/:slug", async (req, res): Promise<void> => {
+router.get("/catalog/courses/:slug", optionalAuth, async (req, res): Promise<void> => {
   const slug = String(req.params.slug);
   const [course] = await db
     .select()

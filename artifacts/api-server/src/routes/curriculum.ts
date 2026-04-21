@@ -478,8 +478,12 @@ router.post("/lessons/:lessonId/complete", requireAuth, async (req, res): Promis
   if (!(await canViewCourse(courseId, dbUser.id, dbUser.role))) {
     res.status(403).json({ error: "Forbidden" }); return;
   }
-  await db.insert(lessonProgressTable).values({ userId: dbUser.id, lessonId })
-    .onConflictDoNothing({ target: [lessonProgressTable.userId, lessonProgressTable.lessonId] });
+  const [progressRow] = await db.insert(lessonProgressTable).values({ userId: dbUser.id, lessonId })
+    .onConflictDoUpdate({
+      target: [lessonProgressTable.userId, lessonProgressTable.lessonId],
+      set: { lessonId },
+    })
+    .returning();
 
   // Compute progress
   const allLessons = await db
@@ -499,6 +503,7 @@ router.post("/lessons/:lessonId/complete", requireAuth, async (req, res): Promis
   const progressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   let certificateNo: string | null = null;
+  let certificateIssued = false;
   if (totalLessons > 0 && completedLessons === totalLessons) {
     const [existing] = await db
       .select()
@@ -512,10 +517,17 @@ router.post("/lessons/:lessonId/complete", requireAuth, async (req, res): Promis
         courseId, userId: dbUser.id, certificateNo: no,
       }).returning();
       certificateNo = cert.certificateNo;
+      certificateIssued = true;
     }
   }
 
-  res.json({ courseId, totalLessons, completedLessons, progressPercent, certificateNo });
+  res.json({
+    completed: true,
+    completedAt: (progressRow?.completedAt ?? new Date()).toISOString(),
+    progressPercent,
+    certificateIssued,
+    certificateNo,
+  });
 });
 
 export default router;

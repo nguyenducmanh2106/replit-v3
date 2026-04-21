@@ -48,7 +48,7 @@ export default function CoursePlayerPage() {
   async function handleComplete() {
     if (!lessonId) return;
     try {
-      const res = await markComplete({ id: lessonId });
+      const res = await markComplete({ lessonId });
       qc.invalidateQueries({ queryKey: getGetCourseCurriculumQueryKey(courseId) });
       qc.invalidateQueries({ queryKey: getGetLessonQueryKey(lessonId) });
       if (res.certificateIssued && res.certificateNo) {
