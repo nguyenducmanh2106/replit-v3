@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { MarkdownEditor } from "@/components/markdown-editor";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -649,10 +650,14 @@ export function ReadingForm({ passage, setPassage, subQuestions, setSubQuestions
   return (
     <div className="space-y-5">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đoạn văn *</Label>
-        <Textarea value={passage} onChange={e => setPassage(e.target.value)}
-          placeholder="Dán đoạn văn đọc hiểu vào đây..." rows={6} className="text-sm leading-relaxed" />
-        {passage && <p className="text-xs text-gray-400 mt-1">{passage.split(/\s+/).length} từ</p>}
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đoạn văn * (hỗ trợ Markdown)</Label>
+        <MarkdownEditor
+          value={passage}
+          onChange={setPassage}
+          placeholder="Dán đoạn văn đọc hiểu vào đây... Hỗ trợ **đậm**, *nghiêng*, # Tiêu đề, > trích dẫn, danh sách..."
+          rows={8}
+        />
+        {passage && <p className="text-xs text-gray-400 mt-1">{passage.split(/\s+/).filter(Boolean).length} từ</p>}
       </div>
 
       <div>
@@ -715,9 +720,13 @@ export function ListeningForm({ audioUrl, setAudioUrl, passage, setPassage, subQ
       )}
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Transcript (tuỳ chọn)</Label>
-        <Textarea value={passage} onChange={e => setPassage(e.target.value)}
-          placeholder="Nội dung transcript của file audio..." rows={4} className="text-sm" />
+        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Transcript (tuỳ chọn, hỗ trợ Markdown)</Label>
+        <MarkdownEditor
+          value={passage}
+          onChange={setPassage}
+          placeholder="Nội dung transcript của file audio... Hỗ trợ định dạng Markdown."
+          rows={6}
+        />
       </div>
 
       <div>

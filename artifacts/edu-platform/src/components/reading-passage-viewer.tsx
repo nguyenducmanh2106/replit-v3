@@ -12,7 +12,25 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { MarkdownView } from "@/components/markdown-view";
 import { cn } from "@/lib/utils";
+
+function stripMarkdown(s: string): string {
+  return s
+    .replace(/```[\s\S]*?```/g, (m) => m.replace(/```/g, "").trim())
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "• ")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "$1")
+    .replace(/(?<!_)_([^_\n]+)_(?!_)/g, "$1")
+    .replace(/~~([^~]+)~~/g, "$1");
+}
 
 export interface Highlight {
   id: string;
@@ -53,6 +71,8 @@ export function ReadingPassageViewer({ passage, storageKey, className }: Props) 
   const [noteText, setNoteText] = useState("");
   const passageRef = useRef<HTMLDivElement>(null);
   const fullKey = storageKey ? `reading-hl:${storageKey}` : null;
+  const plainText = useMemo(() => stripMarkdown(passage), [passage]);
+  const hasHighlights = highlights.length > 0;
 
   // Load from localStorage (or reset to defaults when key changes and no saved data exists)
   useEffect(() => {
@@ -112,7 +132,8 @@ export function ReadingPassageViewer({ passage, storageKey, className }: Props) 
 
     const start = offsetOf(range.startContainer, range.startOffset);
     const end = offsetOf(range.endContainer, range.endOffset);
-    if (start === end || start < 0 || end > passage.length) {
+    const sourceLen = (passageRef.current?.textContent ?? "").length;
+    if (start === end || start < 0 || end > sourceLen) {
       sel.removeAllRanges();
       return;
     }
@@ -131,7 +152,7 @@ export function ReadingPassageViewer({ passage, storageKey, className }: Props) 
       return [...filtered, newHl].sort((a, b) => a.start - b.start);
     });
     sel.removeAllRanges();
-  }, [activeColor, passage.length]);
+  }, [activeColor]);
 
   const removeHighlight = (id: string) => {
     setHighlights((prev) => prev.filter((h) => h.id !== id));
@@ -154,23 +175,23 @@ export function ReadingPassageViewer({ passage, storageKey, className }: Props) 
     setEditingHighlight(null);
   };
 
-  // Render passage with highlight overlays
+  // Render passage with highlight overlays — operates on plainText (stripped markdown)
   const segments = useMemo(() => {
     type Seg = { text: string; hl?: Highlight };
     const out: Seg[] = [];
     let cursor = 0;
     const sorted = [...highlights].sort((a, b) => a.start - b.start);
     for (const h of sorted) {
-      if (h.start > cursor) out.push({ text: passage.slice(cursor, h.start) });
-      out.push({ text: passage.slice(h.start, h.end), hl: h });
+      if (h.start > cursor) out.push({ text: plainText.slice(cursor, h.start) });
+      out.push({ text: plainText.slice(h.start, h.end), hl: h });
       cursor = h.end;
     }
-    if (cursor < passage.length) out.push({ text: passage.slice(cursor) });
+    if (cursor < plainText.length) out.push({ text: plainText.slice(cursor) });
     return out;
-  }, [passage, highlights]);
+  }, [plainText, highlights]);
 
   // Split into paragraphs for focus mode
-  const paragraphs = useMemo(() => passage.split(/\n\n+/), [passage]);
+  const paragraphs = useMemo(() => plainText.split(/\n\n+/), [plainText]);
 
   const fontCls = FONT_SIZES[fontSizeIdx]?.cls ?? FONT_SIZES[1].cls;
   const spacingCls = relaxed ? "tracking-wide [&>p]:mb-5" : "[&>p]:mb-3";
@@ -234,14 +255,22 @@ export function ReadingPassageViewer({ passage, storageKey, className }: Props) 
             setHoveredPara={setHoveredPara}
             onHighlightClick={openNote}
           />
+        ) : hasHighlights ? (
+          // When highlights exist, render plain text so offsets align reliably
+          paragraphs.length > 1 ? (
+            <ParagraphHighlights segments={segments} paragraphs={paragraphs} onHighlightClick={openNote} />
+          ) : (
+            <p>
+              {segments.map((seg, i) => seg.hl ? (
+                <HighlightSpan key={i} hl={seg.hl} text={seg.text} onClick={() => openNote(seg.hl!)} />
+              ) : (
+                <span key={i}>{seg.text}</span>
+              ))}
+            </p>
+          )
         ) : (
-          <p>
-            {segments.map((seg, i) => seg.hl ? (
-              <HighlightSpan key={i} hl={seg.hl} text={seg.text} onClick={() => openNote(seg.hl!)} />
-            ) : (
-              <span key={i}>{seg.text}</span>
-            ))}
-          </p>
+          // No highlights yet → show rich Markdown rendering
+          <MarkdownView source={passage} />
         )}
       </div>
 
@@ -256,7 +285,7 @@ export function ReadingPassageViewer({ passage, storageKey, className }: Props) 
             {highlights.filter((h) => h.note).map((h) => (
               <li key={h.id} className="text-xs flex items-start gap-2">
                 <span className={cn("inline-block px-1.5 py-0.5 rounded text-[11px] flex-shrink-0", colorClass(h.color))}>
-                  {passage.slice(h.start, h.end).slice(0, 40)}
+                  {plainText.slice(h.start, h.end).slice(0, 40)}
                   {h.end - h.start > 40 ? "…" : ""}
                 </span>
                 <span className="text-gray-700 italic">— {h.note}</span>
@@ -277,7 +306,7 @@ export function ReadingPassageViewer({ passage, storageKey, className }: Props) 
               </button>
             </div>
             <div className={cn("p-2 rounded text-sm", colorClass(editingHighlight.color))}>
-              "{passage.slice(editingHighlight.start, editingHighlight.end)}"
+              "{plainText.slice(editingHighlight.start, editingHighlight.end)}"
             </div>
             <Textarea
               value={noteText}
@@ -310,6 +339,65 @@ export function ReadingPassageViewer({ passage, storageKey, className }: Props) 
 function colorClass(id: string): string {
   const c = COLORS.find((x) => x.id === id) ?? COLORS[0];
   return `${c.bg} ${c.text}`;
+}
+
+function ParagraphHighlights({
+  segments,
+  paragraphs,
+  onHighlightClick,
+}: {
+  segments: { text: string; hl?: Highlight }[];
+  paragraphs: string[];
+  onHighlightClick: (h: Highlight) => void;
+}) {
+  // Re-flow segments into paragraphs by walking text positions and splitting at \n\n boundaries
+  type Seg = { text: string; hl?: Highlight };
+  const paraOffsets: number[] = [];
+  let acc = 0;
+  for (const p of paragraphs) {
+    paraOffsets.push(acc);
+    acc += p.length + 2; // +2 for the \n\n joiner
+  }
+  paraOffsets.push(acc);
+
+  const out: Seg[][] = paragraphs.map(() => []);
+  let cursor = 0;
+  for (const seg of segments) {
+    let remaining = seg.text;
+    let segCursor = cursor;
+    while (remaining.length > 0) {
+      const paraIdx = Math.max(0, paraOffsets.findIndex((o, i) => i < paraOffsets.length - 1 && segCursor >= o && segCursor < paraOffsets[i + 1]));
+      const idx = paraIdx === -1 ? paragraphs.length - 1 : paraIdx;
+      const paraEnd = paraOffsets[idx + 1] - 2;
+      const take = Math.min(remaining.length, Math.max(0, paraEnd - segCursor));
+      const piece = remaining.slice(0, take);
+      // Strip leading \n\n separators from text content
+      const cleanPiece = piece.replace(/\n\n+/g, " ");
+      if (cleanPiece) out[idx].push({ text: cleanPiece, hl: seg.hl });
+      remaining = remaining.slice(take);
+      segCursor += take;
+      if (remaining.length > 0) {
+        // skip the separator
+        remaining = remaining.replace(/^\n+/, "");
+        segCursor += 2;
+      }
+    }
+    cursor += seg.text.length;
+  }
+
+  return (
+    <>
+      {out.map((segs, i) => (
+        <p key={i}>
+          {segs.length === 0 ? paragraphs[i] : segs.map((s, j) => s.hl ? (
+            <HighlightSpan key={j} hl={s.hl} text={s.text} onClick={() => onHighlightClick(s.hl!)} />
+          ) : (
+            <span key={j}>{s.text}</span>
+          ))}
+        </p>
+      ))}
+    </>
+  );
 }
 
 function HighlightSpan({ hl, text, onClick }: { hl: Highlight; text: string; onClick: () => void }) {
