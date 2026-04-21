@@ -513,7 +513,9 @@ router.post("/submissions", requireAuth, async (req, res): Promise<void> => {
 
   const result = await getSubmissionResult(submission.id);
   if (result) {
-    const showCorrectAnswer = assignment.allowReview || isTeacher;
+    // After submitting: if auto-graded (no manual review needed), reveal correct answers immediately.
+    // If pending manual review, hide them until teacher publishes.
+    const showCorrectAnswer = isTeacher || autoGraded;
     result.answers = result.answers.map((a, i) => ({
       ...a,
       correctAnswer: showCorrectAnswer && answerResults[i] ? (questionMap.get(answerResults[i]!.questionId)?.correctAnswer ?? null) : null,
