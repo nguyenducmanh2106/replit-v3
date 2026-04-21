@@ -2732,6 +2732,16 @@ components:
       properties:
         questionId:
           type: integer
+        questionType:
+          type: ["string", "null"]
+        questionContent:
+          type: ["string", "null"]
+        questionPassage:
+          type: ["string", "null"]
+        questionExplanation:
+          type: ["string", "null"]
+        questionOptions:
+          type: ["string", "null"]
         answer:
           type: string
         correctAnswer:
@@ -2739,13 +2749,17 @@ components:
         isCorrect:
           type: ["boolean", "null"]
         pointsEarned:
-          type: number
+          type: ["number", "null"]
+        points:
+          type: ["number", "null"]
         feedback:
           type: ["string", "null"]
+        teacherComment:
+          type: ["string", "null"]
+          description: Per-question comment written by the teacher during grading
       required:
         - questionId
         - answer
-        - pointsEarned
 
     SubmissionResult:
       type: object

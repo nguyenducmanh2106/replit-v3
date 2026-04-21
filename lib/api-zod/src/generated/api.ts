@@ -586,11 +586,18 @@ export const GetSubmissionResponse = zod.object({
   "gradedAt": zod.coerce.date().nullish(),
   "answers": zod.array(zod.object({
   "questionId": zod.number(),
+  "questionType": zod.string().nullish(),
+  "questionContent": zod.string().nullish(),
+  "questionPassage": zod.string().nullish(),
+  "questionExplanation": zod.string().nullish(),
+  "questionOptions": zod.string().nullish(),
   "answer": zod.string(),
   "correctAnswer": zod.string().nullish(),
   "isCorrect": zod.boolean().nullish(),
-  "pointsEarned": zod.number(),
-  "feedback": zod.string().nullish()
+  "pointsEarned": zod.number().nullish(),
+  "points": zod.number().nullish(),
+  "feedback": zod.string().nullish(),
+  "teacherComment": zod.string().nullish().describe('Per-question comment written by the teacher during grading')
 })),
   "feedback": zod.string().nullish(),
   "allowReview": zod.boolean().optional().describe('Whether the viewer is allowed to see correct answers and explanations')
@@ -624,11 +631,18 @@ export const GradeSubmissionResponse = zod.object({
   "gradedAt": zod.coerce.date().nullish(),
   "answers": zod.array(zod.object({
   "questionId": zod.number(),
+  "questionType": zod.string().nullish(),
+  "questionContent": zod.string().nullish(),
+  "questionPassage": zod.string().nullish(),
+  "questionExplanation": zod.string().nullish(),
+  "questionOptions": zod.string().nullish(),
   "answer": zod.string(),
   "correctAnswer": zod.string().nullish(),
   "isCorrect": zod.boolean().nullish(),
-  "pointsEarned": zod.number(),
-  "feedback": zod.string().nullish()
+  "pointsEarned": zod.number().nullish(),
+  "points": zod.number().nullish(),
+  "feedback": zod.string().nullish(),
+  "teacherComment": zod.string().nullish().describe('Per-question comment written by the teacher during grading')
 })),
   "feedback": zod.string().nullish(),
   "allowReview": zod.boolean().optional().describe('Whether the viewer is allowed to see correct answers and explanations')

@@ -330,14 +330,32 @@ export interface CreateSubmissionBody {
 
 export interface SubmissionAnswerResult {
   questionId: number;
+  /** @nullable */
+  questionType?: string | null;
+  /** @nullable */
+  questionContent?: string | null;
+  /** @nullable */
+  questionPassage?: string | null;
+  /** @nullable */
+  questionExplanation?: string | null;
+  /** @nullable */
+  questionOptions?: string | null;
   answer: string;
   /** @nullable */
   correctAnswer?: string | null;
   /** @nullable */
   isCorrect?: boolean | null;
-  pointsEarned: number;
+  /** @nullable */
+  pointsEarned?: number | null;
+  /** @nullable */
+  points?: number | null;
   /** @nullable */
   feedback?: string | null;
+  /**
+     * Per-question comment written by the teacher during grading
+     * @nullable
+     */
+  teacherComment?: string | null;
 }
 
 export interface SubmissionResult {
