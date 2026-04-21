@@ -32,5 +32,7 @@ export interface Assignment {
   /** draft | published | closed */
   status: string;
   submissionCount: number;
+  /** Number of final submissions made by the requesting student */
+  myAttemptCount?: number;
   createdAt: Date;
 }

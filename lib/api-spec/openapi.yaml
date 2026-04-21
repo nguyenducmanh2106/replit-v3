@@ -2507,6 +2507,9 @@ components:
           description: "draft | published | closed"
         submissionCount:
           type: integer
+        myAttemptCount:
+          type: integer
+          description: Number of final submissions made by the requesting student
         createdAt:
           type: string
           format: date-time
@@ -2630,6 +2633,9 @@ components:
           type: string
         submissionCount:
           type: integer
+        myAttemptCount:
+          type: integer
+          description: Number of final submissions made by the requesting student
         createdAt:
           type: string
           format: date-time

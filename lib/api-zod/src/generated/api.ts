@@ -388,6 +388,7 @@ export const ListAssignmentsResponseItem = zod.object({
   "questionCount": zod.number(),
   "status": zod.string().describe('draft | published | closed'),
   "submissionCount": zod.number(),
+  "myAttemptCount": zod.number().optional().describe('Number of final submissions made by the requesting student'),
   "createdAt": zod.coerce.date()
 })
 export const ListAssignmentsResponse = zod.array(ListAssignmentsResponseItem)
@@ -431,6 +432,7 @@ export const GetAssignmentResponse = zod.object({
   "questionCount": zod.number().optional(),
   "status": zod.string(),
   "submissionCount": zod.number(),
+  "myAttemptCount": zod.number().optional().describe('Number of final submissions made by the requesting student'),
   "createdAt": zod.coerce.date(),
   "questions": zod.array(zod.object({
   "id": zod.number(),
@@ -500,6 +502,7 @@ export const UpdateAssignmentResponse = zod.object({
   "questionCount": zod.number(),
   "status": zod.string().describe('draft | published | closed'),
   "submissionCount": zod.number(),
+  "myAttemptCount": zod.number().optional().describe('Number of final submissions made by the requesting student'),
   "createdAt": zod.coerce.date()
 })
 

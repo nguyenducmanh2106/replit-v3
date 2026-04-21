@@ -32,6 +32,8 @@ export interface AssignmentWithQuestions {
   questionCount?: number;
   status: string;
   submissionCount: number;
+  /** Number of final submissions made by the requesting student */
+  myAttemptCount?: number;
   createdAt: Date;
   questions: AssignmentQuestion[];
 }
