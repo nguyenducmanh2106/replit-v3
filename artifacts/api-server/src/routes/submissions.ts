@@ -189,7 +189,8 @@ function gradeAnswer(question: QuestionLike, studentAnswer: string): { isCorrect
     const pairs = safeJson<Array<{ left: string; right: string }>>(opts, []);
     if (pairs.length === 0) return { isCorrect: null, pointsEarned: 0 };
     const studentMatches = safeJson<Record<string, string>>(studentAnswer, {});
-    const allCorrect = pairs.every(pair => studentMatches[pair.left] === pair.right);
+    const norm = (s: string | undefined | null) => (s ?? "").trim().toLowerCase();
+    const allCorrect = pairs.every(pair => norm(studentMatches[pair.left]) === norm(pair.right));
     return { isCorrect: allCorrect, pointsEarned: allCorrect ? question.points : 0 };
   }
 
