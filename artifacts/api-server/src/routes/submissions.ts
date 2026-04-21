@@ -75,6 +75,37 @@ function safeJson<T>(str: string | null | undefined, fallback: T): T {
   try { return JSON.parse(str) as T; } catch { return fallback; }
 }
 
+function sanitizeOptionsForReview(qType: string | null | undefined, optionsStr: string | null | undefined): string | null {
+  if (!optionsStr || !qType) return optionsStr ?? null;
+  try {
+    if (qType === "matching") {
+      const pairs = JSON.parse(optionsStr) as Array<{ left: string; right: string }>;
+      if (!Array.isArray(pairs)) return optionsStr;
+      const rights = pairs.map(p => p.right);
+      for (let i = rights.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rights[i], rights[j]] = [rights[j], rights[i]]; }
+      return JSON.stringify(pairs.map((p, i) => ({ left: p.left, right: rights[i] })));
+    }
+    if (qType === "drag_drop") {
+      const dd = JSON.parse(optionsStr) as { items: string[]; zones: Array<{ label: string; accepts: string[] }> };
+      if (!dd?.zones) return optionsStr;
+      return JSON.stringify({ items: dd.items, zones: dd.zones.map(z => ({ label: z.label, accepts: [] })) });
+    }
+    if (qType === "sentence_reorder") {
+      const order = JSON.parse(optionsStr) as string[];
+      if (!Array.isArray(order)) return optionsStr;
+      const shuffled = [...order];
+      for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+      return JSON.stringify(shuffled);
+    }
+    if (qType === "reading" || qType === "listening") {
+      const subQs = JSON.parse(optionsStr) as Array<Record<string, unknown>>;
+      if (!Array.isArray(subQs)) return optionsStr;
+      return JSON.stringify(subQs.map(sq => { const { correctAnswer, ...rest } = sq; return rest; }));
+    }
+  } catch {}
+  return optionsStr;
+}
+
 const MANUAL_TYPES = ["essay"];
 
 type QuestionLike = { type: string; correctAnswer: string | null; options: string | null; points: number; metadata?: string | null; content?: string; level?: string; };
@@ -515,26 +546,30 @@ router.get("/submissions/:id", requireAuth, async (req, res): Promise<void> => {
   }
 
   if (isStudent) {
+    const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, result.assignmentId));
+    const allowReview = assignment?.allowReview ?? false;
     if (result.status === "pending_review") {
       res.json(GetSubmissionResponse.parse({
         ...result,
         score: null,
         percentage: null,
-        answers: result.answers.map(a => ({ ...a, correctAnswer: null, feedback: null, teacherComment: null, pointsEarned: null, isCorrect: null, questionExplanation: null })),
+        allowReview: false,
+        answers: result.answers.map(a => ({ ...a, correctAnswer: null, feedback: null, teacherComment: null, pointsEarned: null, isCorrect: null, questionExplanation: null, questionOptions: sanitizeOptionsForReview(a.questionType, a.questionOptions) })),
       }));
       return;
     }
     // For graded/published submissions, students can always see their score, their answers,
     // teacher feedback. Only mask correct answers + explanations when teacher disabled allowReview.
-    const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, result.assignmentId));
-    const allowReview = assignment?.allowReview ?? false;
     if (!allowReview) {
       res.json(GetSubmissionResponse.parse({
         ...result,
-        answers: result.answers.map(a => ({ ...a, correctAnswer: null, questionExplanation: null })),
+        allowReview: false,
+        answers: result.answers.map(a => ({ ...a, correctAnswer: null, questionExplanation: null, questionOptions: sanitizeOptionsForReview(a.questionType, a.questionOptions) })),
       }));
       return;
     }
+    res.json(GetSubmissionResponse.parse({ ...result, allowReview: true }));
+    return;
   }
 
   if (TEACHER_ROLES.includes(dbUser.role) && dbUser.role !== "system_admin") {

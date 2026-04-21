@@ -25,6 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
 import { MarkdownView } from "@/components/markdown-view";
+import { SubmissionAnswerView } from "@/components/submission-answer-view";
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -745,6 +746,7 @@ export default function SubmissionDetailPage() {
   }, [submission?.feedback]);
 
   const isTeacher = me?.role && ["teacher", "center_admin", "school_admin", "system_admin", "enterprise_admin"].includes(me.role);
+  const canShowCorrect = !!isTeacher || !!(submission as any)?.allowReview;
 
   if (isLoading) {
     return (
@@ -943,18 +945,12 @@ export default function SubmissionDetailPage() {
                 {(submission.answers ?? []).map((answer: any, index: number) => {
                   const qType = answer.questionType as string | null;
                   const isEssay = answer.isCorrect === undefined || answer.isCorrect === null;
-                  const isOpenEnd = qType === "open_end";
                   const isEssayType = qType === "essay";
                   const anns = annotationsForAnswer(answer.questionId);
                   const isGradedEssay = isEssay && (
                     submission.status === "published" ||
                     (submission.status === "graded" && (answer.pointsEarned != null || answer.teacherComment != null))
                   );
-
-                  let openEndParsed: any = null;
-                  if (isOpenEnd) {
-                    try { openEndParsed = JSON.parse(answer.answer || "{}"); } catch {}
-                  }
 
                   return (
                     <div key={answer.questionId} className={`rounded-xl border-2 overflow-hidden ${
@@ -1018,52 +1014,12 @@ export default function SubmissionDetailPage() {
                           </details>
                         )}
 
-                        {/* Student answer */}
+                        {/* Student answer — rendered like the question itself with overlay of correct/wrong */}
                         <div>
-                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Câu trả lời của học sinh</p>
-                          {isOpenEnd && openEndParsed ? (
-                            <div className="space-y-2">
-                              {openEndParsed.text_content || openEndParsed.text ? (
-                                <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
-                                  {openEndParsed.text_content || openEndParsed.text}
-                                </p>
-                              ) : null}
-                              {(openEndParsed.audio_url || openEndParsed.audioUrl) && (
-                                <div className="p-3 bg-violet-50 rounded-xl border border-violet-200 space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-violet-700">🎙️ Ghi âm</span>
-                                    <div className="flex items-center gap-2">
-                                      {openEndParsed.duration_seconds && (
-                                        <span className="text-xs text-gray-400">
-                                          {Math.floor(openEndParsed.duration_seconds / 60)}:{String(openEndParsed.duration_seconds % 60).padStart(2, "0")}
-                                        </span>
-                                      )}
-                                      {openEndParsed.stt_confidence != null && openEndParsed.stt_confidence > 0 && (
-                                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${openEndParsed.stt_confidence >= 0.8 ? "bg-green-100 text-green-700" : openEndParsed.stt_confidence >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
-                                          STT: {Math.round(openEndParsed.stt_confidence * 100)}%
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <audio controls src={openEndParsed.audio_url || openEndParsed.audioUrl} className="w-full h-10" />
-                                  {openEndParsed.transcript && (
-                                    <div className="mt-1 p-2 bg-white rounded-lg border border-violet-100">
-                                      <p className="text-xs text-gray-400 mb-0.5">Bản chuyển đổi:</p>
-                                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{openEndParsed.transcript}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              {openEndParsed.imageUrl && (
-                                <div className="p-2 bg-violet-50 rounded-xl border border-violet-200">
-                                  <img src={openEndParsed.imageUrl} alt="Ảnh trả lời" className="max-h-64 rounded-lg object-contain" />
-                                </div>
-                              )}
-                              {!openEndParsed.text_content && !openEndParsed.text && !openEndParsed.audio_url && !openEndParsed.audioUrl && !openEndParsed.imageUrl && (
-                                <span className="text-gray-400 italic text-sm">(Bỏ trống)</span>
-                              )}
-                            </div>
-                          ) : isEssayType && isTeacher ? (
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">
+                            {qType === "essay" || qType === "open_end" ? "Câu trả lời của học sinh" : "Bài làm"}
+                          </p>
+                          {isEssayType && isTeacher ? (
                             <div>
                               <AnnotatedText
                                 text={answer.answer || "(Bỏ trống)"}
@@ -1076,14 +1032,8 @@ export default function SubmissionDetailPage() {
                               />
                               <p className="text-xs text-muted-foreground mt-1.5 italic">💡 Chọn văn bản để thêm nhận xét inline</p>
                             </div>
-                          ) : (qType === "reading" || qType === "listening") ? (
-                            <ReadingSubAnswerView
-                              studentAnswer={answer.answer}
-                              questionOptions={answer.questionOptions}
-                              qType={qType}
-                            />
                           ) : (
-                            formatStudentAnswer(answer.answer, qType)
+                            <SubmissionAnswerView answer={answer} canShowCorrect={canShowCorrect} />
                           )}
                         </div>
 
@@ -1208,33 +1158,13 @@ export default function SubmissionDetailPage() {
                       )}
 
                       <div>
-                        <p className="text-xs text-gray-400 mb-1.5">Câu trả lời của học sinh:</p>
+                        <p className="text-xs text-gray-400 mb-1.5">
+                          {answer.questionType === "essay" || answer.questionType === "open_end" ? "Câu trả lời của học sinh:" : "Bài làm:"}
+                        </p>
                         <div className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5">
-                          {(answer.questionType === "reading" || answer.questionType === "listening") ? (
-                            <ReadingSubAnswerView
-                              studentAnswer={answer.answer}
-                              questionOptions={answer.questionOptions}
-                              qType={answer.questionType}
-                            />
-                          ) : answer.questionType === "open_end" ? (
-                            <OpenEndAnswerView rawAnswer={answer.answer} />
-                          ) : answer.questionType === "essay" ? (
-                            answer.answer
-                              ? <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{answer.answer}</p>
-                              : <span className="text-gray-400 italic text-sm">(Bỏ trống)</span>
-                          ) : (
-                            formatStudentAnswer(answer.answer, answer.questionType)
-                          )}
+                          <SubmissionAnswerView answer={answer} canShowCorrect={canShowCorrect} />
                         </div>
                       </div>
-
-                      {/* For auto-graded wrong answers show correct answer */}
-                      {!isEssay && !answer.isCorrect && answer.correctAnswer && answer.questionType !== "reading" && answer.questionType !== "listening" && (
-                        <div className="p-2.5 bg-green-50 border border-green-100 rounded-lg">
-                          <p className="text-xs font-semibold text-green-700 mb-1.5">✅ Đáp án đúng</p>
-                          {formatCorrectAnswer(answer.correctAnswer, answer.questionOptions, answer.questionType)}
-                        </div>
-                      )}
                       {isEssay && (
                         <div className="space-y-1.5">
                           <Label className="text-xs">

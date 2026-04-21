@@ -358,6 +358,8 @@ export interface SubmissionResult {
   answers: SubmissionAnswerResult[];
   /** @nullable */
   feedback?: string | null;
+  /** Whether the viewer is allowed to see correct answers and explanations */
+  allowReview?: boolean;
 }
 
 export interface GradeSubmissionBody {

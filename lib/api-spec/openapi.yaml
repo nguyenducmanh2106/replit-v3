@@ -2780,6 +2780,9 @@ components:
             $ref: "#/components/schemas/SubmissionAnswerResult"
         feedback:
           type: ["string", "null"]
+        allowReview:
+          type: boolean
+          description: Whether the viewer is allowed to see correct answers and explanations
       required:
         - id
         - assignmentId

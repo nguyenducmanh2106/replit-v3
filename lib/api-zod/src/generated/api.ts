@@ -592,7 +592,8 @@ export const GetSubmissionResponse = zod.object({
   "pointsEarned": zod.number(),
   "feedback": zod.string().nullish()
 })),
-  "feedback": zod.string().nullish()
+  "feedback": zod.string().nullish(),
+  "allowReview": zod.boolean().optional().describe('Whether the viewer is allowed to see correct answers and explanations')
 })
 
 
@@ -629,7 +630,8 @@ export const GradeSubmissionResponse = zod.object({
   "pointsEarned": zod.number(),
   "feedback": zod.string().nullish()
 })),
-  "feedback": zod.string().nullish()
+  "feedback": zod.string().nullish(),
+  "allowReview": zod.boolean().optional().describe('Whether the viewer is allowed to see correct answers and explanations')
 })
 
 
