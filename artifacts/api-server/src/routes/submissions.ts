@@ -275,7 +275,10 @@ router.get("/submissions", requireAuth, async (req, res): Promise<void> => {
   const result = await Promise.all(submissions.map(async s => {
     const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, s.assignmentId));
     const [student] = await db.select().from(usersTable).where(eq(usersTable.id, s.studentId));
-    const percentage = s.totalPoints > 0 && s.score != null
+    // Hide score from student until teacher publishes (pending_review = score not finalized)
+    const hideScore = isStudentView && s.status === "pending_review";
+    const exposedScore = hideScore ? null : (s.score ?? null);
+    const percentage = !hideScore && s.totalPoints > 0 && s.score != null
       ? Math.round((s.score / s.totalPoints) * 100 * 10) / 10
       : null;
     return {
@@ -284,12 +287,12 @@ router.get("/submissions", requireAuth, async (req, res): Promise<void> => {
       assignmentTitle: assignment?.title ?? "",
       studentId: s.studentId,
       studentName: student?.name ?? "",
-      score: s.score ?? null,
+      score: exposedScore,
       totalPoints: s.totalPoints,
       percentage,
       status: s.status,
       submittedAt: s.submittedAt.toISOString(),
-      gradedAt: s.gradedAt?.toISOString() ?? null,
+      gradedAt: hideScore ? null : (s.gradedAt?.toISOString() ?? null),
     };
   }));
 
