@@ -20,7 +20,7 @@ import {
   ArrowLeft, Save, Plus, Trash2, CheckCircle2, Circle, GripVertical,
   ChevronUp, ChevronDown, Play, Pause, Volume2, Video as VideoIcon,
   BookOpen, Headphones, Clock, Info, AlertCircle, X, RotateCcw,
-  MessageSquare, HelpCircle, StickyNote,
+  MessageSquare, HelpCircle, StickyNote, Sparkles,
 } from "lucide-react";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
