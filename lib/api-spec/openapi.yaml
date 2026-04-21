@@ -2791,7 +2791,10 @@ components:
         score:
           type: number
         feedback:
-          type: string
+          type: ["string", "null"]
+        keepStatus:
+          type: boolean
+          description: If true, do not change status to graded (save draft only)
       required:
         - score
 
@@ -4405,12 +4408,12 @@ components:
     GradeQuestionBody:
       type: object
       properties:
-        score:
+        pointsEarned:
           type: number
-        feedback:
+          description: Points awarded for this answer (essay/open_end only)
+        teacherComment:
           type: ["string", "null"]
-      required:
-        - score
+          description: Teacher's comment on this answer
 
     GradeQuestionResponse:
       type: object
@@ -4419,12 +4422,17 @@ components:
           type: boolean
         questionId:
           type: integer
-        score:
+        pointsEarned:
+          type: number
+        teacherComment:
+          type: ["string", "null"]
+        submissionScore:
           type: number
       required:
         - success
         - questionId
-        - score
+        - pointsEarned
+        - submissionScore
 
     PublishGradesResponse:
       type: object

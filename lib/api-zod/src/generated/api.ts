@@ -602,7 +602,8 @@ export const GradeSubmissionParams = zod.object({
 
 export const GradeSubmissionBody = zod.object({
   "score": zod.number(),
-  "feedback": zod.string().optional()
+  "feedback": zod.string().nullish(),
+  "keepStatus": zod.boolean().optional().describe('If true, do not change status to graded (save draft only)')
 })
 
 export const GradeSubmissionResponse = zod.object({
@@ -1433,14 +1434,16 @@ export const GradeQuestionParams = zod.object({
 })
 
 export const GradeQuestionBody = zod.object({
-  "score": zod.number(),
-  "feedback": zod.string().nullish()
+  "pointsEarned": zod.number().optional().describe('Points awarded for this answer (essay\/open_end only)'),
+  "teacherComment": zod.string().nullish().describe('Teacher\'s comment on this answer')
 })
 
 export const GradeQuestionResponse = zod.object({
   "success": zod.boolean(),
   "questionId": zod.number(),
-  "score": zod.number()
+  "pointsEarned": zod.number(),
+  "teacherComment": zod.string().nullish(),
+  "submissionScore": zod.number()
 })
 
 

@@ -9,5 +9,8 @@
 export interface GradeQuestionResponse {
   success: boolean;
   questionId: number;
-  score: number;
+  pointsEarned: number;
+  /** @nullable */
+  teacherComment?: string | null;
+  submissionScore: number;
 }

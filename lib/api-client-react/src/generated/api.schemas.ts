@@ -358,7 +358,10 @@ export interface SubmissionResult {
 
 export interface GradeSubmissionBody {
   score: number;
-  feedback?: string;
+  /** @nullable */
+  feedback?: string | null;
+  /** If true, do not change status to graded (save draft only) */
+  keepStatus?: boolean;
 }
 
 export interface DashboardSummary {
@@ -1110,15 +1113,22 @@ export interface CertificateView {
 }
 
 export interface GradeQuestionBody {
-  score: number;
-  /** @nullable */
-  feedback?: string | null;
+  /** Points awarded for this answer (essay/open_end only) */
+  pointsEarned?: number;
+  /**
+     * Teacher's comment on this answer
+     * @nullable
+     */
+  teacherComment?: string | null;
 }
 
 export interface GradeQuestionResponse {
   success: boolean;
   questionId: number;
-  score: number;
+  pointsEarned: number;
+  /** @nullable */
+  teacherComment?: string | null;
+  submissionScore: number;
 }
 
 export interface PublishGradesResponse {

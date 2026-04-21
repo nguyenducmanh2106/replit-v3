@@ -7,7 +7,11 @@
  */
 
 export interface GradeQuestionBody {
-  score: number;
-  /** @nullable */
-  feedback?: string | null;
+  /** Points awarded for this answer (essay/open_end only) */
+  pointsEarned?: number;
+  /**
+     * Teacher's comment on this answer
+     * @nullable
+     */
+  teacherComment?: string | null;
 }

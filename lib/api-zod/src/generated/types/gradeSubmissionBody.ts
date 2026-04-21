@@ -8,5 +8,8 @@
 
 export interface GradeSubmissionBody {
   score: number;
-  feedback?: string;
+  /** @nullable */
+  feedback?: string | null;
+  /** If true, do not change status to graded (save draft only) */
+  keepStatus?: boolean;
 }
