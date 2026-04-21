@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "@/lib/routing";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from "@/components/ui/sidebar";
-import { LayoutDashboard, BookOpen, Library, PenSquare, FileCheck, UserCircle, LogOut, BarChart2, Target, Settings, Trophy, Building2, Link2, ShieldAlert, FolderOpen, Award, Compass } from "lucide-react";
+import { LayoutDashboard, BookOpen, Library, PenSquare, FileCheck, UserCircle, LogOut, BarChart2, Target, Settings, Trophy, Building2, Link2, ShieldAlert, FolderOpen, Award, Compass, ClipboardList } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useGetMe } from "@workspace/api-client-react";
 import { useNavigate } from "@tanstack/react-router";
@@ -76,6 +76,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  {isTeacherOrAdmin && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.startsWith("/placement-tests")}>
+                        <Link href="/placement-tests" className="flex items-center gap-3">
+                          <ClipboardList className="h-4 w-4" />
+                          <span>Bài test đầu vào</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={location.startsWith("/submissions")}>
                       <Link href="/submissions" className="flex items-center gap-3">

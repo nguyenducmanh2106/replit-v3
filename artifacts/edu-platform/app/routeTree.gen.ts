@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CatalogIndexRouteImport } from './routes/catalog/index'
+import { Route as TestSlugRouteImport } from './routes/test/$slug'
 import { Route as CatalogSlugRouteImport } from './routes/catalog/$slug'
 import { Route as AuthSystemRouteImport } from './routes/_auth/system'
 import { Route as AuthRubricsRouteImport } from './routes/_auth/rubrics'
@@ -30,16 +31,20 @@ import { Route as AuthDashboardRouteImport } from './routes/_auth/dashboard'
 import { Route as AuthSubmissionsIndexRouteImport } from './routes/_auth/submissions/index'
 import { Route as AuthQuizTemplatesIndexRouteImport } from './routes/_auth/quiz-templates/index'
 import { Route as AuthQuestionsIndexRouteImport } from './routes/_auth/questions/index'
+import { Route as AuthPlacementTestsIndexRouteImport } from './routes/_auth/placement-tests/index'
 import { Route as AuthCoursesIndexRouteImport } from './routes/_auth/courses/index'
 import { Route as AuthCertificatesIndexRouteImport } from './routes/_auth/certificates/index'
 import { Route as AuthAssignmentsIndexRouteImport } from './routes/_auth/assignments/index'
 import { Route as AuthSubmissionsIdRouteImport } from './routes/_auth/submissions/$id'
 import { Route as AuthQuizTemplatesIdRouteImport } from './routes/_auth/quiz-templates/$id'
 import { Route as AuthQuestionsNewRouteImport } from './routes/_auth/questions/new'
+import { Route as AuthPlacementTestsIdRouteImport } from './routes/_auth/placement-tests/$id'
 import { Route as AuthCoursesIdRouteImport } from './routes/_auth/courses/$id'
 import { Route as AuthCertificatesCertNoRouteImport } from './routes/_auth/certificates/$certNo'
 import { Route as AuthAssignmentsIdRouteImport } from './routes/_auth/assignments/$id'
 import { Route as AuthQuestionsIdEditRouteImport } from './routes/_auth/questions/$id_.edit'
+import { Route as AuthPlacementTestsSubmissionsSidRouteImport } from './routes/_auth/placement-tests/submissions.$sid'
+import { Route as AuthPlacementTestsIdSubmissionsRouteImport } from './routes/_auth/placement-tests/$id_.submissions'
 import { Route as AuthCoursesIdLearnRouteImport } from './routes/_auth/courses/$id_.learn'
 import { Route as AuthCoursesIdCurriculumRouteImport } from './routes/_auth/courses/$id_.curriculum'
 import { Route as AuthAssignmentsIdTakeRouteImport } from './routes/_auth/assignments/$id_.take'
@@ -76,6 +81,11 @@ const IndexRoute = IndexRouteImport.update({
 const CatalogIndexRoute = CatalogIndexRouteImport.update({
   id: '/catalog/',
   path: '/catalog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestSlugRoute = TestSlugRouteImport.update({
+  id: '/test/$slug',
+  path: '/test/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogSlugRoute = CatalogSlugRouteImport.update({
@@ -148,6 +158,11 @@ const AuthQuestionsIndexRoute = AuthQuestionsIndexRouteImport.update({
   path: '/questions/',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthPlacementTestsIndexRoute = AuthPlacementTestsIndexRouteImport.update({
+  id: '/placement-tests/',
+  path: '/placement-tests/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthCoursesIndexRoute = AuthCoursesIndexRouteImport.update({
   id: '/courses/',
   path: '/courses/',
@@ -178,6 +193,11 @@ const AuthQuestionsNewRoute = AuthQuestionsNewRouteImport.update({
   path: '/questions/new',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthPlacementTestsIdRoute = AuthPlacementTestsIdRouteImport.update({
+  id: '/placement-tests/$id',
+  path: '/placement-tests/$id',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthCoursesIdRoute = AuthCoursesIdRouteImport.update({
   id: '/courses/$id',
   path: '/courses/$id',
@@ -198,6 +218,18 @@ const AuthQuestionsIdEditRoute = AuthQuestionsIdEditRouteImport.update({
   path: '/questions/$id/edit',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthPlacementTestsSubmissionsSidRoute =
+  AuthPlacementTestsSubmissionsSidRouteImport.update({
+    id: '/placement-tests/submissions/$sid',
+    path: '/placement-tests/submissions/$sid',
+    getParentRoute: () => AuthRoute,
+  } as any)
+const AuthPlacementTestsIdSubmissionsRoute =
+  AuthPlacementTestsIdSubmissionsRouteImport.update({
+    id: '/placement-tests/$id_/submissions',
+    path: '/placement-tests/$id/submissions',
+    getParentRoute: () => AuthRoute,
+  } as any)
 const AuthCoursesIdLearnRoute = AuthCoursesIdLearnRouteImport.update({
   id: '/courses/$id_/learn',
   path: '/courses/$id/learn',
@@ -231,22 +263,27 @@ export interface FileRoutesByFullPath {
   '/rubrics': typeof AuthRubricsRoute
   '/system': typeof AuthSystemRoute
   '/catalog/$slug': typeof CatalogSlugRoute
+  '/test/$slug': typeof TestSlugRoute
   '/catalog/': typeof CatalogIndexRoute
   '/assignments/$id': typeof AuthAssignmentsIdRoute
   '/certificates/$certNo': typeof AuthCertificatesCertNoRoute
   '/courses/$id': typeof AuthCoursesIdRoute
+  '/placement-tests/$id': typeof AuthPlacementTestsIdRoute
   '/questions/new': typeof AuthQuestionsNewRoute
   '/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
   '/submissions/$id': typeof AuthSubmissionsIdRoute
   '/assignments/': typeof AuthAssignmentsIndexRoute
   '/certificates/': typeof AuthCertificatesIndexRoute
   '/courses/': typeof AuthCoursesIndexRoute
+  '/placement-tests/': typeof AuthPlacementTestsIndexRoute
   '/questions/': typeof AuthQuestionsIndexRoute
   '/quiz-templates/': typeof AuthQuizTemplatesIndexRoute
   '/submissions/': typeof AuthSubmissionsIndexRoute
   '/assignments/$id/take': typeof AuthAssignmentsIdTakeRoute
   '/courses/$id/curriculum': typeof AuthCoursesIdCurriculumRoute
   '/courses/$id/learn': typeof AuthCoursesIdLearnRoute
+  '/placement-tests/$id/submissions': typeof AuthPlacementTestsIdSubmissionsRoute
+  '/placement-tests/submissions/$sid': typeof AuthPlacementTestsSubmissionsSidRoute
   '/questions/$id/edit': typeof AuthQuestionsIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -266,22 +303,27 @@ export interface FileRoutesByTo {
   '/rubrics': typeof AuthRubricsRoute
   '/system': typeof AuthSystemRoute
   '/catalog/$slug': typeof CatalogSlugRoute
+  '/test/$slug': typeof TestSlugRoute
   '/catalog': typeof CatalogIndexRoute
   '/assignments/$id': typeof AuthAssignmentsIdRoute
   '/certificates/$certNo': typeof AuthCertificatesCertNoRoute
   '/courses/$id': typeof AuthCoursesIdRoute
+  '/placement-tests/$id': typeof AuthPlacementTestsIdRoute
   '/questions/new': typeof AuthQuestionsNewRoute
   '/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
   '/submissions/$id': typeof AuthSubmissionsIdRoute
   '/assignments': typeof AuthAssignmentsIndexRoute
   '/certificates': typeof AuthCertificatesIndexRoute
   '/courses': typeof AuthCoursesIndexRoute
+  '/placement-tests': typeof AuthPlacementTestsIndexRoute
   '/questions': typeof AuthQuestionsIndexRoute
   '/quiz-templates': typeof AuthQuizTemplatesIndexRoute
   '/submissions': typeof AuthSubmissionsIndexRoute
   '/assignments/$id/take': typeof AuthAssignmentsIdTakeRoute
   '/courses/$id/curriculum': typeof AuthCoursesIdCurriculumRoute
   '/courses/$id/learn': typeof AuthCoursesIdLearnRoute
+  '/placement-tests/$id/submissions': typeof AuthPlacementTestsIdSubmissionsRoute
+  '/placement-tests/submissions/$sid': typeof AuthPlacementTestsSubmissionsSidRoute
   '/questions/$id/edit': typeof AuthQuestionsIdEditRoute
 }
 export interface FileRoutesById {
@@ -303,22 +345,27 @@ export interface FileRoutesById {
   '/_auth/rubrics': typeof AuthRubricsRoute
   '/_auth/system': typeof AuthSystemRoute
   '/catalog/$slug': typeof CatalogSlugRoute
+  '/test/$slug': typeof TestSlugRoute
   '/catalog/': typeof CatalogIndexRoute
   '/_auth/assignments/$id': typeof AuthAssignmentsIdRoute
   '/_auth/certificates/$certNo': typeof AuthCertificatesCertNoRoute
   '/_auth/courses/$id': typeof AuthCoursesIdRoute
+  '/_auth/placement-tests/$id': typeof AuthPlacementTestsIdRoute
   '/_auth/questions/new': typeof AuthQuestionsNewRoute
   '/_auth/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
   '/_auth/submissions/$id': typeof AuthSubmissionsIdRoute
   '/_auth/assignments/': typeof AuthAssignmentsIndexRoute
   '/_auth/certificates/': typeof AuthCertificatesIndexRoute
   '/_auth/courses/': typeof AuthCoursesIndexRoute
+  '/_auth/placement-tests/': typeof AuthPlacementTestsIndexRoute
   '/_auth/questions/': typeof AuthQuestionsIndexRoute
   '/_auth/quiz-templates/': typeof AuthQuizTemplatesIndexRoute
   '/_auth/submissions/': typeof AuthSubmissionsIndexRoute
   '/_auth/assignments/$id_/take': typeof AuthAssignmentsIdTakeRoute
   '/_auth/courses/$id_/curriculum': typeof AuthCoursesIdCurriculumRoute
   '/_auth/courses/$id_/learn': typeof AuthCoursesIdLearnRoute
+  '/_auth/placement-tests/$id_/submissions': typeof AuthPlacementTestsIdSubmissionsRoute
+  '/_auth/placement-tests/submissions/$sid': typeof AuthPlacementTestsSubmissionsSidRoute
   '/_auth/questions/$id_/edit': typeof AuthQuestionsIdEditRoute
 }
 export interface FileRouteTypes {
@@ -340,22 +387,27 @@ export interface FileRouteTypes {
     | '/rubrics'
     | '/system'
     | '/catalog/$slug'
+    | '/test/$slug'
     | '/catalog/'
     | '/assignments/$id'
     | '/certificates/$certNo'
     | '/courses/$id'
+    | '/placement-tests/$id'
     | '/questions/new'
     | '/quiz-templates/$id'
     | '/submissions/$id'
     | '/assignments/'
     | '/certificates/'
     | '/courses/'
+    | '/placement-tests/'
     | '/questions/'
     | '/quiz-templates/'
     | '/submissions/'
     | '/assignments/$id/take'
     | '/courses/$id/curriculum'
     | '/courses/$id/learn'
+    | '/placement-tests/$id/submissions'
+    | '/placement-tests/submissions/$sid'
     | '/questions/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -375,22 +427,27 @@ export interface FileRouteTypes {
     | '/rubrics'
     | '/system'
     | '/catalog/$slug'
+    | '/test/$slug'
     | '/catalog'
     | '/assignments/$id'
     | '/certificates/$certNo'
     | '/courses/$id'
+    | '/placement-tests/$id'
     | '/questions/new'
     | '/quiz-templates/$id'
     | '/submissions/$id'
     | '/assignments'
     | '/certificates'
     | '/courses'
+    | '/placement-tests'
     | '/questions'
     | '/quiz-templates'
     | '/submissions'
     | '/assignments/$id/take'
     | '/courses/$id/curriculum'
     | '/courses/$id/learn'
+    | '/placement-tests/$id/submissions'
+    | '/placement-tests/submissions/$sid'
     | '/questions/$id/edit'
   id:
     | '__root__'
@@ -411,22 +468,27 @@ export interface FileRouteTypes {
     | '/_auth/rubrics'
     | '/_auth/system'
     | '/catalog/$slug'
+    | '/test/$slug'
     | '/catalog/'
     | '/_auth/assignments/$id'
     | '/_auth/certificates/$certNo'
     | '/_auth/courses/$id'
+    | '/_auth/placement-tests/$id'
     | '/_auth/questions/new'
     | '/_auth/quiz-templates/$id'
     | '/_auth/submissions/$id'
     | '/_auth/assignments/'
     | '/_auth/certificates/'
     | '/_auth/courses/'
+    | '/_auth/placement-tests/'
     | '/_auth/questions/'
     | '/_auth/quiz-templates/'
     | '/_auth/submissions/'
     | '/_auth/assignments/$id_/take'
     | '/_auth/courses/$id_/curriculum'
     | '/_auth/courses/$id_/learn'
+    | '/_auth/placement-tests/$id_/submissions'
+    | '/_auth/placement-tests/submissions/$sid'
     | '/_auth/questions/$id_/edit'
   fileRoutesById: FileRoutesById
 }
@@ -438,6 +500,7 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   CatalogSlugRoute: typeof CatalogSlugRoute
+  TestSlugRoute: typeof TestSlugRoute
   CatalogIndexRoute: typeof CatalogIndexRoute
 }
 
@@ -490,6 +553,13 @@ declare module '@tanstack/react-router' {
       path: '/catalog'
       fullPath: '/catalog/'
       preLoaderRoute: typeof CatalogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test/$slug': {
+      id: '/test/$slug'
+      path: '/test/$slug'
+      fullPath: '/test/$slug'
+      preLoaderRoute: typeof TestSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catalog/$slug': {
@@ -590,6 +660,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthQuestionsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/placement-tests/': {
+      id: '/_auth/placement-tests/'
+      path: '/placement-tests'
+      fullPath: '/placement-tests/'
+      preLoaderRoute: typeof AuthPlacementTestsIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/courses/': {
       id: '/_auth/courses/'
       path: '/courses'
@@ -632,6 +709,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthQuestionsNewRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/placement-tests/$id': {
+      id: '/_auth/placement-tests/$id'
+      path: '/placement-tests/$id'
+      fullPath: '/placement-tests/$id'
+      preLoaderRoute: typeof AuthPlacementTestsIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/courses/$id': {
       id: '/_auth/courses/$id'
       path: '/courses/$id'
@@ -658,6 +742,20 @@ declare module '@tanstack/react-router' {
       path: '/questions/$id/edit'
       fullPath: '/questions/$id/edit'
       preLoaderRoute: typeof AuthQuestionsIdEditRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/placement-tests/submissions/$sid': {
+      id: '/_auth/placement-tests/submissions/$sid'
+      path: '/placement-tests/submissions/$sid'
+      fullPath: '/placement-tests/submissions/$sid'
+      preLoaderRoute: typeof AuthPlacementTestsSubmissionsSidRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/placement-tests/$id_/submissions': {
+      id: '/_auth/placement-tests/$id_/submissions'
+      path: '/placement-tests/$id/submissions'
+      fullPath: '/placement-tests/$id/submissions'
+      preLoaderRoute: typeof AuthPlacementTestsIdSubmissionsRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/courses/$id_/learn': {
@@ -698,18 +796,22 @@ interface AuthRouteChildren {
   AuthAssignmentsIdRoute: typeof AuthAssignmentsIdRoute
   AuthCertificatesCertNoRoute: typeof AuthCertificatesCertNoRoute
   AuthCoursesIdRoute: typeof AuthCoursesIdRoute
+  AuthPlacementTestsIdRoute: typeof AuthPlacementTestsIdRoute
   AuthQuestionsNewRoute: typeof AuthQuestionsNewRoute
   AuthQuizTemplatesIdRoute: typeof AuthQuizTemplatesIdRoute
   AuthSubmissionsIdRoute: typeof AuthSubmissionsIdRoute
   AuthAssignmentsIndexRoute: typeof AuthAssignmentsIndexRoute
   AuthCertificatesIndexRoute: typeof AuthCertificatesIndexRoute
   AuthCoursesIndexRoute: typeof AuthCoursesIndexRoute
+  AuthPlacementTestsIndexRoute: typeof AuthPlacementTestsIndexRoute
   AuthQuestionsIndexRoute: typeof AuthQuestionsIndexRoute
   AuthQuizTemplatesIndexRoute: typeof AuthQuizTemplatesIndexRoute
   AuthSubmissionsIndexRoute: typeof AuthSubmissionsIndexRoute
   AuthAssignmentsIdTakeRoute: typeof AuthAssignmentsIdTakeRoute
   AuthCoursesIdCurriculumRoute: typeof AuthCoursesIdCurriculumRoute
   AuthCoursesIdLearnRoute: typeof AuthCoursesIdLearnRoute
+  AuthPlacementTestsIdSubmissionsRoute: typeof AuthPlacementTestsIdSubmissionsRoute
+  AuthPlacementTestsSubmissionsSidRoute: typeof AuthPlacementTestsSubmissionsSidRoute
   AuthQuestionsIdEditRoute: typeof AuthQuestionsIdEditRoute
 }
 
@@ -727,18 +829,22 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthAssignmentsIdRoute: AuthAssignmentsIdRoute,
   AuthCertificatesCertNoRoute: AuthCertificatesCertNoRoute,
   AuthCoursesIdRoute: AuthCoursesIdRoute,
+  AuthPlacementTestsIdRoute: AuthPlacementTestsIdRoute,
   AuthQuestionsNewRoute: AuthQuestionsNewRoute,
   AuthQuizTemplatesIdRoute: AuthQuizTemplatesIdRoute,
   AuthSubmissionsIdRoute: AuthSubmissionsIdRoute,
   AuthAssignmentsIndexRoute: AuthAssignmentsIndexRoute,
   AuthCertificatesIndexRoute: AuthCertificatesIndexRoute,
   AuthCoursesIndexRoute: AuthCoursesIndexRoute,
+  AuthPlacementTestsIndexRoute: AuthPlacementTestsIndexRoute,
   AuthQuestionsIndexRoute: AuthQuestionsIndexRoute,
   AuthQuizTemplatesIndexRoute: AuthQuizTemplatesIndexRoute,
   AuthSubmissionsIndexRoute: AuthSubmissionsIndexRoute,
   AuthAssignmentsIdTakeRoute: AuthAssignmentsIdTakeRoute,
   AuthCoursesIdCurriculumRoute: AuthCoursesIdCurriculumRoute,
   AuthCoursesIdLearnRoute: AuthCoursesIdLearnRoute,
+  AuthPlacementTestsIdSubmissionsRoute: AuthPlacementTestsIdSubmissionsRoute,
+  AuthPlacementTestsSubmissionsSidRoute: AuthPlacementTestsSubmissionsSidRoute,
   AuthQuestionsIdEditRoute: AuthQuestionsIdEditRoute,
 }
 
@@ -752,6 +858,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   CatalogSlugRoute: CatalogSlugRoute,
+  TestSlugRoute: TestSlugRoute,
   CatalogIndexRoute: CatalogIndexRoute,
 }
 export const routeTree = rootRouteImport

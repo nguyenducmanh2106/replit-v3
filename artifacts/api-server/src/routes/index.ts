@@ -23,6 +23,7 @@ import quizSessionsRouter from "./quiz-sessions";
 import curriculumRouter from "./curriculum";
 import catalogRouter from "./catalog";
 import certificatesRouter from "./certificates";
+import placementTestsRouter from "./placement-tests";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(quizSessionsRouter);
 router.use(curriculumRouter);
 router.use(catalogRouter);
 router.use(certificatesRouter);
+router.use(placementTestsRouter);
 
 export default router;

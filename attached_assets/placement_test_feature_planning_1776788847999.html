@@ -1,0 +1,619 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .wrap { padding: 1.5rem 0; }
+  .hero { margin-bottom: 1.5rem; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500; margin-bottom: 10px; background: var(--color-background-info); color: var(--color-text-info); border: 0.5px solid var(--color-border-secondary); }
+  h1.title { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: var(--color-text-secondary); }
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); padding-bottom: 0; }
+  .tab { font-size: 13px; padding: 8px 14px; border: none; background: none; cursor: pointer; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -0.5px; transition: all .15s; font-family: var(--font-sans); border-radius: 4px 4px 0 0; }
+  .tab:hover { color: var(--color-text-primary); background: var(--color-background-secondary); }
+  .tab.active { color: var(--color-text-primary); border-bottom-color: var(--color-text-primary); font-weight: 500; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; margin-top: 1.5rem; }
+  .section-title:first-child { margin-top: 0; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; }
+  .card-title { font-size: 15px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+  .card-sub { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; margin: 2px 2px 0 0; }
+  .pill-blue { background: var(--color-background-info); color: var(--color-text-info); }
+  .pill-green { background: var(--color-background-success); color: var(--color-text-success); }
+  .pill-amber { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .pill-red { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .flow-step { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; }
+  .flow-step:not(:last-child) { border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; margin-top: 1px; }
+  .step-num.teacher { background: var(--color-background-info); color: var(--color-text-info); }
+  .step-num.student { background: var(--color-background-success); color: var(--color-text-success); }
+  .step-num.sys { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .step-content { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .step-desc { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.5; }
+  .feature-list { list-style: none; }
+  .feature-list li { font-size: 13px; color: var(--color-text-secondary); padding: 4px 0; display: flex; gap: 8px; line-height: 1.5; }
+  .feature-list li::before { content: "—"; color: var(--color-text-tertiary); flex-shrink: 0; }
+  .status-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .divider { height: 0.5px; background: var(--color-border-tertiary); margin: 1rem 0; }
+  .actor-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .actor-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .actor-icon.teacher { background: var(--color-background-info); }
+  .actor-icon.student { background: var(--color-background-success); }
+  .actor-name { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .actor-role { font-size: 12px; color: var(--color-text-secondary); }
+  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; text-align: center; }
+  .metric-val { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+  .metric-lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .module-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; margin-bottom: 10px; }
+  .module-head { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .module-body { padding: 10px 14px; }
+  .mod-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+  .notif-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+</style>
+<div class="wrap">
+  <div class="hero">
+    <div class="badge">✦ Feature Planning</div>
+    <h1 class="title">Placement Test — Bài Kiểm Tra Đánh Giá Đầu Vào</h1>
+    <p class="subtitle">Tính năng tạo bài test độc lập (ngoài khoá học) — chấm điểm, nhận xét và thông báo qua email</p>
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-val">3</div><div class="metric-lbl">Nguồn câu hỏi</div></div>
+      <div class="metric"><div class="metric-val">2</div><div class="metric-lbl">Nhóm người dùng</div></div>
+      <div class="metric"><div class="metric-val">6</div><div class="metric-lbl">Module chính</div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview')">Tổng quan</button>
+    <button class="tab" onclick="switchTab('teacher')">Luồng giáo viên</button>
+    <button class="tab" onclick="switchTab('student')">Luồng học sinh</button>
+    <button class="tab" onclick="switchTab('modules')">Tính năng chi tiết</button>
+    <button class="tab" onclick="switchTab('notify')">Thông báo & Email</button>
+    <button class="tab" onclick="switchTab('tech')">Yêu cầu kỹ thuật</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="tab-overview">
+    <p class="section-title">Mô tả tính năng</p>
+    <div class="card">
+      <p class="card-sub">Giáo viên tạo một bài test đánh giá đầu vào <strong>không thuộc khoá học nào</strong>, sinh ra link chia sẻ. Học sinh truy cập link, điền thông tin cá nhân và làm bài. Sau khi nộp, hệ thống gửi email xác nhận cho học sinh, lưu bài làm để giáo viên chấm điểm và nhận xét thủ công.</p>
+    </div>
+
+    <p class="section-title">Đặt tên chức năng</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">🎯 Placement Test</div>
+        <div class="card-sub">Tên tiếng Anh ngắn gọn, phổ biến trong giáo dục. Phù hợp nếu nền tảng dùng tiếng Anh là chính.</div>
+        <div class="tag-row"><span class="pill pill-green">Gợi ý chính</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Bài Test Đầu Vào</div>
+        <div class="card-sub">Tên tiếng Việt dễ hiểu, thân thiện với người dùng phổ thông trong nước.</div>
+        <div class="tag-row"><span class="pill pill-blue">Thay thế</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔍 Bài Kiểm Tra Xếp Lớp</div>
+        <div class="card-sub">Nhấn mạnh mục đích phân loại trình độ, phù hợp trung tâm ngoại ngữ.</div>
+        <div class="tag-row"><span class="pill pill-amber">Ngành ngôn ngữ</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Assessment Test</div>
+        <div class="card-sub">Mang tính học thuật, phù hợp môi trường đại học hoặc nền tảng B2B.</div>
+        <div class="tag-row"><span class="pill pill-blue">B2B / Học thuật</span></div>
+      </div>
+    </div>
+
+    <p class="section-title">Actors & vai trò</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="actor-head">
+          <div class="actor-icon teacher">👨‍🏫</div>
+          <div><div class="actor-name">Giáo viên / Admin</div><div class="actor-role">Người tạo và quản lý bài test</div></div>
+        </div>
+        <ul class="feature-list">
+          <li>Tạo, chỉnh sửa, xoá bài test</li>
+          <li>Thêm câu hỏi từ nhiều nguồn</li>
+          <li>Chia sẻ link cho học sinh</li>
+          <li>Xem danh sách bài nộp</li>
+          <li>Chấm điểm và nhận xét</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="actor-head">
+          <div class="actor-icon student">👤</div>
+          <div><div class="actor-name">Học sinh</div><div class="actor-role">Người làm bài test qua link</div></div>
+        </div>
+        <ul class="feature-list">
+          <li>Truy cập link bài test</li>
+          <li>Điền họ tên và email</li>
+          <li>Làm bài và nộp</li>
+          <li>Nhận email xác nhận hoàn thành</li>
+          <li>Xem điểm / nhận xét (nếu được mở)</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="section-title">3 nguồn câu hỏi</p>
+    <div class="grid3">
+      <div class="card">
+        <div class="card-title">📦 Kho Quiz Nguồn</div>
+        <div class="card-sub">Import toàn bộ bộ quiz có sẵn trên hệ thống vào bài test</div>
+        <div class="tag-row"><span class="pill pill-blue">Nguồn 1</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🏦 Ngân Hàng Câu Hỏi</div>
+        <div class="card-sub">Chọn từng câu hỏi lẻ từ question bank có phân loại, tag, độ khó</div>
+        <div class="tag-row"><span class="pill pill-amber">Nguồn 2</span></div>
+      </div>
+      <div class="card">
+        <div class="card-title">✏️ Tạo Câu Hỏi Mới</div>
+        <div class="card-sub">Tạo câu hỏi đơn lẻ trực tiếp trong bài test (nhiều dạng)</div>
+        <div class="tag-row"><span class="pill pill-green">Nguồn 3</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEACHER FLOW -->
+  <div class="panel" id="tab-teacher">
+    <p class="section-title">Luồng tạo & quản lý bài test</p>
+    <div class="card">
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num teacher">1</div>
+          <div class="step-content">
+            <div class="step-title">Tạo bài test mới</div>
+            <div class="step-desc">Nhập tên bài test, mô tả, hướng dẫn làm bài. Cấu hình thời gian làm bài (tuỳ chọn), điểm tối đa, ngưỡng đạt. Đặt trạng thái Draft / Active / Closed.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num teacher">2</div>
+          <div class="step-content">
+            <div class="step-title">Thêm câu hỏi vào bài test</div>
+            <div class="step-desc">Chọn từ 3 nguồn: (A) Import bộ quiz sẵn có, (B) Tìm kiếm và chọn từ ngân hàng câu hỏi theo tag/độ khó, (C) Tạo câu hỏi mới tại chỗ. Kéo-thả để sắp xếp thứ tự câu hỏi.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num teacher">3</div>
+          <div class="step-content">
+            <div class="step-title">Cấu hình nâng cao (tuỳ chọn)</div>
+            <div class="step-desc">Bật/tắt hiển thị điểm sau khi nộp. Cho phép làm lại hay không. Giới hạn số lần làm bài. Chọn ngẫu nhiên câu hỏi / đáp án.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num sys">4</div>
+          <div class="step-content">
+            <div class="step-title">Xuất bản → Sinh link bài test</div>
+            <div class="step-desc">Hệ thống tự động sinh link duy nhất (slug ngẫu nhiên hoặc tuỳ chỉnh). Ví dụ: platform.com/test/abc123. Giáo viên copy link chia sẻ qua email, Zalo, LMS, v.v.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num teacher">5</div>
+          <div class="step-content">
+            <div class="step-title">Theo dõi kết quả & chấm điểm</div>
+            <div class="step-desc">Xem danh sách học sinh đã nộp bài. Mở từng bài nộp, chấm điểm thủ công cho câu tự luận, thêm nhận xét chung hoặc từng câu. Tuỳ chọn gửi email phản hồi điểm cho học sinh.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-title">Màn hình Giáo viên — danh sách tính năng</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Trang tạo / chỉnh sửa bài test</div>
+        <ul class="feature-list">
+          <li>Form nhập tiêu đề, mô tả, hướng dẫn</li>
+          <li>Cấu hình thời gian, điểm đạt</li>
+          <li>Panel 3-tab thêm câu hỏi (Quiz / Bank / Tạo mới)</li>
+          <li>Danh sách câu hỏi dạng kéo-thả</li>
+          <li>Preview trước khi xuất bản</li>
+          <li>Nút "Xuất bản & lấy link"</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Trang quản lý bài nộp</div>
+        <ul class="feature-list">
+          <li>Bảng học sinh đã nộp (tên, email, thời gian, điểm tự động)</li>
+          <li>Filter theo trạng thái: Chưa chấm / Đã chấm</li>
+          <li>Xem chi tiết từng bài nộp</li>
+          <li>Nhập điểm + nhận xét tổng quát</li>
+          <li>Nhận xét từng câu hỏi</li>
+          <li>Nút "Gửi kết quả cho học sinh"</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- STUDENT FLOW -->
+  <div class="panel" id="tab-student">
+    <p class="section-title">Luồng học sinh làm bài</p>
+    <div class="card">
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num student">1</div>
+          <div class="step-content">
+            <div class="step-title">Nhận link & truy cập</div>
+            <div class="step-desc">Học sinh nhận link từ giáo viên (qua email, Zalo, v.v.). Mở link trên trình duyệt — không cần đăng ký tài khoản.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num student">2</div>
+          <div class="step-content">
+            <div class="step-title">Trang mô tả bài test (Landing Page)</div>
+            <div class="step-desc">Hiển thị: tên bài test, mô tả, hướng dẫn làm bài, số câu hỏi, thời gian (nếu có). Form bắt buộc điền Họ tên đầy đủ + Email trước khi bắt đầu. Nút "Bắt đầu làm bài".</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num student">3</div>
+          <div class="step-content">
+            <div class="step-title">Làm bài test</div>
+            <div class="step-desc">Hiển thị câu hỏi tuần tự hoặc toàn bộ (theo cấu hình). Thanh tiến trình, đồng hồ đếm ngược (nếu có). Lưu tự động câu trả lời. Nộp bài thủ công hoặc tự nộp khi hết giờ.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num sys">4</div>
+          <div class="step-content">
+            <div class="step-title">Hệ thống xử lý bài nộp</div>
+            <div class="step-desc">Lưu bài làm vào cơ sở dữ liệu. Chấm điểm tự động các câu trắc nghiệm. Gửi email xác nhận hoàn thành cho học sinh. Thông báo cho giáo viên có bài nộp mới (tuỳ chọn).</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num student">5</div>
+          <div class="step-content">
+            <div class="step-title">Trang kết quả (sau nộp)</div>
+            <div class="step-desc">Màn hình "Đã nộp bài thành công!". Nếu cấu hình hiển thị điểm: thấy điểm ngay. Thông báo sẽ có email kết quả khi giáo viên chấm xong. Không thể sửa bài đã nộp.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num sys">6</div>
+          <div class="step-content">
+            <div class="step-title">Nhận email kết quả (sau khi GV chấm)</div>
+            <div class="step-desc">Giáo viên chấm xong và nhấn "Gửi kết quả". Học sinh nhận email với điểm số, nhận xét tổng quát từ giáo viên và (tuỳ chọn) xem chi tiết bài làm.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="section-title">Trang landing học sinh — chi tiết UI</p>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;">Bố cục trang làm bài (dành cho học sinh)</div>
+      <ul class="feature-list">
+        <li>Banner/header tên bài test + tên tổ chức/giáo viên</li>
+        <li>Mô tả bài test và hướng dẫn làm bài</li>
+        <li>Thông tin: số câu hỏi, thời gian giới hạn (nếu có)</li>
+        <li>Form thông tin: <strong>Họ và tên</strong> (required) + <strong>Email</strong> (required, validated)</li>
+        <li>Checkbox đồng ý điều khoản / thông tin sẽ được lưu lại</li>
+        <li>Nút "Bắt đầu làm bài" — chỉ active sau khi điền đủ thông tin</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- MODULES -->
+  <div class="panel" id="tab-modules">
+    <p class="section-title">Các module chính</p>
+
+    <div class="module-card">
+      <div class="module-head">
+        <div class="mod-icon" style="background:var(--color-background-info);">📝</div>
+        <div>
+          <div class="card-title">Module 1 — Test Builder</div>
+          <div class="card-sub">Tạo và quản lý cấu trúc bài test</div>
+        </div>
+        <div style="margin-left:auto;"><span class="pill pill-blue">Giáo viên</span></div>
+      </div>
+      <div class="module-body">
+        <ul class="feature-list">
+          <li>CRUD bài test: tạo, xem, sửa, xoá, nhân bản (duplicate)</li>
+          <li>Trường thông tin: tiêu đề, mô tả, hướng dẫn, thời gian, điểm tối đa, ngưỡng đạt</li>
+          <li>Trạng thái: Draft → Active → Closed / Archived</li>
+          <li>Cấu hình nâng cao: random câu hỏi, random đáp án, giới hạn số lần làm, hiển thị điểm ngay hay không</li>
+          <li>Preview bài test trước khi publish</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-head">
+        <div class="mod-icon" style="background:var(--color-background-warning);">❓</div>
+        <div>
+          <div class="card-title">Module 2 — Question Manager</div>
+          <div class="card-sub">Quản lý và thêm câu hỏi từ nhiều nguồn</div>
+        </div>
+        <div style="margin-left:auto;"><span class="pill pill-blue">Giáo viên</span></div>
+      </div>
+      <div class="module-body">
+        <ul class="feature-list">
+          <li><strong>Nguồn A — Quiz Bank:</strong> Duyệt danh sách quiz sẵn có, import toàn bộ câu hỏi từ 1 quiz vào bài test</li>
+          <li><strong>Nguồn B — Question Bank:</strong> Tìm kiếm câu hỏi theo keyword, tag, loại câu hỏi, độ khó. Chọn lẻ hoặc chọn nhiều câu cùng lúc</li>
+          <li><strong>Nguồn C — Tạo mới:</strong> Inline editor tạo câu hỏi trực tiếp trong bài test</li>
+          <li>Dạng câu hỏi hỗ trợ: Trắc nghiệm 1 đáp án, Trắc nghiệm nhiều đáp án, Đúng/Sai, Điền vào chỗ trống, Tự luận ngắn, Tự luận dài</li>
+          <li>Kéo-thả để sắp xếp thứ tự câu hỏi</li>
+          <li>Gán điểm riêng cho từng câu hỏi</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-head">
+        <div class="mod-icon" style="background:var(--color-background-success);">🔗</div>
+        <div>
+          <div class="card-title">Module 3 — Link & Access Control</div>
+          <div class="card-sub">Sinh link và kiểm soát truy cập bài test</div>
+        </div>
+        <div style="margin-left:auto;"><span class="pill pill-green">Hệ thống</span></div>
+      </div>
+      <div class="module-body">
+        <ul class="feature-list">
+          <li>Tự động sinh unique link khi publish (random slug an toàn, không đoán được)</li>
+          <li>Tuỳ chọn đặt slug custom: platform.com/test/ten-bai-test</li>
+          <li>Nút copy link nhanh, QR code để in/chia sẻ offline</li>
+          <li>Đặt ngày hết hạn link (tuỳ chọn)</li>
+          <li>Bật/tắt link (active/inactive) không cần xoá bài test</li>
+          <li>Bảo vệ bằng mật khẩu (tuỳ chọn)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-head">
+        <div class="mod-icon" style="background:var(--color-background-success);">📄</div>
+        <div>
+          <div class="card-title">Module 4 — Test Taking (Student)</div>
+          <div class="card-sub">Giao diện làm bài cho học sinh</div>
+        </div>
+        <div style="margin-left:auto;"><span class="pill pill-green">Học sinh</span></div>
+      </div>
+      <div class="module-body">
+        <ul class="feature-list">
+          <li>Landing page bài test: mô tả, hướng dẫn, form nhập họ tên + email</li>
+          <li>Validate email hợp lệ trước khi cho phép bắt đầu</li>
+          <li>Đồng hồ đếm ngược (nếu bài test có giới hạn thời gian)</li>
+          <li>Lưu tự động progress mỗi khi trả lời câu hỏi (chống mất dữ liệu khi reload)</li>
+          <li>Thanh điều hướng: câu trước/sau, danh sách câu hỏi</li>
+          <li>Tự động nộp khi hết giờ</li>
+          <li>Trang xác nhận sau nộp bài</li>
+          <li>Responsive: hoạt động tốt trên mobile</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-head">
+        <div class="mod-icon" style="background:var(--color-background-danger);">🎓</div>
+        <div>
+          <div class="card-title">Module 5 — Grading & Submission</div>
+          <div class="card-sub">Quản lý bài nộp, chấm điểm và nhận xét</div>
+        </div>
+        <div style="margin-left:auto;"><span class="pill pill-blue">Giáo viên</span></div>
+      </div>
+      <div class="module-body">
+        <ul class="feature-list">
+          <li>Dashboard bài nộp: bảng danh sách có tên, email, thời gian nộp, điểm tự động, trạng thái chấm</li>
+          <li>Chấm tự động: trắc nghiệm, đúng/sai, điền ô trống chính xác</li>
+          <li>Chấm tay: nhập điểm và nhận xét cho câu tự luận</li>
+          <li>Nhận xét tổng quát cho toàn bài</li>
+          <li>Nhận xét theo từng câu hỏi</li>
+          <li>Export danh sách kết quả ra Excel/CSV</li>
+          <li>Thống kê: điểm trung bình, phân phối điểm, câu hỏi sai nhiều nhất</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-head">
+        <div class="mod-icon" style="background:var(--color-background-warning);">📧</div>
+        <div>
+          <div class="card-title">Module 6 — Notification & Email</div>
+          <div class="card-sub">Hệ thống thông báo tự động</div>
+        </div>
+        <div style="margin-left:auto;"><span class="pill pill-amber">Tự động</span></div>
+      </div>
+      <div class="module-body">
+        <ul class="feature-list">
+          <li>Email xác nhận nộp bài gửi cho học sinh ngay sau khi submit</li>
+          <li>Email thông báo có bài nộp mới gửi cho giáo viên (có thể tắt)</li>
+          <li>Email kết quả + nhận xét gửi cho học sinh sau khi GV chấm xong</li>
+          <li>Template email có thương hiệu (logo, màu sắc, tên tổ chức)</li>
+          <li>Học sinh có thể xem lại bài làm qua link trong email (nếu được bật)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="panel" id="tab-notify">
+    <p class="section-title">Email 1 — Xác nhận nộp bài (gửi tự động cho học sinh)</p>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px;">📧 Gửi ngay sau khi học sinh nộp bài</div>
+      <div class="notif-item">
+        <div class="notif-dot" style="background:#3B8BD4;"></div>
+        <div><strong>Tiêu đề:</strong> <span style="font-size:13px;color:var(--color-text-secondary);">"[Tên bài test] — Bạn đã nộp bài thành công!"</span></div>
+      </div>
+      <div class="notif-item">
+        <div class="notif-dot" style="background:#3B8BD4;"></div>
+        <div style="font-size:13px;color:var(--color-text-secondary);">Thông tin trong email: Họ tên học sinh, tên bài test, thời gian nộp, số câu đã trả lời. Thông báo kết quả sẽ được gửi sau khi giáo viên chấm xong.</div>
+      </div>
+      <div class="notif-item" style="border:none;">
+        <div class="notif-dot" style="background:#3B8BD4;"></div>
+        <div style="font-size:13px;color:var(--color-text-secondary);">Nếu bài test cấu hình hiển thị điểm ngay: đính kèm điểm tự động của phần trắc nghiệm.</div>
+      </div>
+    </div>
+
+    <p class="section-title">Email 2 — Thông báo có bài nộp mới (gửi cho giáo viên)</p>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px;">🔔 Gửi ngay khi học sinh nộp — có thể bật/tắt</div>
+      <div class="notif-item">
+        <div class="notif-dot" style="background:#BA7517;"></div>
+        <div><strong>Tiêu đề:</strong> <span style="font-size:13px;color:var(--color-text-secondary);">"[Tên học sinh] vừa nộp bài [Tên bài test]"</span></div>
+      </div>
+      <div class="notif-item" style="border:none;">
+        <div class="notif-dot" style="background:#BA7517;"></div>
+        <div style="font-size:13px;color:var(--color-text-secondary);">Kèm link trực tiếp vào trang chấm bài của học sinh đó. Tổng số bài chờ chấm hiện tại.</div>
+      </div>
+    </div>
+
+    <p class="section-title">Email 3 — Gửi kết quả & nhận xét (giáo viên kích hoạt)</p>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px;">📊 Gửi khi GV nhấn "Gửi kết quả cho học sinh"</div>
+      <div class="notif-item">
+        <div class="notif-dot" style="background:#0F6E56;"></div>
+        <div><strong>Tiêu đề:</strong> <span style="font-size:13px;color:var(--color-text-secondary);">"Kết quả bài test [Tên bài test] của bạn"</span></div>
+      </div>
+      <div class="notif-item">
+        <div class="notif-dot" style="background:#0F6E56;"></div>
+        <div style="font-size:13px;color:var(--color-text-secondary);">Nội dung: Điểm số (X/Y điểm), nhận xét tổng quát của giáo viên, (tuỳ chọn) chi tiết từng câu với nhận xét.</div>
+      </div>
+      <div class="notif-item" style="border:none;">
+        <div class="notif-dot" style="background:#0F6E56;"></div>
+        <div style="font-size:13px;color:var(--color-text-secondary);">Link "Xem lại bài làm của bạn" dẫn đến trang review (chỉ đọc) nếu giáo viên bật tuỳ chọn này.</div>
+      </div>
+    </div>
+
+    <p class="section-title">Cài đặt Email Template</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">Cấu hình template</div>
+        <ul class="feature-list">
+          <li>Logo tổ chức / trung tâm</li>
+          <li>Màu sắc chủ đạo (brand color)</li>
+          <li>Tên người gửi (From name)</li>
+          <li>Reply-to email của giáo viên</li>
+          <li>Chữ ký email tuỳ chỉnh</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Tuỳ chọn thông báo</div>
+        <ul class="feature-list">
+          <li>Bật/tắt thông báo email cho GV</li>
+          <li>Digest hàng ngày thay vì real-time</li>
+          <li>CC/BCC cho quản lý</li>
+          <li>Preview email trước khi gửi</li>
+          <li>Log lịch sử email đã gửi</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TECH -->
+  <div class="panel" id="tab-tech">
+    <p class="section-title">Mô hình dữ liệu — Entities chính</p>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">PlacementTest</div>
+        <ul class="feature-list">
+          <li>id, title, description, instructions</li>
+          <li>status (draft/active/closed)</li>
+          <li>time_limit (minutes, nullable)</li>
+          <li>max_score, pass_score</li>
+          <li>show_score_immediately (bool)</li>
+          <li>allow_retake, max_attempts</li>
+          <li>randomize_questions (bool)</li>
+          <li>link_slug (unique), link_active</li>
+          <li>link_expires_at (nullable)</li>
+          <li>created_by (teacher_id)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">TestSubmission</div>
+        <ul class="feature-list">
+          <li>id, test_id</li>
+          <li>student_name, student_email</li>
+          <li>started_at, submitted_at</li>
+          <li>auto_score, manual_score</li>
+          <li>grading_status (pending/graded)</li>
+          <li>teacher_comment (text)</li>
+          <li>answers[] (JSON)</li>
+          <li>graded_at, graded_by</li>
+          <li>result_sent_at (nullable)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">TestQuestion</div>
+        <ul class="feature-list">
+          <li>id, test_id, order_index</li>
+          <li>source_type (quiz/bank/custom)</li>
+          <li>source_id (nullable)</li>
+          <li>question_type</li>
+          <li>content, options[], correct_answer</li>
+          <li>points (điểm câu hỏi)</li>
+          <li>teacher_comment_template</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">AnswerRecord</div>
+        <ul class="feature-list">
+          <li>id, submission_id, question_id</li>
+          <li>student_answer (text/JSON)</li>
+          <li>is_correct (bool, nullable)</li>
+          <li>auto_score, manual_score</li>
+          <li>teacher_comment (text)</li>
+          <li>answered_at</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="section-title">Yêu cầu phi chức năng</p>
+    <div class="grid3">
+      <div class="card">
+        <div class="card-title">🔒 Bảo mật</div>
+        <ul class="feature-list">
+          <li>Link slug đủ dài và random (không đoán được)</li>
+          <li>Rate limiting chống spam submit</li>
+          <li>Validate email format</li>
+          <li>CSRF protection</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">⚡ Hiệu năng</div>
+        <ul class="feature-list">
+          <li>Auto-save mỗi 30 giây</li>
+          <li>Trang học sinh tải nhanh (no login)</li>
+          <li>Email gửi qua queue (async)</li>
+          <li>Xử lý đồng thời nhiều học sinh</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">📱 Trải nghiệm</div>
+        <ul class="feature-list">
+          <li>Responsive mobile-first</li>
+          <li>Không cần tài khoản học sinh</li>
+          <li>Hỗ trợ paste rich text câu tự luận</li>
+          <li>Accessibility (a11y cơ bản)</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="section-title">API Endpoints chính (gợi ý)</p>
+    <div class="card">
+      <div style="font-family:var(--font-mono);font-size:12px;line-height:2;color:var(--color-text-secondary);">
+        <div><span style="color:var(--color-text-success);">POST</span>   /api/placement-tests &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — Tạo bài test mới</div>
+        <div><span style="color:var(--color-text-info);">GET&nbsp;&nbsp;</span> /api/placement-tests/:id &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — Lấy chi tiết bài test</div>
+        <div><span style="color:var(--color-text-warning);">PUT&nbsp;&nbsp;</span> /api/placement-tests/:id &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — Cập nhật bài test</div>
+        <div><span style="color:var(--color-text-success);">POST</span>   /api/placement-tests/:id/publish &nbsp; — Xuất bản & sinh link</div>
+        <div><span style="color:var(--color-text-info);">GET&nbsp;&nbsp;</span> /test/:slug &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — Trang public học sinh truy cập</div>
+        <div><span style="color:var(--color-text-success);">POST</span>   /api/test/:slug/start &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — Bắt đầu làm bài (lưu name+email)</div>
+        <div><span style="color:var(--color-text-warning);">PUT&nbsp;&nbsp;</span> /api/submissions/:id/answers &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — Auto-save câu trả lời</div>
+        <div><span style="color:var(--color-text-success);">POST</span>   /api/submissions/:id/submit &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — Nộp bài</div>
+        <div><span style="color:var(--color-text-info);">GET&nbsp;&nbsp;</span> /api/placement-tests/:id/submissions — Danh sách bài nộp (GV)</div>
+        <div><span style="color:var(--color-text-warning);">PUT&nbsp;&nbsp;</span> /api/submissions/:id/grade &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; — Chấm điểm & nhận xét</div>
+        <div><span style="color:var(--color-text-success);">POST</span>   /api/submissions/:id/send-result &nbsp;&nbsp; — Gửi email kết quả cho học sinh</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+</script>

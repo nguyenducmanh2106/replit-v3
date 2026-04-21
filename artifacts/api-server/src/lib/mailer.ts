@@ -11,6 +11,172 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
+function appBaseUrl(): string {
+  const domain = process.env["REPLIT_DOMAINS"]?.split(",")[0]?.trim() ?? process.env["REPLIT_DEV_DOMAIN"];
+  if (domain) return `https://${domain}`;
+  return process.env["APP_URL"] ?? "http://localhost:3000";
+}
+
+const BRAND_HEADER = `
+  <tr>
+    <td style="background:#378ADD;padding:28px 40px;text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:8px;display:inline-block;line-height:36px;text-align:center;">
+          <span style="color:#fff;font-weight:bold;font-size:18px;">E</span>
+        </div>
+        <span style="color:#fff;font-size:22px;font-weight:700;vertical-align:middle;">EduPlatform</span>
+      </div>
+    </td>
+  </tr>
+`;
+const BRAND_FOOTER = `
+  <tr>
+    <td style="padding:0 40px 28px;">
+      <div style="border-top:1px solid #e2e8f0;padding-top:20px;">
+        <p style="margin:0;font-size:13px;color:#a0aec0;line-height:1.6;">&copy; 2026 EduPlatform. All rights reserved.</p>
+      </div>
+    </td>
+  </tr>
+`;
+function wrapEmail(inner: string): string {
+  return `<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f7f9;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7f9;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        ${BRAND_HEADER}
+        ${inner}
+        ${BRAND_FOOTER}
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+export async function sendPlacementSubmitConfirmEmail(opts: {
+  to: string;
+  studentName: string;
+  testTitle: string;
+  submittedAt: Date;
+  answeredCount: number;
+  totalCount: number;
+  autoScore?: number | null;
+  maxScore?: number | null;
+  showScoreImmediately: boolean;
+}) {
+  const { to, studentName, testTitle, submittedAt, answeredCount, totalCount, autoScore, maxScore, showScoreImmediately } = opts;
+  const scoreBlock = showScoreImmediately && autoScore != null ? `
+    <div style="background:#f0f7ff;border:1px solid #bee3f8;border-radius:8px;padding:16px 20px;margin:20px 0;">
+      <p style="margin:0;font-size:14px;color:#2c5282;">Điểm trắc nghiệm tự động (chưa bao gồm phần tự luận)</p>
+      <p style="margin:6px 0 0;font-size:28px;font-weight:700;color:#2c5282;">${autoScore}${maxScore != null ? ` / ${maxScore}` : ""} điểm</p>
+    </div>
+  ` : "";
+  const inner = `
+    <tr><td style="padding:36px 40px 20px;">
+      <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#1a1a2e;">Bạn đã nộp bài thành công!</h1>
+      <p style="margin:0 0 20px;font-size:15px;color:#4a5568;line-height:1.6;">
+        Xin chào <strong>${studentName}</strong>,<br><br>
+        Chúng tôi xác nhận bạn đã nộp bài test <strong>${testTitle}</strong> lúc
+        <strong>${submittedAt.toLocaleString("vi-VN")}</strong>. Bạn đã trả lời ${answeredCount}/${totalCount} câu hỏi.
+      </p>
+      ${scoreBlock}
+      <p style="margin:0;font-size:14px;color:#718096;line-height:1.6;">
+        Kết quả chính thức (kèm nhận xét từ giáo viên) sẽ được gửi đến email của bạn sau khi chấm xong.
+      </p>
+    </td></tr>
+  `;
+  await transporter.sendMail({
+    from: `"EduPlatform" <${GMAIL_USER}>`,
+    to,
+    subject: `${testTitle} — Bạn đã nộp bài thành công!`,
+    html: wrapEmail(inner),
+  });
+}
+
+export async function sendPlacementNewSubmissionEmail(opts: {
+  to: string;
+  teacherName?: string;
+  studentName: string;
+  studentEmail: string;
+  testTitle: string;
+  submissionId: number;
+  pendingCount: number;
+}) {
+  const { to, teacherName, studentName, studentEmail, testTitle, submissionId, pendingCount } = opts;
+  const gradeUrl = `${appBaseUrl()}/placement-tests/submissions/${submissionId}`;
+  const inner = `
+    <tr><td style="padding:36px 40px 20px;">
+      <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#1a1a2e;">Có bài nộp mới</h1>
+      <p style="margin:0 0 16px;font-size:15px;color:#4a5568;line-height:1.6;">
+        ${teacherName ? `Xin chào <strong>${teacherName}</strong>,<br><br>` : ""}
+        <strong>${studentName}</strong> (${studentEmail}) vừa nộp bài test <strong>${testTitle}</strong>.
+      </p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${gradeUrl}" style="display:inline-block;padding:12px 28px;background:#378ADD;color:#fff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;">Vào chấm bài</a>
+      </div>
+      <p style="margin:0;font-size:13px;color:#718096;">Hiện có <strong>${pendingCount}</strong> bài đang chờ chấm.</p>
+    </td></tr>
+  `;
+  await transporter.sendMail({
+    from: `"EduPlatform" <${GMAIL_USER}>`,
+    to,
+    subject: `${studentName} vừa nộp bài ${testTitle}`,
+    html: wrapEmail(inner),
+  });
+}
+
+export async function sendPlacementResultEmail(opts: {
+  to: string;
+  studentName: string;
+  testTitle: string;
+  totalScore: number;
+  maxScore: number;
+  passScore?: number | null;
+  teacherComment?: string | null;
+  reviewUrl?: string | null;
+}) {
+  const { to, studentName, testTitle, totalScore, maxScore, passScore, teacherComment, reviewUrl } = opts;
+  const passed = passScore != null ? totalScore >= passScore : null;
+  const passBadge = passed === true
+    ? `<span style="display:inline-block;padding:4px 12px;background:#c6f6d5;color:#22543d;border-radius:20px;font-size:13px;font-weight:600;">Đạt</span>`
+    : passed === false
+    ? `<span style="display:inline-block;padding:4px 12px;background:#fed7d7;color:#742a2a;border-radius:20px;font-size:13px;font-weight:600;">Chưa đạt</span>`
+    : "";
+  const inner = `
+    <tr><td style="padding:36px 40px 20px;">
+      <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#1a1a2e;">Kết quả bài test của bạn</h1>
+      <p style="margin:0 0 16px;font-size:15px;color:#4a5568;line-height:1.6;">
+        Xin chào <strong>${studentName}</strong>,<br><br>
+        Giáo viên đã chấm xong bài test <strong>${testTitle}</strong> của bạn.
+      </p>
+      <div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:16px 0;text-align:center;">
+        <p style="margin:0;font-size:13px;color:#718096;text-transform:uppercase;letter-spacing:0.05em;">Điểm của bạn</p>
+        <p style="margin:8px 0 4px;font-size:36px;font-weight:700;color:#2c5282;">${totalScore} / ${maxScore}</p>
+        ${passBadge}
+      </div>
+      ${teacherComment ? `
+        <div style="background:#fffaf0;border-left:4px solid #ed8936;padding:14px 18px;margin:16px 0;border-radius:4px;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#7b341e;">Nhận xét của giáo viên</p>
+          <p style="margin:0;font-size:14px;color:#4a5568;line-height:1.6;white-space:pre-wrap;">${teacherComment.replace(/</g, "&lt;")}</p>
+        </div>
+      ` : ""}
+      ${reviewUrl ? `
+        <div style="text-align:center;margin:24px 0;">
+          <a href="${reviewUrl}" style="display:inline-block;padding:12px 28px;background:#378ADD;color:#fff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;">Xem lại bài làm của bạn</a>
+        </div>
+      ` : ""}
+    </td></tr>
+  `;
+  await transporter.sendMail({
+    from: `"EduPlatform" <${GMAIL_USER}>`,
+    to,
+    subject: `Kết quả bài test ${testTitle} của bạn`,
+    html: wrapEmail(inner),
+  });
+}
+
+export { appBaseUrl };
+
 export async function sendVerificationEmail(opts: {
   to: string;
   verificationUrl: string;
