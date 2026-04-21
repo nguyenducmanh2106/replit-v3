@@ -6,6 +6,8 @@ import {
   placementSubmissionsTable,
   placementAnswersTable,
   usersTable,
+  quizTemplatesTable,
+  quizTemplateQuestionsTable,
 } from "@workspace/db/schema";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import crypto from "crypto";
@@ -24,42 +26,166 @@ function genSlug(): string {
   return crypto.randomBytes(8).toString("base64url");
 }
 
-type QType = "mcq" | "true_false" | "short_answer" | "long_answer" | "fill_blank";
+function safeJson<T>(str: unknown, fallback: T): T {
+  if (str == null) return fallback;
+  if (typeof str !== "string") {
+    // jsonb columns may already arrive parsed
+    try { return str as T; } catch { return fallback; }
+  }
+  try { return JSON.parse(str) as T; } catch { return fallback; }
+}
 
-function gradePlacementAnswer(q: { type: string; options: unknown; correctAnswer: string | null; points: number }, studentAnswer: string | null): { isCorrect: boolean | null; autoScore: number } {
+type QLike = { type: string; options: unknown; correctAnswer: string | null; metadata: unknown; points: number };
+
+function gradePlacementAnswer(q: QLike, studentAnswer: string | null): { isCorrect: boolean | null; autoScore: number } {
   if (studentAnswer == null || studentAnswer.trim() === "") return { isCorrect: null, autoScore: 0 };
-  const type = q.type as QType;
-  const norm = (s: string) => s.trim().toLowerCase();
 
-  if (type === "long_answer") return { isCorrect: null, autoScore: 0 };
+  const ca = q.correctAnswer;
+  const opts = q.options;
+  const norm = (s: string | undefined | null) => (s ?? "").trim().toLowerCase();
 
-  if (type === "mcq") {
-    // correct_answer can be single string or JSON array (multi-select)
-    let correct: string[] = [];
-    try {
-      const parsed = JSON.parse(q.correctAnswer ?? "");
-      correct = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)];
-    } catch {
-      correct = q.correctAnswer ? [q.correctAnswer] : [];
-    }
-    let student: string[] = [];
-    try {
-      const parsed = JSON.parse(studentAnswer);
-      student = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)];
-    } catch {
-      student = [studentAnswer];
-    }
-    const cs = new Set(correct.map(norm));
-    const ss = new Set(student.map(norm));
-    const same = cs.size === ss.size && [...cs].every(v => ss.has(v));
-    return { isCorrect: same, autoScore: same ? q.points : 0 };
+  // Manual-only types (unless essay has autoGrade — we still treat as manual here)
+  if (q.type === "essay" || q.type === "open_end" || q.type === "long_answer") {
+    return { isCorrect: null, autoScore: 0 };
   }
 
-  if (type === "true_false" || type === "short_answer" || type === "fill_blank") {
-    const ok = norm(studentAnswer) === norm(q.correctAnswer ?? "");
+  if (q.type === "mcq") {
+    if (!ca) return { isCorrect: null, autoScore: 0 };
+    // multi-select if metadata.allowMultiple — student/correct stored as comma-joined or JSON array
+    const meta = safeJson<Record<string, unknown>>(q.metadata, {});
+    const isMulti = !!meta.allowMultiple;
+    const parseList = (s: string): string[] => {
+      try { const p = JSON.parse(s); if (Array.isArray(p)) return p.map(String); } catch {/*noop*/}
+      return s.split(",").map(t => t.trim()).filter(Boolean);
+    };
+    if (isMulti) {
+      const cs = new Set(parseList(ca).map(norm));
+      const ss = new Set(parseList(studentAnswer).map(norm));
+      const same = cs.size === ss.size && [...cs].every(v => ss.has(v));
+      return { isCorrect: same, autoScore: same ? q.points : 0 };
+    }
+    const ok = norm(studentAnswer) === norm(ca);
     return { isCorrect: ok, autoScore: ok ? q.points : 0 };
   }
 
+  if (q.type === "true_false") {
+    if (!ca) return { isCorrect: null, autoScore: 0 };
+    const tfMap: Record<string, string> = { "true": "đúng", "false": "sai", "đúng": "đúng", "sai": "sai" };
+    const ns = tfMap[norm(studentAnswer)] ?? norm(studentAnswer);
+    const nc = tfMap[norm(ca)] ?? norm(ca);
+    const ok = ns === nc;
+    return { isCorrect: ok, autoScore: ok ? q.points : 0 };
+  }
+
+  if (q.type === "fill_blank") {
+    if (!ca) return { isCorrect: null, autoScore: 0 };
+    const correctArr = safeJson<string[]>(ca, [ca]);
+    const studentArr = safeJson<string[]>(studentAnswer, [studentAnswer]);
+    if (correctArr.length === 0) return { isCorrect: null, autoScore: 0 };
+    const all = correctArr.every((c, i) => norm(studentArr[i]) === norm(c));
+    return { isCorrect: all, autoScore: all ? q.points : 0 };
+  }
+
+  if (q.type === "short_answer") {
+    const ok = norm(studentAnswer) === norm(ca ?? "");
+    return { isCorrect: ok, autoScore: ok ? q.points : 0 };
+  }
+
+  if (q.type === "word_selection") {
+    if (!ca) return { isCorrect: null, autoScore: 0 };
+    const correctWords = safeJson<string[]>(ca, []).map(w => norm(w)).sort();
+    const studentWords = safeJson<string[]>(studentAnswer, studentAnswer.split(",")).map(w => norm(w)).filter(Boolean).sort();
+    const ok = correctWords.length === studentWords.length && correctWords.every((w, i) => w === studentWords[i]);
+    return { isCorrect: ok, autoScore: ok ? q.points : 0 };
+  }
+
+  if (q.type === "matching") {
+    let correctDict = safeJson<Record<string, string>>(ca, {} as Record<string, string>);
+    if (!correctDict || typeof correctDict !== "object" || Array.isArray(correctDict) || Object.keys(correctDict).length === 0) {
+      const arr = safeJson<unknown>(opts, null);
+      correctDict = {};
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          if (typeof item === "string" && item.includes("|")) {
+            const [l, ...rest] = item.split("|");
+            correctDict[l!.trim()] = rest.join("|").trim();
+          } else if (item && typeof item === "object" && "left" in (item as any) && "right" in (item as any)) {
+            correctDict[(item as any).left] = (item as any).right;
+          }
+        }
+      }
+    }
+    const entries = Object.entries(correctDict);
+    if (entries.length === 0) return { isCorrect: null, autoScore: 0 };
+    const studentMatches = safeJson<Record<string, string>>(studentAnswer, {} as Record<string, string>);
+    const ok = entries.every(([l, r]) => norm(studentMatches[l]) === norm(r));
+    return { isCorrect: ok, autoScore: ok ? q.points : 0 };
+  }
+
+  if (q.type === "drag_drop") {
+    const ddOpts = safeJson<{ items: string[]; zones: Array<{ label: string; accepts: string[] }> }>(opts, { items: [], zones: [] });
+    if (!ddOpts.zones || ddOpts.zones.length === 0) return { isCorrect: null, autoScore: 0 };
+    const studentZones = safeJson<Record<string, string[]>>(studentAnswer, {} as Record<string, string[]>);
+    let total = 0;
+    let ok = true;
+    for (const zone of ddOpts.zones) {
+      const placed = studentZones[zone.label] ?? [];
+      const accepts = zone.accepts ?? [];
+      for (const item of accepts) { total++; if (!placed.includes(item)) ok = false; }
+      for (const item of placed) { if (!accepts.includes(item)) ok = false; }
+    }
+    if (total === 0) return { isCorrect: null, autoScore: 0 };
+    return { isCorrect: ok, autoScore: ok ? q.points : 0 };
+  }
+
+  if (q.type === "sentence_reorder") {
+    const correctOrder = safeJson<string[]>(opts, []);
+    if (correctOrder.length === 0) return { isCorrect: null, autoScore: 0 };
+    const studentOrder = safeJson<string[]>(studentAnswer, []);
+    const ok = correctOrder.length === studentOrder.length && correctOrder.every((w, i) => w === studentOrder[i]);
+    return { isCorrect: ok, autoScore: ok ? q.points : 0 };
+  }
+
+  if (q.type === "reading" || q.type === "listening") {
+    type SubQ = { question: string; choices: string[]; correctAnswer: string; points?: number };
+    const subQs = safeJson<SubQ[]>(opts, []);
+    if (subQs.length === 0) return { isCorrect: null, autoScore: 0 };
+    const studentSubs = safeJson<Record<string, string>>(studentAnswer, {} as Record<string, string>);
+    const fallbackShare = q.points / subQs.length;
+    let earned = 0;
+    let allOk = true;
+    for (let i = 0; i < subQs.length; i++) {
+      const sc = norm(studentSubs[String(i)]);
+      const cc = norm(subQs[i]!.correctAnswer);
+      if (sc && sc === cc) {
+        earned += typeof subQs[i]!.points === "number" ? subQs[i]!.points! : fallbackShare;
+      } else {
+        allOk = false;
+      }
+    }
+    return { isCorrect: allOk, autoScore: Math.round(earned) };
+  }
+
+  if (q.type === "video_interactive") {
+    type VQ = { timestamp: number; type?: string; question: string; choices: string[]; correctAnswer: string; points?: number };
+    const all = safeJson<VQ[]>(opts, []);
+    const studentVA = safeJson<Record<string, string>>(studentAnswer, {} as Record<string, string>);
+    let correct = 0; let totalQ = 0;
+    for (let i = 0; i < all.length; i++) {
+      if ((all[i]!.type ?? "question") !== "question") continue;
+      totalQ++;
+      if (norm(studentVA[String(i)]) === norm(all[i]!.correctAnswer)) correct++;
+    }
+    if (totalQ === 0) return { isCorrect: null, autoScore: 0 };
+    const ratio = correct / totalQ;
+    return { isCorrect: ratio === 1, autoScore: Math.round(q.points * ratio) };
+  }
+
+  // Unknown / fallback
+  if (ca) {
+    const ok = norm(studentAnswer) === norm(ca);
+    return { isCorrect: ok, autoScore: ok ? q.points : 0 };
+  }
   return { isCorrect: null, autoScore: 0 };
 }
 
@@ -218,12 +344,19 @@ router.post("/placement-tests/:id/questions", requireAuth, async (req, res): Pro
     sourceType?: string;
     sourceId?: number | null;
     type: string;
+    skill?: string | null;
+    level?: string | null;
     content: string;
     options?: unknown;
     correctAnswer?: string | null;
+    audioUrl?: string | null;
+    videoUrl?: string | null;
+    imageUrl?: string | null;
+    passage?: string | null;
+    explanation?: string | null;
+    metadata?: unknown;
     points?: number;
   };
-  // next order index
   const [{ maxIdx }] = await db
     .select({ maxIdx: sql<number>`COALESCE(MAX(${placementTestQuestionsTable.orderIndex}), -1)::int` })
     .from(placementTestQuestionsTable)
@@ -236,9 +369,17 @@ router.post("/placement-tests/:id/questions", requireAuth, async (req, res): Pro
       sourceType: body.sourceType ?? "custom",
       sourceId: body.sourceId ?? null,
       type: body.type,
+      skill: body.skill ?? null,
+      level: body.level ?? null,
       content: body.content,
       options: (body.options as any) ?? null,
       correctAnswer: body.correctAnswer ?? null,
+      audioUrl: body.audioUrl ?? null,
+      videoUrl: body.videoUrl ?? null,
+      imageUrl: body.imageUrl ?? null,
+      passage: body.passage ?? null,
+      explanation: body.explanation ?? null,
+      metadata: (body.metadata as any) ?? null,
       points: body.points ?? 1,
     })
     .returning();
@@ -268,12 +409,102 @@ router.post("/placement-tests/:id/questions/bulk-import", requireAuth, async (re
     sourceType: "bank",
     sourceId: q.id,
     type: q.type,
+    skill: (q as any).skill ?? null,
+    level: (q as any).level ?? null,
     content: q.content,
     options: q.options as any,
     correctAnswer: q.correctAnswer as any,
+    audioUrl: (q as any).audioUrl ?? null,
+    videoUrl: (q as any).videoUrl ?? null,
+    imageUrl: (q as any).imageUrl ?? null,
+    passage: (q as any).passage ?? null,
+    explanation: (q as any).explanation ?? null,
+    metadata: (q as any).metadata ?? null,
     points: q.points ?? 1,
   }));
   if (rows.length === 0) { res.json({ imported: 0 }); return; }
+  const inserted = await db.insert(placementTestQuestionsTable).values(rows).returning();
+  res.json({ imported: inserted.length, questions: inserted });
+});
+
+// GET /placement-tests/quiz-templates  (list quiz templates available to import)
+router.get("/placement-tests/quiz-templates", requireAuth, async (req, res): Promise<void> => {
+  const user = req.dbUser!;
+  if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const rows = await db
+    .select({
+      id: quizTemplatesTable.id,
+      title: quizTemplatesTable.title,
+      description: quizTemplatesTable.description,
+      skill: quizTemplatesTable.skill,
+      level: quizTemplatesTable.level,
+      questionCount: sql<number>`(SELECT COUNT(*)::int FROM ${quizTemplateQuestionsTable} WHERE ${quizTemplateQuestionsTable.templateId} = ${quizTemplatesTable.id})`,
+    })
+    .from(quizTemplatesTable)
+    .orderBy(desc(quizTemplatesTable.updatedAt));
+  res.json(rows);
+});
+
+// GET /placement-tests/quiz-templates/:tid/questions
+router.get("/placement-tests/quiz-templates/:tid/questions", requireAuth, async (req, res): Promise<void> => {
+  const user = req.dbUser!;
+  if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const tid = Number(req.params["tid"]);
+  const rows = await db
+    .select()
+    .from(quizTemplateQuestionsTable)
+    .where(eq(quizTemplateQuestionsTable.templateId, tid))
+    .orderBy(quizTemplateQuestionsTable.orderIndex);
+  res.json(rows);
+});
+
+// POST /placement-tests/:id/import-from-quiz  (import from quiz template)
+router.post("/placement-tests/:id/import-from-quiz", requireAuth, async (req, res): Promise<void> => {
+  const user = req.dbUser!;
+  if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const testId = Number(req.params["id"]);
+  const body = req.body as { templateId: number; questionIds?: number[] };
+  if (!body.templateId) { res.status(400).json({ error: "templateId is required" }); return; }
+
+  const [test] = await db.select().from(placementTestsTable).where(eq(placementTestsTable.id, testId)).limit(1);
+  if (!test) { res.status(404).json({ error: "Bài test không tồn tại" }); return; }
+
+  const tplQs = await db.select().from(quizTemplateQuestionsTable)
+    .where(eq(quizTemplateQuestionsTable.templateId, Number(body.templateId)))
+    .orderBy(quizTemplateQuestionsTable.orderIndex);
+  if (tplQs.length === 0) { res.status(400).json({ error: "Quiz nguồn không có câu hỏi" }); return; }
+
+  const selectedIds = Array.isArray(body.questionIds) ? body.questionIds.map(Number) : null;
+  const toImport = selectedIds && selectedIds.length > 0
+    ? tplQs.filter(q => selectedIds.includes(q.id))
+    : tplQs;
+  if (toImport.length === 0) { res.status(400).json({ error: "Không có câu hỏi nào được chọn" }); return; }
+
+  const [{ maxIdx }] = await db
+    .select({ maxIdx: sql<number>`COALESCE(MAX(${placementTestQuestionsTable.orderIndex}), -1)::int` })
+    .from(placementTestQuestionsTable)
+    .where(eq(placementTestQuestionsTable.testId, testId));
+  let idx = (maxIdx ?? -1) + 1;
+
+  const rows = toImport.map(q => ({
+    testId,
+    orderIndex: idx++,
+    sourceType: "quiz",
+    sourceId: q.id,
+    type: q.type,
+    skill: (q as any).skill ?? null,
+    level: (q as any).level ?? null,
+    content: q.content,
+    options: q.options as any,
+    correctAnswer: q.correctAnswer as any,
+    audioUrl: (q as any).audioUrl ?? null,
+    videoUrl: (q as any).videoUrl ?? null,
+    imageUrl: (q as any).imageUrl ?? null,
+    passage: (q as any).passage ?? null,
+    explanation: (q as any).explanation ?? null,
+    metadata: (q as any).metadata ?? null,
+    points: q.points ?? 1,
+  }));
   const inserted = await db.insert(placementTestQuestionsTable).values(rows).returning();
   res.json({ imported: inserted.length, questions: inserted });
 });
@@ -284,11 +515,22 @@ router.patch("/placement-test-questions/:qid", requireAuth, async (req, res): Pr
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
   const qid = Number(req.params["qid"]);
   const body = req.body as Partial<{
-    content: string; type: string; options: unknown; correctAnswer: string | null; points: number;
+    content: string; type: string; skill: string | null; level: string | null;
+    options: unknown; correctAnswer: string | null;
+    audioUrl: string | null; videoUrl: string | null; imageUrl: string | null;
+    passage: string | null; explanation: string | null; metadata: unknown;
+    points: number;
   }>;
+  const updates: Record<string, unknown> = {};
+  for (const k of ["content", "type", "skill", "level", "correctAnswer", "audioUrl", "videoUrl", "imageUrl", "passage", "explanation", "points"] as const) {
+    if (k in body) updates[k] = (body as any)[k];
+  }
+  if ("options" in body) updates.options = body.options as any;
+  if ("metadata" in body) updates.metadata = body.metadata as any;
+
   const [row] = await db
     .update(placementTestQuestionsTable)
-    .set(body as any)
+    .set(updates as any)
     .where(eq(placementTestQuestionsTable.id, qid))
     .returning();
   if (!row) { res.status(404).json({ error: "Not found" }); return; }

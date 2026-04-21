@@ -306,3 +306,41 @@ cd lib/api-zod && npx tsc -p tsconfig.json
 ## Seed Data
 
 On first API server start, demo data is automatically seeded (courses, questions, assignments, badges) if the database is empty.
+
+## Curriculum Feature (Course → Chapter → Lesson → Block)
+
+Frappe Learning–style hierarchical curriculum implemented across schema, API, and UI:
+
+- **DB tables** (`lib/db/src/schema/learning.ts`): `chapters`, `lessons`, `lesson_blocks`, `lesson_progress`, `certificates`. All 5 tables exist in Postgres (verified April 2026).
+- **API routes**:
+  - Curriculum CRUD/reorder: `artifacts/api-server/src/routes/curriculum.ts`
+  - Public catalog + self-enroll: `artifacts/api-server/src/routes/catalog.ts`
+  - Certificates: `artifacts/api-server/src/routes/certificates.ts`
+- **Frontend pages** (TanStack Router under `artifacts/edu-platform/app/routes/`):
+  - Teacher curriculum builder: `_auth/courses/$id_.curriculum.tsx` → `pages/curriculum-builder.tsx`
+  - Student course player: `_auth/courses/$id_.learn.tsx` → `pages/course-player.tsx`
+  - Public catalog: `catalog/index.tsx` + `catalog/$slug.tsx` → `pages/{catalog,course-landing}.tsx`
+  - Certificates: `_auth/certificates/{index,$certNo}.tsx` → `pages/{certificates,certificate}.tsx`
+
+Block content key conventions (used by both builder and player — keep in sync):
+- `heading`: `{ text, level }`
+- `text`: `{ content }` (NOT `html`)
+- `youtube`: `{ url }`
+- `upload`: `{ url, filename, mimeType }`
+- `quiz`: `{ questions: [...] }` — embedded inline, not a quiz_template reference
+- `assignment`: `{ description, dueDate }` — embedded inline, not an assignments reference
+
+## Placement Tests — All 12 Question Types
+
+`artifacts/api-server/src/routes/placement-tests.ts` supports the same 12 question types as assignments:
+- Auto-graded: mcq (single/multi via `metadata.allowMultiple`), true_false, fill_blank (JSON array), short_answer, word_selection, matching, drag_drop, sentence_reorder, reading/listening (sub-questions), video_interactive (ratio).
+- Manual: essay, open_end, long_answer.
+
+DB schema extended with: `skill, level, audioUrl, videoUrl, imageUrl, passage, explanation, metadata` columns.
+
+Endpoints:
+- `POST /placement-tests/:id/questions` — accepts full question shape (all media + metadata fields)
+- `PATCH /placement-test-questions/:qid` — partial update preserving null values
+- `POST /placement-tests/:id/questions/bulk-import` — copy from question bank with all fields
+- `POST /placement-tests/:id/import-from-quiz` — copy from quiz template (Quiz nguồn)
+- `GET /placement-tests/quiz-templates` + `GET /placement-tests/quiz-templates/:tid/questions` — listing
