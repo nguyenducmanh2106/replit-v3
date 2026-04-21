@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Link } from "@/lib/routing";
+import { MarkdownView } from "@/components/markdown-view";
 import { useGetMe } from "@workspace/api-client-react";
 import {
   Play, Plus, CheckSquare, Clock, Calendar, Trash2, Eye, Pencil,
@@ -716,18 +717,24 @@ function QuestionCard({ q, idx, onEdit, onDelete, isDraft, isTeacher }: {
               <div className="flex items-center gap-1.5 mb-1 text-xs font-medium text-amber-700">
                 <BookOpen className="w-3.5 h-3.5" /> Bài đọc
               </div>
-              <p className="text-sm text-amber-900 whitespace-pre-wrap line-clamp-4">{q.passage}</p>
+              <div className="text-sm text-amber-900 line-clamp-4">
+                <MarkdownView source={q.passage} compact />
+              </div>
             </div>
           )}
 
-          <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{q.content}</p>
+          <div className="text-sm text-gray-800 leading-relaxed">
+            <MarkdownView source={q.content} compact />
+          </div>
 
           <OptionsView type={q.type} options={q.options} correctAnswer={q.correctAnswer} metadata={q.metadata} />
 
           {q.explanation && (
             <div className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-              <span className="font-medium text-yellow-700">Giải thích:</span>{" "}
-              <span className="text-yellow-800">{q.explanation}</span>
+              <div className="font-medium text-yellow-700 mb-1">Giải thích:</div>
+              <div className="text-yellow-800">
+                <MarkdownView source={q.explanation} compact />
+              </div>
             </div>
           )}
         </div>

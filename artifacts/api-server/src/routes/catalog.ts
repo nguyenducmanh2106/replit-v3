@@ -15,12 +15,13 @@ const router: IRouter = Router();
 router.get("/catalog/courses", async (req, res): Promise<void> => {
   const category = typeof req.query.category === "string" ? req.query.category : null;
   const level = typeof req.query.level === "string" ? req.query.level : null;
-  const q = typeof req.query.q === "string" ? req.query.q : null;
+  const search = typeof req.query.search === "string" ? req.query.search
+    : typeof req.query.q === "string" ? req.query.q : null;
 
   const conds = [eq(coursesTable.published, true)];
   if (category) conds.push(eq(coursesTable.category, category));
   if (level) conds.push(eq(coursesTable.level, level));
-  if (q) conds.push(ilike(coursesTable.name, `%${q}%`));
+  if (search) conds.push(ilike(coursesTable.name, `%${search}%`));
 
   const courses = await db
     .select()

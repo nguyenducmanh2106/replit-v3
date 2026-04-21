@@ -387,7 +387,7 @@ function QuestionCard({ q, idx, onEdit, onDelete }: {
               <div className="flex items-center gap-1.5 mb-1 text-xs font-medium text-amber-700">
                 <BookOpen className="w-3.5 h-3.5" /> Bài đọc
               </div>
-              <p className="text-sm text-amber-900 whitespace-pre-wrap line-clamp-4">{q.passage}</p>
+              <div className="text-sm text-amber-900 line-clamp-4"><MarkdownView source={q.passage} compact /></div>
             </div>
           )}
 

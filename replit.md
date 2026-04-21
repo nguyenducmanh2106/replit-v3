@@ -64,6 +64,12 @@ Better Auth replaces Clerk everywhere:
 | `/dashboard` | Role-adaptive dashboard with charts and activity feed |
 | `/courses` | Course list + creation modal |
 | `/courses/:id` | Course detail (members + assignments + schedule + documents + import tabs) |
+| `/courses/:id/curriculum` | Curriculum Builder — teacher creates chapters, lessons, lesson blocks (heading/text/youtube/upload/quiz/assignment) |
+| `/courses/:id/learn` | Course Player — student sidebar tree, progress bar, mark complete, prev/next nav, auto-certificate on 100% |
+| `/catalog` | Public course catalog (no auth) — search, category filter, course cards |
+| `/catalog/:slug` | Course landing page — description, chapters preview, self-enroll button |
+| `/certificates` | My certificates list (auto-issued on 100% completion) |
+| `/certificates/:certNo` | Printable certificate detail page (public) |
 | `/questions` | Question bank with skill/level/type filters |
 | `/assignments` | Assignment list with status filter + create dialog (maxAttempts, allowReview) |
 | `/assignments/:id` | Assignment editor (add questions, import from template, publish/close, teacher preview) |
@@ -131,6 +137,21 @@ Better Auth replaces Clerk everywhere:
 - `GET /api/gamification/badges`, `leaderboard`, `streak` — Gamification
 - `GET /api/enterprise/department-report`, `competency-matrix` — Enterprise
 - `POST /api/lms/sync`, `GET /api/lms/status` — LMS integration stubs
+
+### Curriculum (Frappe Learning-style)
+- `GET /api/courses/:id/curriculum` — full chapter+lesson tree with per-lesson completion status and progress %
+- `GET/POST /api/courses/:id/chapters`, `PATCH/DELETE /api/chapters/:chapterId`
+- `POST /api/courses/:id/chapters/reorder`
+- `GET/POST /api/chapters/:chapterId/lessons`, `GET/PATCH/DELETE /api/lessons/:lessonId`
+- `POST /api/chapters/:chapterId/lessons/reorder`
+- `GET/POST /api/lessons/:lessonId/blocks`, `PATCH/DELETE /api/lesson-blocks/:blockId`
+- `POST /api/lessons/:lessonId/blocks/reorder`
+- `POST /api/lessons/:lessonId/complete` — mark lesson done; auto-issues certificate on 100% and returns `{ certificateIssued, certificateNo, progressPercent }`
+- `GET /api/catalog/courses` — public list (search, category, level filters)
+- `GET /api/catalog/courses/:slug` — public course detail with chapter outline + enroll status
+- `POST /api/courses/:id/enroll` — self-enroll (auth required)
+- `GET /api/certificates` — my certificates list
+- `GET /api/certificates/:certificateNo` — public certificate lookup
 
 ### Phase 2
 - `GET/POST /api/courses/:id/schedule`, `DELETE /api/courses/:id/schedule/:eventId`
