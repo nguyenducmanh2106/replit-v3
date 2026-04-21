@@ -520,15 +520,20 @@ router.get("/submissions/:id", requireAuth, async (req, res): Promise<void> => {
         ...result,
         score: null,
         percentage: null,
-        answers: result.answers.map(a => ({ ...a, correctAnswer: null, feedback: null, teacherComment: null, pointsEarned: null, isCorrect: null })),
+        answers: result.answers.map(a => ({ ...a, correctAnswer: null, feedback: null, teacherComment: null, pointsEarned: null, isCorrect: null, questionExplanation: null })),
       }));
       return;
     }
-    if (result.status !== "published") {
-      const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, result.assignmentId));
-      if (assignment && !assignment.allowReview) {
-        res.status(403).json({ error: "Giáo viên chưa cho phép xem lại bài làm" }); return;
-      }
+    // For graded/published submissions, students can always see their score, their answers,
+    // teacher feedback. Only mask correct answers + explanations when teacher disabled allowReview.
+    const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, result.assignmentId));
+    const allowReview = assignment?.allowReview ?? false;
+    if (!allowReview) {
+      res.json(GetSubmissionResponse.parse({
+        ...result,
+        answers: result.answers.map(a => ({ ...a, correctAnswer: null, questionExplanation: null })),
+      }));
+      return;
     }
   }
 
