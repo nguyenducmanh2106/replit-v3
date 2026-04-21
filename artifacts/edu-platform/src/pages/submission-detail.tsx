@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "@/lib/routing";
 import {
   useGetSubmission, useGradeSubmission,
@@ -734,10 +734,15 @@ export default function SubmissionDetailPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [gradeScore, setGradeScore] = useState<string>("");
   const [gradeFeedback, setGradeFeedback] = useState<string>("");
   const [questionGrades, setQuestionGrades] = useState<Record<number, { points: string; comment: string }>>({});
   const [savingQuestion, setSavingQuestion] = useState<number | null>(null);
+  const [savingFeedback, setSavingFeedback] = useState(false);
+  const [publishing, setPublishing] = useState<"single" | "all" | null>(null);
+
+  useEffect(() => {
+    if (submission?.feedback != null) setGradeFeedback(submission.feedback);
+  }, [submission?.feedback]);
 
   const isTeacher = me?.role && ["teacher", "center_admin", "school_admin", "system_admin", "enterprise_admin"].includes(me.role);
 
@@ -781,16 +786,69 @@ export default function SubmissionDetailPage() {
   }
 
   async function handleSaveFeedback() {
-    const parsedScore = parseFloat(gradeScore);
-    const score = isNaN(parsedScore) ? (submission?.score ?? 0) : parsedScore;
+    if (!submission) return;
+    setSavingFeedback(true);
     try {
-      await gradeSubmission({ id: submissionId, data: { score, feedback: gradeFeedback || undefined, keepStatus: true } });
+      await gradeSubmission({
+        id: submissionId,
+        data: {
+          score: submission.score ?? 0,
+          feedback: gradeFeedback.trim() ? gradeFeedback : undefined,
+          keepStatus: true,
+        },
+      });
       await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
-      toast({ title: "Đã lưu nhận xét" });
+      toast({
+        title: "Đã lưu nhận xét",
+        description: submission.status === "pending_review"
+          ? "Nhận xét lưu dạng nháp — học sinh chỉ thấy sau khi publish"
+          : "Học sinh đã có thể thấy nhận xét cập nhật",
+      });
     } catch {
       toast({ title: "Lỗi", description: "Không thể lưu nhận xét", variant: "destructive" });
+    } finally {
+      setSavingFeedback(false);
     }
   }
+
+  async function handlePublishSingle() {
+    if (!submission) return;
+    setPublishing("single");
+    try {
+      await gradeSubmission({
+        id: submissionId,
+        data: {
+          score: submission.score ?? 0,
+          feedback: gradeFeedback.trim() ? gradeFeedback : undefined,
+          keepStatus: false,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
+      toast({ title: "Đã công bố kết quả cho học sinh này" });
+    } catch {
+      toast({ title: "Lỗi", description: "Không thể công bố", variant: "destructive" });
+    } finally {
+      setPublishing(null);
+    }
+  }
+
+  async function handlePublishAll() {
+    if (!submission) return;
+    setPublishing("all");
+    try {
+      const result = await publishGradesMutate({ id: submission.assignmentId });
+      await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
+      toast({ title: result.message || "Đã publish kết quả" });
+    } catch {
+      toast({ title: "Lỗi", description: "Không thể publish kết quả", variant: "destructive" });
+    } finally {
+      setPublishing(null);
+    }
+  }
+
+  const feedbackChanged = gradeFeedback.trim() !== (submission?.feedback ?? "").trim();
+  const isPendingReview = submission?.status === "pending_review";
+  const isPublishedOrGraded = submission?.status === "published" || submission?.status === "graded";
 
   return (
     <div className="space-y-6">
@@ -1257,40 +1315,87 @@ export default function SubmissionDetailPage() {
                 <div className="border-t pt-4 space-y-4">
                   <div>
                     <p className="text-sm font-semibold">Nhận xét chung (tuỳ chọn)</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Nhận xét nội bộ — chỉ hiển thị cho học sinh sau khi publish kết quả</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isPendingReview
+                        ? "Nhận xét nội bộ — chỉ hiển thị cho học sinh sau khi công bố kết quả"
+                        : "Học sinh đã có thể thấy kết quả — chỉnh sửa nhận xét sẽ áp dụng ngay"}
+                    </p>
                   </div>
                   <Textarea
                     value={gradeFeedback}
                     onChange={e => setGradeFeedback(e.target.value)}
-                    placeholder={submission.feedback ?? "Nhận xét chung cho học sinh..."}
+                    placeholder="Nhận xét chung cho học sinh..."
                     rows={3}
                   />
-                  <div className="flex flex-col gap-3">
-                    <div className="flex gap-3 items-center">
-                      <Button onClick={handleSaveFeedback} variant="outline" size="sm">
+
+                  <div className="space-y-3">
+                    {/* Save feedback (always available) */}
+                    <div className="flex flex-wrap gap-3 items-center">
+                      <Button
+                        onClick={handleSaveFeedback}
+                        variant="outline"
+                        size="sm"
+                        disabled={savingFeedback || !feedbackChanged}
+                      >
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        Lưu nhận xét
+                        {savingFeedback
+                          ? "Đang lưu..."
+                          : isPendingReview
+                            ? "Lưu nháp nhận xét"
+                            : "Cập nhật nhận xét"}
                       </Button>
-                      <span className="text-xs text-muted-foreground">Lưu nháp — chưa công bố điểm cho học sinh</span>
+                      <span className="text-xs text-muted-foreground">
+                        {!feedbackChanged
+                          ? "Chưa có thay đổi"
+                          : isPendingReview
+                            ? "Lưu tạm — chưa công bố cho học sinh"
+                            : "Áp dụng ngay cho học sinh"}
+                      </span>
                     </div>
-                    {submission.status === "pending_review" && (
-                      <div className="flex gap-3 items-center pt-1 border-t">
-                        <Button
-                          onClick={async () => {
-                            try {
-                              const result = await publishGradesMutate({ id: submission.assignmentId });
-                              await queryClient.invalidateQueries({ queryKey: getGetSubmissionQueryKey(submissionId) });
-                              toast({ title: result.message || "Đã publish kết quả" });
-                            } catch {
-                              toast({ title: "Lỗi", description: "Không thể publish kết quả", variant: "destructive" });
-                            }
-                          }}
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          Publish kết quả
-                        </Button>
-                        <span className="text-xs text-muted-foreground">Công bố điểm & nhận xét — học sinh sẽ thấy kết quả</span>
+
+                    {/* Publish actions — only for pending_review */}
+                    {isPendingReview && (
+                      <div className="pt-3 border-t space-y-2">
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Công bố kết quả</p>
+
+                        <div className="flex flex-wrap gap-3 items-center">
+                          <Button
+                            onClick={handlePublishSingle}
+                            size="sm"
+                            disabled={publishing !== null}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {publishing === "single" ? "Đang công bố..." : "Công bố chỉ bài này"}
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            Học sinh <span className="font-medium text-gray-700">{submission.studentName}</span> sẽ thấy điểm và nhận xét ngay
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 items-center">
+                          <Button
+                            onClick={handlePublishAll}
+                            size="sm"
+                            variant="outline"
+                            disabled={publishing !== null}
+                          >
+                            {publishing === "all" ? "Đang công bố..." : "Công bố tất cả bài chờ chấm"}
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            Áp dụng cho <span className="font-medium">tất cả</span> bài nộp đang chờ chấm trong assignment này
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {isPublishedOrGraded && (
+                      <div className="pt-3 border-t flex items-center gap-2 text-xs text-green-700">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>
+                          {submission.status === "published"
+                            ? "Đã công bố — học sinh đang thấy kết quả này"
+                            : "Đã chấm tự động — học sinh đang thấy kết quả này"}
+                        </span>
                       </div>
                     )}
                   </div>
