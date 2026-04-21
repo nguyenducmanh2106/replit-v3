@@ -171,13 +171,10 @@ function gradeAnswer(question: QuestionLike, studentAnswer: string): { isCorrect
     const correctArr = safeJson<string[]>(ca, [ca]);
     const studentArr = safeJson<string[]>(studentAnswer, [studentAnswer]);
     if (correctArr.length === 0) return { isCorrect: null, pointsEarned: 0 };
-    let correct = 0;
-    for (let i = 0; i < correctArr.length; i++) {
-      if ((studentArr[i] ?? "").trim().toLowerCase() === (correctArr[i] ?? "").trim().toLowerCase()) correct++;
-    }
-    const ratio = correct / correctArr.length;
-    const pointsEarned = Math.round(question.points * ratio);
-    return { isCorrect: ratio === 1, pointsEarned };
+    const allCorrect = correctArr.every((c, i) =>
+      (studentArr[i] ?? "").trim().toLowerCase() === (c ?? "").trim().toLowerCase()
+    );
+    return { isCorrect: allCorrect, pointsEarned: allCorrect ? question.points : 0 };
   }
 
   if (question.type === "word_selection") {
