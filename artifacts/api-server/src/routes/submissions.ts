@@ -192,30 +192,30 @@ function gradeAnswer(question: QuestionLike, studentAnswer: string): { isCorrect
     const pairs = safeJson<Array<{ left: string; right: string }>>(opts, []);
     if (pairs.length === 0) return { isCorrect: null, pointsEarned: 0 };
     const studentMatches = safeJson<Record<string, string>>(studentAnswer, {});
-    let correct = 0;
-    for (const pair of pairs) {
-      if (studentMatches[pair.left] === pair.right) correct++;
-    }
-    const ratio = correct / pairs.length;
-    return { isCorrect: ratio === 1, pointsEarned: Math.round(question.points * ratio) };
+    const allCorrect = pairs.every(pair => studentMatches[pair.left] === pair.right);
+    return { isCorrect: allCorrect, pointsEarned: allCorrect ? question.points : 0 };
   }
 
   if (question.type === "drag_drop") {
     const ddOpts = safeJson<{ items: string[]; zones: Array<{ label: string; accepts: string[] }> }>(opts, { items: [], zones: [] });
     if (ddOpts.zones.length === 0) return { isCorrect: null, pointsEarned: 0 };
     const studentZones = safeJson<Record<string, string[]>>(studentAnswer, {});
-    let correct = 0;
     let total = 0;
+    let allCorrect = true;
     for (const zone of ddOpts.zones) {
       const placed = studentZones[zone.label] ?? [];
-      for (const item of zone.accepts) {
+      const accepts = zone.accepts ?? [];
+      for (const item of accepts) {
         total++;
-        if (placed.includes(item)) correct++;
+        if (!placed.includes(item)) allCorrect = false;
+      }
+      // any extra item not in accepts also counts as wrong
+      for (const item of placed) {
+        if (!accepts.includes(item)) allCorrect = false;
       }
     }
     if (total === 0) return { isCorrect: null, pointsEarned: 0 };
-    const ratio = correct / total;
-    return { isCorrect: ratio === 1, pointsEarned: Math.round(question.points * ratio) };
+    return { isCorrect: allCorrect, pointsEarned: allCorrect ? question.points : 0 };
   }
 
   if (question.type === "sentence_reorder") {
