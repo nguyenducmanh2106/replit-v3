@@ -186,11 +186,29 @@ function gradeAnswer(question: QuestionLike, studentAnswer: string): { isCorrect
   }
 
   if (question.type === "matching") {
-    const pairs = safeJson<Array<{ left: string; right: string }>>(opts, []);
-    if (pairs.length === 0) return { isCorrect: null, pointsEarned: 0 };
+    // correct_answer is the source of truth: { "leftItem": "rightItem", ... }
+    // options may be either the same dict, or ["left | right", ...] legacy format.
+    let correctDict = safeJson<Record<string, string>>(ca, {});
+    if (!correctDict || typeof correctDict !== "object" || Array.isArray(correctDict) || Object.keys(correctDict).length === 0) {
+      // Fallback: parse options array of "left | right" strings
+      const arr = safeJson<unknown>(opts, null);
+      correctDict = {};
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          if (typeof item === "string" && item.includes("|")) {
+            const [l, ...rest] = item.split("|");
+            correctDict[l!.trim()] = rest.join("|").trim();
+          } else if (item && typeof item === "object" && "left" in item && "right" in item) {
+            correctDict[(item as any).left] = (item as any).right;
+          }
+        }
+      }
+    }
+    const entries = Object.entries(correctDict);
+    if (entries.length === 0) return { isCorrect: null, pointsEarned: 0 };
     const studentMatches = safeJson<Record<string, string>>(studentAnswer, {});
     const norm = (s: string | undefined | null) => (s ?? "").trim().toLowerCase();
-    const allCorrect = pairs.every(pair => norm(studentMatches[pair.left]) === norm(pair.right));
+    const allCorrect = entries.every(([left, right]) => norm(studentMatches[left]) === norm(right));
     return { isCorrect: allCorrect, pointsEarned: allCorrect ? question.points : 0 };
   }
 
