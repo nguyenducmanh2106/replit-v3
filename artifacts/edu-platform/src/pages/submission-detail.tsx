@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useParams } from "@/lib/routing";
 import {
   useGetSubmission, useGradeSubmission,
@@ -19,15 +19,139 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, Star, MessageSquare, Trash2, Target, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Star, MessageSquare, Trash2, Target, Sparkles, ChevronDown, ChevronUp, BookOpen } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useGetMe } from "@workspace/api-client-react";
+import { MarkdownView } from "@/components/markdown-view";
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
   try { return format(parseISO(iso), "dd/MM/yyyy HH:mm"); } catch { return iso ?? "—"; }
+}
+
+function safeJson<T>(s: string | null | undefined, fallback: T): T {
+  if (!s) return fallback;
+  try { return JSON.parse(s) as T; } catch { return fallback; }
+}
+
+const QUESTION_TYPE_LABELS: Record<string, string> = {
+  mcq: "Trắc nghiệm", true_false: "Đúng/Sai", fill_blank: "Điền chỗ trống",
+  word_selection: "Chọn từ", matching: "Nối cặp", drag_drop: "Kéo thả",
+  sentence_reorder: "Sắp xếp câu", reading: "Đọc hiểu", listening: "Nghe hiểu",
+  video_interactive: "Video tương tác", essay: "Bài luận", open_end: "Câu hỏi mở",
+};
+
+function formatStudentAnswer(answer: string | null, type: string | null): React.ReactNode {
+  if (!answer) return <span className="text-gray-400 italic">(Bỏ trống)</span>;
+  const t = type ?? "";
+
+  if (t === "mcq") {
+    const answers = answer.split(",").map(a => a.trim()).filter(Boolean);
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {answers.map((a, i) => (
+          <span key={i} className="px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-lg text-sm font-medium text-blue-800">{a}</span>
+        ))}
+      </div>
+    );
+  }
+  if (t === "true_false") {
+    return (
+      <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${
+        answer === "Đúng" ? "bg-green-50 border-green-300 text-green-700" : "bg-red-50 border-red-300 text-red-700"
+      }`}>{answer}</span>
+    );
+  }
+  if (t === "fill_blank") {
+    const blanks = safeJson<string[]>(answer, [answer]);
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {blanks.map((b, i) => (
+          <span key={i} className="px-2.5 py-1 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-800">
+            Ô {i + 1}: {b}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  if (t === "word_selection") {
+    const words = safeJson<string[]>(answer, []);
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {words.map((w, i) => (
+          <span key={i} className="px-2 py-0.5 bg-amber-50 border border-amber-300 rounded text-sm font-medium text-amber-800">{w}</span>
+        ))}
+      </div>
+    );
+  }
+  if (t === "matching") {
+    const pairs = safeJson<Array<{ left: string; right: string }>>(answer, []);
+    if (pairs.length > 0) {
+      return (
+        <div className="space-y-1">
+          {pairs.map((p, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <span className="px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-blue-800 font-medium">{p.left}</span>
+              <span className="text-gray-400">↔</span>
+              <span className="px-2 py-0.5 bg-pink-50 border border-pink-200 rounded text-pink-800 font-medium">{p.right}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  }
+  if (t === "sentence_reorder") {
+    const words = safeJson<string[]>(answer, [answer]);
+    return <span className="text-sm text-gray-800 font-medium">{Array.isArray(words) ? words.join(" ") : answer}</span>;
+  }
+  if (t === "drag_drop") {
+    return <span className="text-sm text-gray-800 whitespace-pre-wrap">{answer}</span>;
+  }
+  return <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{answer}</p>;
+}
+
+function formatCorrectAnswer(correctAnswer: string | null, options: string | null, type: string | null): React.ReactNode {
+  if (!correctAnswer) return null;
+  const t = type ?? "";
+  if (t === "mcq") {
+    const opts = safeJson<string[]>(options, []);
+    const correct = correctAnswer.split(",").map(a => a.trim()).filter(Boolean);
+    const labels = "ABCDEFGHIJ";
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {correct.map((c, i) => {
+          const idx = opts.indexOf(c);
+          return (
+            <span key={i} className="px-2.5 py-1 bg-green-50 border border-green-300 rounded-lg text-sm font-bold text-green-800">
+              {idx >= 0 ? `${labels[idx]}. ${c}` : c}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+  if (t === "true_false") {
+    return (
+      <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${
+        correctAnswer === "Đúng" ? "bg-green-50 border-green-300 text-green-700" : "bg-red-50 border-red-300 text-red-700"
+      }`}>{correctAnswer}</span>
+    );
+  }
+  if (t === "fill_blank") {
+    const blanks = safeJson<string[]>(correctAnswer, [correctAnswer]);
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {blanks.map((b, i) => (
+          <span key={i} className="px-2.5 py-1 bg-green-50 border border-green-300 rounded-lg text-sm font-medium text-green-800">
+            Ô {i + 1}: {b}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  return <span className="text-sm text-green-700 font-medium">{correctAnswer}</span>;
 }
 
 const HIGHLIGHT_COLORS = [
@@ -565,173 +689,203 @@ export default function SubmissionDetailPage() {
             <CardContent>
               <div className="space-y-4">
                 {(submission.answers ?? []).map((answer: any, index: number) => {
+                  const qType = answer.questionType as string | null;
                   const isEssay = answer.isCorrect === undefined || answer.isCorrect === null;
+                  const isOpenEnd = qType === "open_end";
+                  const isEssayType = qType === "essay";
                   const anns = annotationsForAnswer(answer.questionId);
                   const isGradedEssay = isEssay && (
                     submission.status === "published" ||
                     (submission.status === "graded" && (answer.pointsEarned != null || answer.teacherComment != null))
                   );
+
+                  let openEndParsed: any = null;
+                  if (isOpenEnd) {
+                    try { openEndParsed = JSON.parse(answer.answer || "{}"); } catch {}
+                  }
+
                   return (
-                    <div key={answer.questionId} className={`p-4 rounded-xl border-2 ${
+                    <div key={answer.questionId} className={`rounded-xl border-2 overflow-hidden ${
                       isEssay
-                        ? isGradedEssay
-                          ? "border-green-100 bg-green-50/30"
-                          : "border-amber-100 bg-amber-50/30"
-                        : answer.isCorrect ? "border-green-100 bg-green-50/30" :
-                      "border-red-100 bg-red-50/30"
+                        ? isGradedEssay ? "border-green-200" : "border-amber-200"
+                        : answer.isCorrect ? "border-green-200" : "border-red-200"
                     }`}>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-white border">
+                      {/* Header */}
+                      <div className={`flex items-center justify-between px-4 py-2.5 ${
+                        isEssay
+                          ? isGradedEssay ? "bg-green-50" : "bg-amber-50"
+                          : answer.isCorrect ? "bg-green-50" : "bg-red-50"
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center bg-white border shadow-sm">
                             {isEssay ? (
-                              isGradedEssay
-                                ? <CheckCircle className="w-4 h-4 text-success" />
-                                : <Clock className="w-4 h-4 text-warning" />
+                              isGradedEssay ? <CheckCircle className="w-3.5 h-3.5 text-success" /> : <Clock className="w-3.5 h-3.5 text-warning" />
                             ) : answer.isCorrect ? (
-                              <CheckCircle className="w-4 h-4 text-success" />
+                              <CheckCircle className="w-3.5 h-3.5 text-success" />
                             ) : (
-                              <XCircle className="w-4 h-4 text-red-500" />
+                              <XCircle className="w-3.5 h-3.5 text-red-500" />
                             )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">Câu {index + 1}</p>
-                            <div className="mt-2 space-y-1">
-                              {isEssay ? (
-                                <div>
-                                  <p className="text-xs text-muted-foreground mb-1">{(() => {
-                                    let parsed: any = null;
-                                    try { parsed = JSON.parse(answer.answer || "{}"); } catch {}
-                                    return (parsed?.input_type || parsed?.mode) ? "Câu hỏi mở:" : "Bài luận:";
-                                  })()}</p>
-                                  {(() => {
-                                    let openEndParsed: any = null;
-                                    try { openEndParsed = JSON.parse(answer.answer || "{}"); } catch {}
-                                    const isOpenEnd = openEndParsed?.input_type || openEndParsed?.mode;
+                          <span className="text-sm font-semibold text-gray-800">Câu {index + 1}</span>
+                          {qType && (
+                            <Badge variant="outline" className="text-xs py-0 h-5">
+                              {QUESTION_TYPE_LABELS[qType] ?? qType}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 text-warning" />
+                          <span className="text-sm font-semibold text-gray-700">{answer.pointsEarned ?? "—"}</span>
+                          {answer.points != null && <span className="text-xs text-gray-400">/ {answer.points}</span>}
+                        </div>
+                      </div>
 
-                                    if (isOpenEnd) {
-                                      const textVal = openEndParsed.text_content || openEndParsed.text;
-                                      const audioVal = openEndParsed.audio_url || openEndParsed.audioUrl;
-                                      const transcriptVal = openEndParsed.transcript;
-                                      const durationVal = openEndParsed.duration_seconds;
-                                      const confidenceVal = openEndParsed.stt_confidence;
-                                      const imageVal = openEndParsed.imageUrl;
-                                      const hasContent = textVal || audioVal || imageVal;
+                      {/* Body */}
+                      <div className="p-4 bg-white space-y-3">
 
-                                      return (
-                                        <div className="space-y-2">
-                                          {textVal && (
-                                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{textVal}</p>
-                                          )}
-                                          {audioVal && (
-                                            <div className="p-3 bg-violet-50 rounded-xl border border-violet-200 space-y-2">
-                                              <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium text-violet-700">🎙️ Ghi âm</span>
-                                                <div className="flex items-center gap-2">
-                                                  {durationVal && <span className="text-xs text-gray-400">{Math.floor(durationVal / 60)}:{String(durationVal % 60).padStart(2, "0")}</span>}
-                                                  {confidenceVal != null && confidenceVal > 0 && (
-                                                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${confidenceVal >= 0.8 ? "bg-green-100 text-green-700" : confidenceVal >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
-                                                      STT: {Math.round(confidenceVal * 100)}%
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              </div>
-                                              <audio controls src={audioVal} className="w-full h-10" />
-                                              {transcriptVal && (
-                                                <div className="mt-1 p-2 bg-white rounded-lg border border-violet-100">
-                                                  <p className="text-xs text-gray-400 mb-0.5">Bản chuyển đổi:</p>
-                                                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{transcriptVal}</p>
-                                                </div>
-                                              )}
-                                            </div>
-                                          )}
-                                          {imageVal && (
-                                            <div className="p-2 bg-violet-50 rounded-xl border border-violet-200">
-                                              <img src={imageVal} alt="Ảnh trả lời" className="max-h-64 rounded-lg object-contain" />
-                                            </div>
-                                          )}
-                                          {!hasContent && (
-                                            <p className="text-sm text-gray-400 italic">(Bỏ trống)</p>
-                                          )}
-                                        </div>
-                                      );
-                                    }
-
-                                    return isTeacher ? (
-                                      <AnnotatedText
-                                        text={answer.answer || "(Bỏ trống)"}
-                                        annotations={anns.map((a: any) => ({
-                                          id: a.id,
-                                          startOffset: a.startOffset,
-                                          endOffset: a.endOffset,
-                                          comment: a.comment ?? null,
-                                          color: a.color,
-                                        }))}
-                                        onAnnotate={(start, end, color, comment) => handleAnnotate(answer.questionId, start, end, color, comment)}
-                                        canAnnotate={!!isTeacher}
-                                      />
-                                    ) : (
-                                      <p className="text-sm text-gray-900 whitespace-pre-wrap">{answer.answer || "(Bỏ trống)"}</p>
-                                    );
-                                  })()}
-                                  {anns.length > 0 && (
-                                    <div className="mt-2 space-y-1">
-                                      {anns.map((a: any) => (
-                                        <div key={a.id} className="flex items-center justify-between px-2 py-1 rounded bg-white border text-xs">
-                                          <div className="flex items-center gap-2">
-                                            <MessageSquare className="w-3 h-3 text-muted-foreground" />
-                                            <span className="text-muted-foreground">[{a.startOffset}:{a.endOffset}]</span>
-                                            {a.comment && <span>{a.comment}</span>}
-                                          </div>
-                                          {isTeacher && (
-                                            <button onClick={() => handleDeleteAnnotation(a.id)} className="text-red-400 hover:text-red-600">
-                                              <Trash2 className="w-3 h-3" />
-                                            </button>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {isTeacher && (
-                                    <p className="text-xs text-muted-foreground mt-1 italic">💡 Chọn văn bản để thêm nhận xét inline</p>
-                                  )}
-                                  {!isTeacher && (
-                                    isGradedEssay ? (
-                                      <Badge className="bg-green-100 text-green-700 border-0 text-xs mt-1">Đã chấm</Badge>
-                                    ) : (
-                                      <Badge className="bg-amber-100 text-warning border-0 text-xs mt-1">Chờ chấm tay</Badge>
-                                    )
-                                  )}
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="flex gap-2">
-                                    <span className="text-xs text-muted-foreground w-24 flex-shrink-0">Câu trả lời:</span>
-                                    <span className="text-sm text-gray-900">{answer.answer || "(Bỏ trống)"}</span>
-                                  </div>
-                                  {answer.correctAnswer && (
-                                    <div className="flex gap-2">
-                                      <span className="text-xs text-muted-foreground w-24 flex-shrink-0">Đáp án đúng:</span>
-                                      <span className="text-sm text-success font-medium">{answer.correctAnswer}</span>
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                              {answer.feedback && (
-                                <p className="text-xs text-muted-foreground mt-1 italic">{answer.feedback}</p>
-                              )}
-                              {answer.teacherComment && (
-                                <div className="mt-2 p-2 bg-blue-50 border border-blue-100 rounded-lg">
-                                  <p className="text-xs font-medium text-blue-700 mb-0.5">Nhận xét giáo viên:</p>
-                                  <p className="text-sm text-blue-900">{answer.teacherComment}</p>
-                                </div>
-                              )}
+                        {/* Question content */}
+                        {answer.questionContent && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Đề bài</p>
+                            <div className="text-sm text-gray-900">
+                              <MarkdownView source={answer.questionContent} />
                             </div>
                           </div>
+                        )}
+
+                        {/* Passage for reading/listening */}
+                        {answer.questionPassage && (qType === "reading" || qType === "listening") && (
+                          <details className="rounded-lg border border-blue-100 bg-blue-50/40">
+                            <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer text-xs font-semibold text-blue-700 select-none">
+                              <BookOpen className="w-3.5 h-3.5" />
+                              Xem đoạn văn / transcript
+                            </summary>
+                            <div className="px-4 pb-3 pt-1 text-sm text-gray-800">
+                              <MarkdownView source={answer.questionPassage} />
+                            </div>
+                          </details>
+                        )}
+
+                        {/* Student answer */}
+                        <div>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Câu trả lời của học sinh</p>
+                          {isOpenEnd && openEndParsed ? (
+                            <div className="space-y-2">
+                              {openEndParsed.text_content || openEndParsed.text ? (
+                                <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                                  {openEndParsed.text_content || openEndParsed.text}
+                                </p>
+                              ) : null}
+                              {(openEndParsed.audio_url || openEndParsed.audioUrl) && (
+                                <div className="p-3 bg-violet-50 rounded-xl border border-violet-200 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-violet-700">🎙️ Ghi âm</span>
+                                    <div className="flex items-center gap-2">
+                                      {openEndParsed.duration_seconds && (
+                                        <span className="text-xs text-gray-400">
+                                          {Math.floor(openEndParsed.duration_seconds / 60)}:{String(openEndParsed.duration_seconds % 60).padStart(2, "0")}
+                                        </span>
+                                      )}
+                                      {openEndParsed.stt_confidence != null && openEndParsed.stt_confidence > 0 && (
+                                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${openEndParsed.stt_confidence >= 0.8 ? "bg-green-100 text-green-700" : openEndParsed.stt_confidence >= 0.5 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                                          STT: {Math.round(openEndParsed.stt_confidence * 100)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <audio controls src={openEndParsed.audio_url || openEndParsed.audioUrl} className="w-full h-10" />
+                                  {openEndParsed.transcript && (
+                                    <div className="mt-1 p-2 bg-white rounded-lg border border-violet-100">
+                                      <p className="text-xs text-gray-400 mb-0.5">Bản chuyển đổi:</p>
+                                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{openEndParsed.transcript}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {openEndParsed.imageUrl && (
+                                <div className="p-2 bg-violet-50 rounded-xl border border-violet-200">
+                                  <img src={openEndParsed.imageUrl} alt="Ảnh trả lời" className="max-h-64 rounded-lg object-contain" />
+                                </div>
+                              )}
+                              {!openEndParsed.text_content && !openEndParsed.text && !openEndParsed.audio_url && !openEndParsed.audioUrl && !openEndParsed.imageUrl && (
+                                <span className="text-gray-400 italic text-sm">(Bỏ trống)</span>
+                              )}
+                            </div>
+                          ) : isEssayType && isTeacher ? (
+                            <div>
+                              <AnnotatedText
+                                text={answer.answer || "(Bỏ trống)"}
+                                annotations={anns.map((a: any) => ({
+                                  id: a.id, startOffset: a.startOffset, endOffset: a.endOffset,
+                                  comment: a.comment ?? null, color: a.color,
+                                }))}
+                                onAnnotate={(start, end, color, comment) => handleAnnotate(answer.questionId, start, end, color, comment)}
+                                canAnnotate={!!isTeacher}
+                              />
+                              <p className="text-xs text-muted-foreground mt-1.5 italic">💡 Chọn văn bản để thêm nhận xét inline</p>
+                            </div>
+                          ) : (
+                            formatStudentAnswer(answer.answer, qType)
+                          )}
                         </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Star className="w-4 h-4 text-warning" />
-                          <span className="text-sm font-semibold">{answer.pointsEarned}</span>
-                        </div>
+
+                        {/* Annotations list */}
+                        {anns.length > 0 && (
+                          <div className="space-y-1">
+                            {anns.map((a: any) => (
+                              <div key={a.id} className="flex items-center justify-between px-2 py-1 rounded bg-gray-50 border text-xs">
+                                <div className="flex items-center gap-2">
+                                  <MessageSquare className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-muted-foreground">[{a.startOffset}:{a.endOffset}]</span>
+                                  {a.comment && <span>{a.comment}</span>}
+                                </div>
+                                {isTeacher && (
+                                  <button onClick={() => handleDeleteAnnotation(a.id)} className="text-red-400 hover:text-red-600">
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Correct answer (for wrong auto-graded answers) */}
+                        {!isEssay && !answer.isCorrect && answer.correctAnswer && (
+                          <div className="p-3 bg-green-50 border border-green-100 rounded-lg">
+                            <p className="text-xs font-semibold text-green-700 mb-1.5">✅ Đáp án đúng</p>
+                            {formatCorrectAnswer(answer.correctAnswer, answer.questionOptions, qType)}
+                          </div>
+                        )}
+
+                        {/* Explanation */}
+                        {answer.questionExplanation && (
+                          <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                            <p className="text-xs font-semibold text-amber-700 mb-1">💡 Giải thích</p>
+                            <div className="text-sm text-amber-900">
+                              <MarkdownView source={answer.questionExplanation} />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Auto feedback */}
+                        {answer.feedback && (
+                          <p className="text-xs text-muted-foreground italic">{answer.feedback}</p>
+                        )}
+
+                        {/* Teacher comment */}
+                        {answer.teacherComment && (
+                          <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                            <p className="text-xs font-semibold text-blue-700 mb-1">Nhận xét giáo viên</p>
+                            <p className="text-sm text-blue-900">{answer.teacherComment}</p>
+                          </div>
+                        )}
+
+                        {/* Essay status for student */}
+                        {!isTeacher && isEssay && (
+                          isGradedEssay
+                            ? <Badge className="bg-green-100 text-green-700 border-0 text-xs">Đã chấm</Badge>
+                            : <Badge className="bg-amber-100 text-warning border-0 text-xs">Chờ chấm tay</Badge>
+                        )}
                       </div>
                     </div>
                   );
@@ -754,10 +908,17 @@ export default function SubmissionDetailPage() {
                   return (
                     <div key={answer.questionId} className="p-4 border rounded-lg space-y-3">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-gray-900">Câu {index + 1}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-900">Câu {index + 1}</p>
+                          {answer.questionType && (
+                            <Badge variant="outline" className="text-xs py-0 h-5">
+                              {QUESTION_TYPE_LABELS[answer.questionType] ?? answer.questionType}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
                           {isEssay ? (
-                            <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Bài luận</Badge>
+                            <Badge className="bg-amber-100 text-amber-700 border-0 text-xs">Bài luận/Mở</Badge>
                           ) : (
                             <Badge className={answer.isCorrect ? "bg-green-100 text-green-700 border-0 text-xs" : "bg-red-100 text-red-600 border-0 text-xs"}>
                               {answer.isCorrect ? "Đúng" : "Sai"}
@@ -766,7 +927,18 @@ export default function SubmissionDetailPage() {
                           <span className="text-sm font-medium">{answer.pointsEarned} đ</span>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-700 line-clamp-3">{answer.answer || "(Bỏ trống)"}</p>
+                      {answer.questionContent && (
+                        <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+                          <p className="text-xs text-gray-400 mb-1">Đề bài:</p>
+                          <div className="text-sm text-gray-800 line-clamp-3">
+                            <MarkdownView source={answer.questionContent} />
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Câu trả lời:</p>
+                        <p className="text-sm text-gray-700 line-clamp-4 whitespace-pre-wrap">{answer.answer || "(Bỏ trống)"}</p>
+                      </div>
                       {isEssay && (
                         <div className="space-y-1.5">
                           <Label className="text-xs">

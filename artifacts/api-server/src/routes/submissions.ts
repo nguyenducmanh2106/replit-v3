@@ -31,7 +31,7 @@ async function getSubmissionResult(id: number) {
   const [student] = await db.select().from(usersTable).where(eq(usersTable.id, submission.studentId));
   const answers = await db.select().from(submissionAnswersTable).where(eq(submissionAnswersTable.submissionId, id));
   const aqRows = await db.select().from(assignmentQuestionsTable).where(eq(assignmentQuestionsTable.assignmentId, submission.assignmentId));
-  const aqPointsMap = new Map<number, number>(aqRows.map(q => [q.id, q.points]));
+  const aqMap = new Map(aqRows.map(q => [q.id, q]));
   const percentage = submission.totalPoints > 0 && submission.score != null
     ? Math.round((submission.score / submission.totalPoints) * 100 * 10) / 10
     : null;
@@ -49,16 +49,24 @@ async function getSubmissionResult(id: number) {
     submittedAt: submission.submittedAt.toISOString(),
     gradedAt: submission.gradedAt?.toISOString() ?? null,
     feedback: submission.feedback ?? null,
-    answers: answers.map(a => ({
-      questionId: a.questionId,
-      answer: a.answer,
-      correctAnswer: null as string | null,
-      isCorrect: a.isCorrect === "true" ? true : a.isCorrect === "false" ? false : null,
-      pointsEarned: a.pointsEarned,
-      points: aqPointsMap.get(a.questionId) ?? null,
-      feedback: a.feedback ?? null,
-      teacherComment: a.teacherComment ?? null,
-    })),
+    answers: answers.map(a => {
+      const q = aqMap.get(a.questionId);
+      return {
+        questionId: a.questionId,
+        questionType: q?.type ?? null,
+        questionContent: q?.content ?? null,
+        questionPassage: q?.passage ?? null,
+        questionExplanation: q?.explanation ?? null,
+        questionOptions: q?.options ?? null,
+        answer: a.answer,
+        correctAnswer: null as string | null,
+        isCorrect: a.isCorrect === "true" ? true : a.isCorrect === "false" ? false : null,
+        pointsEarned: a.pointsEarned,
+        points: q?.points ?? null,
+        feedback: a.feedback ?? null,
+        teacherComment: a.teacherComment ?? null,
+      };
+    }),
   };
 }
 
