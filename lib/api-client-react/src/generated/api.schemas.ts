@@ -1114,10 +1114,8 @@ export interface UpdateQuizTemplateBody {
   tags?: string[];
 }
 
-export type ImportQuestionsToTemplateBodyQuestionsItem = { [key: string]: unknown };
-
 export interface ImportQuestionsToTemplateBody {
-  questions: ImportQuestionsToTemplateBodyQuestionsItem[];
+  questionIds: number[];
 }
 
 export interface UpdateQuizTemplateQuestionBody { [key: string]: unknown }

@@ -4441,13 +4441,12 @@ components:
     ImportQuestionsToTemplateBody:
       type: object
       properties:
-        questions:
+        questionIds:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            type: integer
       required:
-        - questions
+        - questionIds
 
     UpdateQuizTemplateQuestionBody:
       type: object

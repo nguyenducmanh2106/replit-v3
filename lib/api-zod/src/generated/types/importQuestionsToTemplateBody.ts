@@ -5,8 +5,7 @@
  * EduPlatform — Nền tảng Giáo dục MVP API
  * OpenAPI spec version: 0.1.0
  */
-import type { ImportQuestionsToTemplateBodyQuestionsItem } from './importQuestionsToTemplateBodyQuestionsItem';
 
 export interface ImportQuestionsToTemplateBody {
-  questions: ImportQuestionsToTemplateBodyQuestionsItem[];
+  questionIds: number[];
 }

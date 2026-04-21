@@ -1488,7 +1488,7 @@ export const ImportQuestionsToTemplateParams = zod.object({
 })
 
 export const ImportQuestionsToTemplateBody = zod.object({
-  "questions": zod.array(zod.record(zod.string(), zod.unknown()))
+  "questionIds": zod.array(zod.number())
 })
 
 export const ImportQuestionsToTemplateResponse = zod.record(zod.string(), zod.unknown())

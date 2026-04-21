@@ -64,7 +64,6 @@ export * from './healthStatus';
 export * from './importCourseMembersBody';
 export * from './importQuestionsToTemplate200';
 export * from './importQuestionsToTemplateBody';
-export * from './importQuestionsToTemplateBodyQuestionsItem';
 export * from './importResult';
 export * from './leaderboardEntry';
 export * from './learningStreak';
