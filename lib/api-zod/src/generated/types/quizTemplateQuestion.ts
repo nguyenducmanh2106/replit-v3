@@ -8,13 +8,26 @@
 
 export interface QuizTemplateQuestion {
   id: number;
-  templateId: number;
   type: string;
-  question: string;
-  options?: string[];
+  skill: string;
+  level: string;
+  content: string;
+  /** @nullable */
+  options?: string | null;
   /** @nullable */
   correctAnswer?: string | null;
-  points?: number;
-  position?: number;
-  [key: string]: unknown;
- }
+  /** @nullable */
+  audioUrl?: string | null;
+  /** @nullable */
+  videoUrl?: string | null;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  passage?: string | null;
+  /** @nullable */
+  explanation?: string | null;
+  /** @nullable */
+  metadata?: string | null;
+  points: number;
+  orderIndex: number;
+}

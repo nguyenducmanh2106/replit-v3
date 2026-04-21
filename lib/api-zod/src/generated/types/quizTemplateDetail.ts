@@ -5,10 +5,15 @@
  * EduPlatform — Nền tảng Giáo dục MVP API
  * OpenAPI spec version: 0.1.0
  */
-import type { QuizTemplate } from './quizTemplate';
 import type { QuizTemplateQuestion } from './quizTemplateQuestion';
 
 export interface QuizTemplateDetail {
-  template: QuizTemplate;
+  id: number;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  teacherId: number;
+  createdAt: Date;
+  updatedAt: Date;
   questions: QuizTemplateQuestion[];
 }

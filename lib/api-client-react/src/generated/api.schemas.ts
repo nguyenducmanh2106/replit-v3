@@ -1056,27 +1056,47 @@ export interface QuizTemplate {
   title: string;
   /** @nullable */
   description?: string | null;
-  ownerId: number;
-  tags?: string[];
+  teacherId: number;
+  questionCount: number;
+  totalPoints: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface QuizTemplateQuestion {
   id: number;
-  templateId: number;
   type: string;
-  question: string;
-  options?: string[];
+  skill: string;
+  level: string;
+  content: string;
+  /** @nullable */
+  options?: string | null;
   /** @nullable */
   correctAnswer?: string | null;
-  points?: number;
-  position?: number;
-  [key: string]: unknown;
- }
+  /** @nullable */
+  audioUrl?: string | null;
+  /** @nullable */
+  videoUrl?: string | null;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  passage?: string | null;
+  /** @nullable */
+  explanation?: string | null;
+  /** @nullable */
+  metadata?: string | null;
+  points: number;
+  orderIndex: number;
+}
 
 export interface QuizTemplateDetail {
-  template: QuizTemplate;
+  id: number;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  teacherId: number;
+  createdAt: string;
+  updatedAt: string;
   questions: QuizTemplateQuestion[];
 }
 

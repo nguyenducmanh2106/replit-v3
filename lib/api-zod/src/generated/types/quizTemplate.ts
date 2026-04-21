@@ -11,8 +11,9 @@ export interface QuizTemplate {
   title: string;
   /** @nullable */
   description?: string | null;
-  ownerId: number;
-  tags?: string[];
+  teacherId: number;
+  questionCount: number;
+  totalPoints: number;
   createdAt: Date;
   updatedAt: Date;
 }

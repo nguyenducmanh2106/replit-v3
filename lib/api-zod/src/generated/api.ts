@@ -1409,8 +1409,9 @@ export const ListQuizTemplatesResponseItem = zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "description": zod.string().nullish(),
-  "ownerId": zod.number(),
-  "tags": zod.array(zod.string()).optional(),
+  "teacherId": zod.number(),
+  "questionCount": zod.number(),
+  "totalPoints": zod.number(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1429,24 +1430,28 @@ export const GetQuizTemplateParams = zod.object({
 })
 
 export const GetQuizTemplateResponse = zod.object({
-  "template": zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "description": zod.string().nullish(),
-  "ownerId": zod.number(),
-  "tags": zod.array(zod.string()).optional(),
+  "teacherId": zod.number(),
   "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-}),
+  "updatedAt": zod.coerce.date(),
   "questions": zod.array(zod.object({
   "id": zod.number(),
-  "templateId": zod.number(),
   "type": zod.string(),
-  "question": zod.string(),
-  "options": zod.array(zod.string()).optional(),
+  "skill": zod.string(),
+  "level": zod.string(),
+  "content": zod.string(),
+  "options": zod.string().nullish(),
   "correctAnswer": zod.string().nullish(),
-  "points": zod.number().optional(),
-  "position": zod.number().optional()
+  "audioUrl": zod.string().nullish(),
+  "videoUrl": zod.string().nullish(),
+  "imageUrl": zod.string().nullish(),
+  "passage": zod.string().nullish(),
+  "explanation": zod.string().nullish(),
+  "metadata": zod.string().nullish(),
+  "points": zod.number(),
+  "orderIndex": zod.number()
 }))
 })
 
@@ -1465,8 +1470,9 @@ export const UpdateQuizTemplateResponse = zod.object({
   "id": zod.number(),
   "title": zod.string(),
   "description": zod.string().nullish(),
-  "ownerId": zod.number(),
-  "tags": zod.array(zod.string()).optional(),
+  "teacherId": zod.number(),
+  "questionCount": zod.number(),
+  "totalPoints": zod.number(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

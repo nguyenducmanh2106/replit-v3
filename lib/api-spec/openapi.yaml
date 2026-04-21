@@ -4320,12 +4320,12 @@ components:
           type: string
         description:
           type: ["string", "null"]
-        ownerId:
+        teacherId:
           type: integer
-        tags:
-          type: array
-          items:
-            type: string
+        questionCount:
+          type: integer
+        totalPoints:
+          type: number
         createdAt:
           type: string
           format: date-time
@@ -4335,49 +4335,81 @@ components:
       required:
         - id
         - title
-        - ownerId
+        - teacherId
+        - questionCount
+        - totalPoints
         - createdAt
         - updatedAt
 
     QuizTemplateQuestion:
       type: object
-      additionalProperties: true
       properties:
         id:
           type: integer
-        templateId:
-          type: integer
         type:
           type: string
-        question:
+        skill:
+          type: string
+        level:
+          type: string
+        content:
           type: string
         options:
-          type: array
-          items:
-            type: string
+          type: ["string", "null"]
         correctAnswer:
+          type: ["string", "null"]
+        audioUrl:
+          type: ["string", "null"]
+        videoUrl:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        passage:
+          type: ["string", "null"]
+        explanation:
+          type: ["string", "null"]
+        metadata:
           type: ["string", "null"]
         points:
           type: number
-        position:
+        orderIndex:
           type: integer
       required:
         - id
-        - templateId
         - type
-        - question
+        - skill
+        - level
+        - content
+        - points
+        - orderIndex
 
     QuizTemplateDetail:
       type: object
       properties:
-        template:
-          $ref: "#/components/schemas/QuizTemplate"
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        teacherId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
         questions:
           type: array
           items:
             $ref: "#/components/schemas/QuizTemplateQuestion"
       required:
-        - template
+        - id
+        - title
+        - teacherId
+        - createdAt
+        - updatedAt
         - questions
 
     CreateQuizTemplateBody:
