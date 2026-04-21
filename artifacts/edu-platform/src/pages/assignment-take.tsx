@@ -2754,18 +2754,7 @@ export default function AssignmentTakePage() {
                   })()}
                 </div>
 
-                {/* Explanation hint (shown only if answer given, teacher mode) */}
-                {currentAnswer && currentQ?.explanation && (
-                  <div className="ml-16 flex items-start gap-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-2xl">
-                    <Lightbulb className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-bold text-amber-700 mb-1">Gợi ý giải thích</p>
-                      <div className="text-sm text-amber-800 leading-relaxed">
-                        <MarkdownView source={currentQ.explanation ?? ""} compact />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Giải thích chỉ hiển thị sau khi nộp bài, không hiển thị trong lúc làm */}
               </div>
             )}
 
