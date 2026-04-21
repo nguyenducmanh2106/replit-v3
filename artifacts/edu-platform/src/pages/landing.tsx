@@ -15,6 +15,9 @@ export default function LandingPage() {
           <Link href="/sign-in">
             <Button variant="ghost" className="font-medium text-gray-600">Sign In</Button>
           </Link>
+          <Link href="/catalog">
+            <Button variant="ghost" className="font-medium text-gray-600">Khám phá khóa học</Button>
+          </Link>
           <Link href="/sign-up">
             <Button className="font-medium">Get Started</Button>
           </Link>

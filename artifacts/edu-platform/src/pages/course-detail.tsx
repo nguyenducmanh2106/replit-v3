@@ -701,6 +701,16 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
+      <div className="flex gap-2 mb-2">
+        <Link href={`/courses/${id}/learn`}>
+          <Button size="sm"><Play className="w-4 h-4 mr-1" />Vào học</Button>
+        </Link>
+        {canManage && (
+          <Link href={`/courses/${id}/curriculum`}>
+            <Button size="sm" variant="outline"><PenSquare className="w-4 h-4 mr-1" />Soạn chương trình</Button>
+          </Link>
+        )}
+      </div>
       <Tabs defaultValue={canManage ? "members" : "assignments"}>
         <TabsList>
           <TabsTrigger value="members">Thành viên ({members?.length ?? 0})</TabsTrigger>

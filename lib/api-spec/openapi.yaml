@@ -685,6 +685,61 @@ paths:
       summary: Get schedule events for a course
       parameters:
         - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Schedule events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScheduleEvent"
+    post:
+      operationId: createScheduleEvent
+      tags: [courses]
+      summary: Create a schedule event for a course
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScheduleEventBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleEvent"
+    delete:
+      operationId: deleteScheduleEvent
+      tags: [courses]
+      summary: Delete a schedule event (eventId via query)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: eventId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ─── AI Writing Grader ──────────────────────────────────────────────────────
   /ai/grade-essay:
     post:
@@ -737,7 +792,6 @@ paths:
             type: integer
       responses:
         "200":
-          description: Schedule events
           description: Personalized feedback
           content:
             application/json:
@@ -793,29 +847,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ScheduleEvent"
-    post:
-      operationId: createScheduleEvent
-      tags: [courses]
-      summary: Create a schedule event for a course
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateScheduleEventBody"
-      responses:
-        "201":
-          description: Created schedule event
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ScheduleEvent"
 
   /courses/{id}/schedule/{eventId}:
     delete:
@@ -852,7 +883,53 @@ paths:
       responses:
         "200":
           description: Course documents
-                  $ref: "#/components/schemas/FraudEvent"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CourseDocument"
+    post:
+      operationId: createCourseDocument
+      tags: [courses]
+      summary: Create a course document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCourseDocumentBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseDocument"
+    delete:
+      operationId: deleteCourseDocument
+      tags: [courses]
+      summary: Delete a course document (docId via query)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: docId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   # ─── Gamification ────────────────────────────────────────────────────────────
   /gamification/badges:
@@ -868,30 +945,8 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/CourseDocument"
-    post:
-      operationId: createCourseDocument
-      tags: [courses]
-      summary: Add a document link to a course
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateCourseDocumentBody"
-      responses:
-        "201":
-          description: Created document
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CourseDocument"
+                  type: object
+                  additionalProperties: true
 
   /courses/{id}/documents/{docId}:
     delete:
@@ -1272,7 +1327,12 @@ paths:
       responses:
         "200":
           description: Audit log entries
-                  $ref: "#/components/schemas/BadgeWithStatus"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLogEntry"
 
   /gamification/leaderboard:
     get:
@@ -1303,7 +1363,19 @@ paths:
       tags: [storage]
       operationId: requestUploadUrl
       summary: Request a presigned URL for file upload
-                  $ref: "#/components/schemas/LeaderboardEntry"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlBody"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResponse"
 
   /gamification/streak:
     get:
@@ -1347,37 +1419,6 @@ paths:
                 items:
                   $ref: "#/components/schemas/CompetencyEntry"
 
-  # ─── LMS Integration ─────────────────────────────────────────────────────────
-  /lms/sync:
-    post:
-      operationId: syncLms
-      tags: [lms]
-      summary: Trigger sync with external LMS (Moodle or Google Classroom)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UploadUrlRequest'
-      responses:
-        '200':
-          description: Presigned upload URL generated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UploadUrlResponse'
-        '400':
-          description: Missing or invalid required fields.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '500':
-          description: Failed to generate upload URL.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
   /storage/objects/{objectPath}:
     get:
       tags: [storage]
@@ -1403,14 +1444,213 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
-              $ref: "#/components/schemas/LmsSyncBody"
+
+  # ─── Submissions Grading ──────────────────────────────────────────────────
+  /submissions/{id}/answers/{questionId}:
+    patch:
+      operationId: gradeQuestion
+      tags: [submissions]
+      summary: Grade an individual submission answer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GradeQuestionBody"
+      responses:
+        "200":
+          description: Graded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeQuestionResponse"
+
+  /assignments/{id}/publish-grades:
+    post:
+      operationId: publishGrades
+      tags: [submissions]
+      summary: Publish grades for an assignment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishGradesResponse"
+
+  # ─── Quiz Templates ───────────────────────────────────────────────────────
+  /quiz-templates:
+    get:
+      operationId: listQuizTemplates
+      tags: [quiz-templates]
+      responses:
+        "200":
+          description: List of quiz templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizTemplate"
+    post:
+      operationId: createQuizTemplate
+      tags: [quiz-templates]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuizTemplateBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizTemplate"
+
+  /quiz-templates/{id}:
+    get:
+      operationId: getQuizTemplate
+      tags: [quiz-templates]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quiz template detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizTemplateDetail"
+    patch:
+      operationId: updateQuizTemplate
+      tags: [quiz-templates]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateQuizTemplateBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizTemplate"
+    delete:
+      operationId: deleteQuizTemplate
+      tags: [quiz-templates]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /quiz-templates/{id}/import-questions:
+    post:
+      operationId: importQuestionsToTemplate
+      tags: [quiz-templates]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportQuestionsToTemplateBody"
+      responses:
+        "200":
+          description: Imported
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /quiz-templates/{id}/questions/{qid}:
+    patch:
+      operationId: updateQuizTemplateQuestion
+      tags: [quiz-templates]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: qid
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateQuizTemplateQuestionBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /lms/sync:
+    post:
+      operationId: syncLms
+      tags: [lms]
+      summary: Trigger an LMS sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncLmsBody"
       responses:
         "200":
           description: Sync result
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LmsSyncResult"
+                $ref: "#/components/schemas/SyncLmsResponse"
 
   /lms/status:
     get:
@@ -1423,7 +1663,472 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LmsStatus"
+                $ref: "#/components/schemas/GetLmsStatusResponse"
+
+  # ─── Curriculum (Chapters / Lessons / Blocks / Progress) ─────────────────
+  /courses/{id}/curriculum:
+    get:
+      operationId: getCourseCurriculum
+      tags: [courses]
+      summary: Get full curriculum tree (chapters > lessons) with progress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Curriculum tree
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseCurriculum"
+
+  /courses/{id}/chapters:
+    get:
+      operationId: listChapters
+      tags: [courses]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chapters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chapter"
+    post:
+      operationId: createChapter
+      tags: [courses]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChapterBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chapter"
+
+  /chapters/{chapterId}:
+    patch:
+      operationId: updateChapter
+      tags: [courses]
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateChapterBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chapter"
+    delete:
+      operationId: deleteChapter
+      tags: [courses]
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /courses/{id}/chapters/reorder:
+    post:
+      operationId: reorderChapters
+      tags: [courses]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderBody"
+      responses:
+        "204":
+          description: Reordered
+
+  /chapters/{chapterId}/lessons:
+    get:
+      operationId: listLessons
+      tags: [courses]
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lessons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lesson"
+    post:
+      operationId: createLesson
+      tags: [courses]
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLessonBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+
+  /lessons/{lessonId}:
+    get:
+      operationId: getLesson
+      tags: [courses]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lesson with blocks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonDetail"
+    patch:
+      operationId: updateLesson
+      tags: [courses]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLessonBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+    delete:
+      operationId: deleteLesson
+      tags: [courses]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /chapters/{chapterId}/lessons/reorder:
+    post:
+      operationId: reorderLessons
+      tags: [courses]
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderBody"
+      responses:
+        "204":
+          description: Reordered
+
+  /lessons/{lessonId}/blocks:
+    get:
+      operationId: listLessonBlocks
+      tags: [courses]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Blocks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LessonBlock"
+    post:
+      operationId: createLessonBlock
+      tags: [courses]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLessonBlockBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonBlock"
+
+  /blocks/{blockId}:
+    patch:
+      operationId: updateLessonBlock
+      tags: [courses]
+      parameters:
+        - name: blockId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLessonBlockBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonBlock"
+    delete:
+      operationId: deleteLessonBlock
+      tags: [courses]
+      parameters:
+        - name: blockId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /lessons/{lessonId}/blocks/reorder:
+    post:
+      operationId: reorderLessonBlocks
+      tags: [courses]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderBody"
+      responses:
+        "204":
+          description: Reordered
+
+  /lessons/{lessonId}/complete:
+    post:
+      operationId: markLessonComplete
+      tags: [courses]
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Progress recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LessonProgressResult"
+
+  # ─── Public Catalog & Enrollment ─────────────────────────────────────────
+  /catalog/courses:
+    get:
+      operationId: listPublicCourses
+      tags: [courses]
+      summary: List published courses (public, no auth required)
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Published courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogCourse"
+
+  /catalog/courses/{slug}:
+    get:
+      operationId: getPublicCourseBySlug
+      tags: [courses]
+      summary: Get a published course landing page (public, no auth required)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Public course detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicCourseDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /courses/{id}/enroll:
+    post:
+      operationId: enrollInCourse
+      tags: [courses]
+      summary: Self-enroll the current user in a course
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Enrolled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseMember"
+
+  # ─── Certificates ────────────────────────────────────────────────────────
+  /certificates:
+    get:
+      operationId: listMyCertificates
+      tags: [courses]
+      summary: List certificates for the current user
+      responses:
+        "200":
+          description: Certificates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CertificateView"
+
+  /certificates/{certificateNo}:
+    get:
+      operationId: getCertificate
+      tags: [courses]
+      summary: Get a certificate by certificate number (public)
+      parameters:
+        - name: certificateNo
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Certificate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateView"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   schemas:
@@ -1495,8 +2200,22 @@ components:
           type: string
         description:
           type: ["string", "null"]
+        shortDescription:
+          type: ["string", "null"]
         level:
           type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        tags:
+          type: ["array", "null"]
+          items:
+            type: string
+        coverImage:
+          type: ["string", "null"]
+        slug:
+          type: ["string", "null"]
+        published:
+          type: boolean
         teacherId:
           type: ["integer", "null"]
         teacherName:
@@ -1512,6 +2231,7 @@ components:
       required:
         - id
         - name
+        - published
         - studentCount
         - status
         - createdAt
@@ -1523,7 +2243,19 @@ components:
           type: string
         description:
           type: string
+        shortDescription:
+          type: string
         level:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        coverImage:
+          type: string
+        slug:
           type: string
         teacherId:
           type: integer
@@ -1537,8 +2269,22 @@ components:
           type: string
         description:
           type: string
+        shortDescription:
+          type: string
         level:
           type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        coverImage:
+          type: string
+        slug:
+          type: string
+        published:
+          type: boolean
         teacherId:
           type: integer
         status:
@@ -2177,6 +2923,16 @@ components:
         size:
           type: ["integer", "null"]
         mimeType:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - courseId
+        - name
+        - url
+
     # ─── AI ──────────────────────────────────────────────────────────────────
     GradeEssayBody:
       type: object
@@ -2393,13 +3149,14 @@ components:
         imported:
           type: integer
         skipped:
-        - assignmentId
-        - studentId
-        - studentName
-        - assignmentTitle
-        - eventType
-        - severity
-        - createdAt
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+      required:
+        - imported
+        - skipped
 
     # ─── Gamification ─────────────────────────────────────────────────────────
     BadgeWithStatus:
@@ -2566,7 +3323,7 @@ components:
         - overallLevel
 
     # ─── LMS ─────────────────────────────────────────────────────────────────
-    LmsSyncBody:
+    SyncLmsBody:
       type: object
       properties:
         provider:
@@ -2577,7 +3334,7 @@ components:
       required:
         - provider
 
-    LmsSyncResult:
+    SyncLmsResponse:
       type: object
       properties:
         provider:
@@ -3104,36 +3861,31 @@ components:
       properties:
         error:
           type: string
-    LmsSyncResult:
-      type: object
-      required:
-        - provider
-        - status
-        - coursesSynced
-        - studentsSynced
-        - gradesSynced
-        - errors
-        - syncedAt
-      properties:
-        provider:
-          type: string
-        status:
-          type: string
-        coursesSynced:
-          type: integer
-        studentsSynced:
-          type: integer
-        gradesSynced:
-          type: integer
-        errors:
-          type: array
-          items:
-            type: string
-        syncedAt:
-          type: string
-          format: date-time
 
-    LmsStatus:
+    RequestUploadUrlBody:
+      type: object
+      properties:
+        fileName:
+          type: string
+        contentType:
+          type: string
+      required:
+        - fileName
+
+    RequestUploadUrlResponse:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+        objectPath:
+          type: string
+        publicUrl:
+          type: string
+      required:
+        - uploadUrl
+        - objectPath
+
+    GetLmsStatusResponse:
       type: object
       properties:
         moodle:
@@ -3159,3 +3911,512 @@ components:
       required:
         - moodle
         - googleClassroom
+
+    # ─── Curriculum schemas ──────────────────────────────────────────────────
+    Chapter:
+      type: object
+      properties:
+        id:
+          type: integer
+        courseId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        orderIndex:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - courseId
+        - title
+        - orderIndex
+        - createdAt
+
+    CreateChapterBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+      required:
+        - title
+
+    UpdateChapterBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        orderIndex:
+          type: integer
+
+    ReorderBody:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+      required:
+        - ids
+
+    Lesson:
+      type: object
+      properties:
+        id:
+          type: integer
+        chapterId:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: ["string", "null"]
+        orderIndex:
+          type: integer
+        includeInPreview:
+          type: boolean
+        durationMinutes:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - chapterId
+        - title
+        - orderIndex
+        - includeInPreview
+        - createdAt
+
+    CreateLessonBody:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        includeInPreview:
+          type: boolean
+        durationMinutes:
+          type: integer
+      required:
+        - title
+
+    UpdateLessonBody:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        includeInPreview:
+          type: boolean
+        durationMinutes:
+          type: integer
+        orderIndex:
+          type: integer
+
+    LessonBlock:
+      type: object
+      properties:
+        id:
+          type: integer
+        lessonId:
+          type: integer
+        type:
+          type: string
+          description: "heading | text | youtube | upload | quiz | assignment"
+        data:
+          type: object
+          additionalProperties: true
+          description: "Type-specific block payload (free-form JSON)"
+        orderIndex:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - lessonId
+        - type
+        - orderIndex
+        - createdAt
+
+    CreateLessonBlockBody:
+      type: object
+      properties:
+        type:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        orderIndex:
+          type: integer
+      required:
+        - type
+
+    UpdateLessonBlockBody:
+      type: object
+      properties:
+        type:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        orderIndex:
+          type: integer
+
+    LessonDetail:
+      allOf:
+        - $ref: "#/components/schemas/Lesson"
+        - type: object
+          properties:
+            blocks:
+              type: array
+              items:
+                $ref: "#/components/schemas/LessonBlock"
+            chapterTitle:
+              type: ["string", "null"]
+            courseId:
+              type: integer
+            completed:
+              type: boolean
+          required:
+            - blocks
+            - courseId
+            - completed
+
+    CourseCurriculum:
+      type: object
+      properties:
+        courseId:
+          type: integer
+        totalLessons:
+          type: integer
+        completedLessons:
+          type: integer
+        progressPercent:
+          type: integer
+        chapters:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              title:
+                type: string
+              description:
+                type: ["string", "null"]
+              orderIndex:
+                type: integer
+              lessons:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    slug:
+                      type: ["string", "null"]
+                    orderIndex:
+                      type: integer
+                    includeInPreview:
+                      type: boolean
+                    durationMinutes:
+                      type: ["integer", "null"]
+                    completed:
+                      type: boolean
+                  required:
+                    - id
+                    - title
+                    - orderIndex
+                    - includeInPreview
+                    - completed
+            required:
+              - id
+              - title
+              - orderIndex
+              - lessons
+      required:
+        - courseId
+        - totalLessons
+        - completedLessons
+        - progressPercent
+        - chapters
+
+    LessonProgressResult:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        completedAt:
+          type: string
+          format: date-time
+        progressPercent:
+          type: integer
+        certificateIssued:
+          type: boolean
+        certificateNo:
+          type: ["string", "null"]
+      required:
+        - completed
+        - completedAt
+        - progressPercent
+        - certificateIssued
+
+    CatalogCourse:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: ["string", "null"]
+        name:
+          type: string
+        shortDescription:
+          type: ["string", "null"]
+        coverImage:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        level:
+          type: ["string", "null"]
+        tags:
+          type: ["array", "null"]
+          items:
+            type: string
+        teacherName:
+          type: ["string", "null"]
+        studentCount:
+          type: integer
+        totalLessons:
+          type: integer
+      required:
+        - id
+        - name
+        - studentCount
+        - totalLessons
+
+    PublicCourseDetail:
+      allOf:
+        - $ref: "#/components/schemas/CatalogCourse"
+        - type: object
+          properties:
+            description:
+              type: ["string", "null"]
+            chapters:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  lessonCount:
+                    type: integer
+                  previewLessons:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                      required:
+                        - id
+                        - title
+                required:
+                  - id
+                  - title
+                  - lessonCount
+                  - previewLessons
+            isEnrolled:
+              type: boolean
+          required:
+            - chapters
+            - isEnrolled
+
+    CertificateView:
+      type: object
+      properties:
+        id:
+          type: integer
+        certificateNo:
+          type: string
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        userId:
+          type: integer
+        userName:
+          type: string
+        issuedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - certificateNo
+        - courseId
+        - courseName
+        - userId
+        - userName
+        - issuedAt
+
+    GradeQuestionBody:
+      type: object
+      properties:
+        score:
+          type: number
+        feedback:
+          type: ["string", "null"]
+      required:
+        - score
+
+    GradeQuestionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        questionId:
+          type: integer
+        score:
+          type: number
+      required:
+        - success
+        - questionId
+        - score
+
+    PublishGradesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        publishedCount:
+          type: integer
+        message:
+          type: ["string", "null"]
+      required:
+        - success
+        - publishedCount
+
+    QuizTemplate:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        ownerId:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - ownerId
+        - createdAt
+        - updatedAt
+
+    QuizTemplateQuestion:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: integer
+        templateId:
+          type: integer
+        type:
+          type: string
+        question:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctAnswer:
+          type: ["string", "null"]
+        points:
+          type: number
+        position:
+          type: integer
+      required:
+        - id
+        - templateId
+        - type
+        - question
+
+    QuizTemplateDetail:
+      type: object
+      properties:
+        template:
+          $ref: "#/components/schemas/QuizTemplate"
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizTemplateQuestion"
+      required:
+        - template
+        - questions
+
+    CreateQuizTemplateBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+
+    UpdateQuizTemplateBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+
+    ImportQuestionsToTemplateBody:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - questions
+
+    UpdateQuizTemplateQuestionBody:
+      type: object
+      additionalProperties: true

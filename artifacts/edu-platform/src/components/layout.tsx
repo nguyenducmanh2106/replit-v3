@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "@/lib/routing";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from "@/components/ui/sidebar";
-import { LayoutDashboard, BookOpen, Library, PenSquare, FileCheck, UserCircle, LogOut, BarChart2, Target, Settings, Trophy, Building2, Link2, ShieldAlert, FolderOpen } from "lucide-react";
+import { LayoutDashboard, BookOpen, Library, PenSquare, FileCheck, UserCircle, LogOut, BarChart2, Target, Settings, Trophy, Building2, Link2, ShieldAlert, FolderOpen, Award, Compass } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useGetMe } from "@workspace/api-client-react";
 import { useNavigate } from "@tanstack/react-router";
@@ -112,6 +112,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location.startsWith("/certificates")}>
+                      <Link href="/certificates" className="flex items-center gap-3">
+                        <Award className="h-4 w-4" />
+                        <span>Chứng chỉ</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={location.startsWith("/catalog")}>
+                      <Link href="/catalog" className="flex items-center gap-3">
+                        <Compass className="h-4 w-4" />
+                        <span>Khám phá khóa học</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={location === "/profile"}>
                       <Link href="/profile" className="flex items-center gap-3">

@@ -20,6 +20,9 @@ import enterpriseRouter from "./enterprise";
 import lmsRouter from "./lms";
 import quizTemplatesRouter from "./quiz-templates";
 import quizSessionsRouter from "./quiz-sessions";
+import curriculumRouter from "./curriculum";
+import catalogRouter from "./catalog";
+import certificatesRouter from "./certificates";
 
 const router: IRouter = Router();
 
@@ -44,5 +47,8 @@ router.use(enterpriseRouter);
 router.use(lmsRouter);
 router.use(quizTemplatesRouter);
 router.use(quizSessionsRouter);
+router.use(curriculumRouter);
+router.use(catalogRouter);
+router.use(certificatesRouter);
 
 export default router;
