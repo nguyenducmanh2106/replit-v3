@@ -47,9 +47,12 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.betterAuthUserId, session.user.id));
-    if (user) {
-      req.dbUser = user;
+    if (!user) {
+      logger.warn({ betterAuthUserId: session.user.id }, "Authenticated session but no matching DB user");
+      res.status(403).json({ error: "User account not fully set up" });
+      return;
     }
+    req.dbUser = user;
   } catch (err) {
     logger.error({ err, userId: session.user.id }, "DB user lookup failed in requireAuth");
     res.status(500).json({ error: "Internal server error during authentication" });

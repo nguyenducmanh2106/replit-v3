@@ -62,15 +62,23 @@ export default function CurriculumBuilderPage() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getGetCourseCurriculumQueryKey(courseId) });
 
+  const [addingChapter, setAddingChapter] = useState(false);
+
   async function handleAddChapter() {
-    if (!chapterTitle.trim()) return;
+    if (!chapterTitle.trim()) {
+      toast({ title: "Vui lòng nhập tên chương", variant: "destructive" });
+      return;
+    }
+    setAddingChapter(true);
     try {
       await createChapter({ id: courseId, data: { title: chapterTitle.trim() } });
       setChapterTitle("");
       invalidate();
-      toast({ title: "Đã thêm chương" });
+      toast({ title: "Đã thêm chương thành công" });
     } catch (e: any) {
-      toast({ title: "Lỗi", description: e.message, variant: "destructive" });
+      toast({ title: "Lỗi khi thêm chương", description: e.message, variant: "destructive" });
+    } finally {
+      setAddingChapter(false);
     }
   }
 
@@ -137,8 +145,16 @@ export default function CurriculumBuilderPage() {
       <Card>
         <CardHeader><CardTitle className="text-base">Thêm chương mới</CardTitle></CardHeader>
         <CardContent className="flex gap-2">
-          <Input placeholder="Tên chương..." value={chapterTitle} onChange={(e) => setChapterTitle(e.target.value)} />
-          <Button onClick={handleAddChapter}><Plus className="w-4 h-4 mr-1" />Thêm chương</Button>
+          <Input
+            placeholder="Nhập tên chương rồi bấm Thêm hoặc Enter..."
+            value={chapterTitle}
+            onChange={(e) => setChapterTitle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddChapter()}
+            disabled={addingChapter}
+          />
+          <Button onClick={handleAddChapter} disabled={addingChapter}>
+            <Plus className="w-4 h-4 mr-1" />{addingChapter ? "Đang thêm..." : "Thêm chương"}
+          </Button>
         </CardContent>
       </Card>
 
