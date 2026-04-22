@@ -1,14 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "@/lib/routing";
 import { placementPublicApi } from "@/lib/placement-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle, Clock, AlertCircle, FileText, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  CheckCircle, Clock, AlertCircle, FileText, ArrowRight, ChevronLeft, ChevronRight,
+  Send, CheckCircle2, Flag,
+} from "lucide-react";
+import {
+  TYPE_CONFIG,
+  QuestionRenderer,
+  AudioPlayer,
+} from "@/components/question-take-inputs";
 
 type TestData = Awaited<ReturnType<typeof placementPublicApi.getBySlug>>;
 
@@ -26,6 +33,8 @@ export default function PublicPlacementTestPage() {
   const [submissionId, setSubmissionId] = useState<number | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [flagged, setFlagged] = useState<Set<number>>(new Set());
+  const [currentIdx, setCurrentIdx] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ autoScore: number; maxScore: number; showScore: boolean } | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -38,13 +47,20 @@ export default function PublicPlacementTestPage() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  // countdown
   useEffect(() => {
     if (stage !== "taking" || timeLeft == null) return;
     if (timeLeft <= 0) { handleSubmit(true); return; }
     const t = setTimeout(() => setTimeLeft(v => (v != null ? v - 1 : null)), 1000);
     return () => clearTimeout(t);
   }, [stage, timeLeft]);
+
+  const questions = test?.questions ?? [];
+  const currentQ = questions[currentIdx];
+  const answeredCount = useMemo(
+    () => questions.filter(q => (answers[q.id] ?? "").trim() !== "").length,
+    [questions, answers]
+  );
+  const typeConfig = currentQ ? (TYPE_CONFIG[currentQ.type] || TYPE_CONFIG.essay) : TYPE_CONFIG.essay;
 
   async function handleStart() {
     if (!studentName.trim() || !studentEmail.trim()) return;
@@ -58,7 +74,6 @@ export default function PublicPlacementTestPage() {
       if (test?.timeLimitMinutes) setTimeLeft(test.timeLimitMinutes * 60);
       window.scrollTo({ top: 0 });
     } catch (e: any) {
-      // Keep user on landing form — show inline error so they can fix and retry
       setStartError(e.message || "Không bắt đầu được, vui lòng thử lại.");
     } finally { setStarting(false); }
   }
@@ -76,6 +91,21 @@ export default function PublicPlacementTestPage() {
     } catch (e: any) {
       alert(e.message);
     } finally { setSubmitting(false); }
+  }
+
+  function setAnswer(v: string) {
+    if (!currentQ) return;
+    setAnswers(a => ({ ...a, [currentQ.id]: v }));
+  }
+
+  function toggleFlag() {
+    if (!currentQ) return;
+    setFlagged(s => {
+      const next = new Set(s);
+      if (next.has(currentQ.id)) next.delete(currentQ.id);
+      else next.add(currentQ.id);
+      return next;
+    });
   }
 
   if (loading) return <div className="max-w-2xl mx-auto p-6"><Skeleton className="h-64" /></div>;
@@ -96,7 +126,9 @@ export default function PublicPlacementTestPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-4 md:p-8">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"><FileText className="w-3.5 h-3.5" /> Bài kiểm tra đánh giá đầu vào</div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+              <FileText className="w-3.5 h-3.5" /> Bài kiểm tra đánh giá đầu vào
+            </div>
             <h1 className="text-3xl font-bold text-gray-900">{test.title}</h1>
             {test.description && <p className="text-gray-600 max-w-2xl mx-auto">{test.description}</p>}
           </div>
@@ -145,48 +177,204 @@ export default function PublicPlacementTestPage() {
   }
 
   // ========== TAKING ==========
-  if (stage === "taking") {
-    const answered = Object.values(answers).filter(v => v && v.trim() !== "").length;
+  if (stage === "taking" && currentQ) {
+    const TypeIcon = typeConfig.icon;
+    const minutes = timeLeft != null ? Math.floor(timeLeft / 60) : null;
+    const seconds = timeLeft != null ? timeLeft % 60 : null;
+    const lowTime = timeLeft != null && timeLeft < 60;
+    const currentAnswer = answers[currentQ.id] ?? "";
+
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <div className="sticky top-0 z-20 bg-white border-b shadow-sm">
-          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">{test.title}</div>
-              <div className="text-xs text-muted-foreground">{studentName} · {answered}/{test.questions.length} câu đã trả lời</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/40">
+        {/* Header */}
+        <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/80 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={cn("w-11 h-11 rounded-2xl bg-gradient-to-br text-white flex items-center justify-center font-black text-lg shadow-lg flex-shrink-0", typeConfig.gradient)}>
+              {currentIdx + 1}
             </div>
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-gray-900 leading-tight truncate">{test.title}</h1>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                <span>{studentName}</span>
+                <span>·</span>
+                <span>{answeredCount}/{questions.length} câu</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
             {timeLeft != null && (
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono font-semibold ${timeLeft < 60 ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}>
+              <div className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-2xl font-mono font-bold text-base transition-all",
+                lowTime ? "bg-red-100 text-red-700 animate-pulse" : "bg-blue-100 text-blue-700"
+              )}>
                 <Clock className="w-4 h-4" />
-                {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+                {String(minutes!).padStart(2, "0")}:{String(seconds!).padStart(2, "0")}
               </div>
             )}
-            <Button onClick={() => handleSubmit(false)} disabled={submitting}>{submitting ? "Đang nộp..." : "Nộp bài"}</Button>
+            <Button
+              onClick={() => handleSubmit(false)} disabled={submitting}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-2xl shadow-md shadow-green-200"
+            >
+              <Send className="w-4 h-4 mr-1" />
+              {submitting ? "Đang nộp..." : "Nộp bài"}
+            </Button>
           </div>
-        </div>
+        </header>
 
-        <div className="max-w-3xl mx-auto p-4 space-y-4">
-          {test.questions.map((q, idx) => (
-            <Card key={q.id}>
-              <CardContent className="py-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">{idx + 1}</div>
-                  <div className="flex-1">
-                    <div className="flex gap-2 mb-1 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">{q.points} điểm</Badge>
-                    </div>
-                    <p className="text-base font-medium whitespace-pre-wrap">{q.content}</p>
-                  </div>
-                </div>
-                <div className="pl-11">
-                  <QuestionInput q={q} value={answers[q.id] ?? ""} onChange={v => setAnswers(a => ({ ...a, [q.id]: v }))} />
-                </div>
+        <div className="max-w-6xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+          {/* Sidebar: question palette */}
+          <aside className="hidden lg:block">
+            <Card className="sticky top-24 rounded-2xl">
+              <CardHeader className="pb-3"><CardTitle className="text-sm">Danh sách câu hỏi</CardTitle></CardHeader>
+              <CardContent className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {questions.map((q, i) => {
+                  const isAnswered = (answers[q.id] ?? "").trim() !== "";
+                  const isCurrent = i === currentIdx;
+                  const isFlagged = flagged.has(q.id);
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => setCurrentIdx(i)}
+                      className={cn(
+                        "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-left",
+                        isCurrent
+                          ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md"
+                          : isAnswered
+                            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0",
+                        isCurrent ? "bg-white/20" : isAnswered ? "bg-emerald-100" : "bg-white"
+                      )}>
+                        {i + 1}
+                      </div>
+                      <span className="truncate flex-1">Câu {i + 1}</span>
+                      {isAnswered && !isCurrent && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />}
+                      {isFlagged && <Flag className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />}
+                    </button>
+                  );
+                })}
               </CardContent>
             </Card>
-          ))}
-          <div className="flex justify-end">
-            <Button size="lg" onClick={() => handleSubmit(false)} disabled={submitting}>{submitting ? "Đang nộp..." : "Nộp bài"}</Button>
-          </div>
+          </aside>
+
+          {/* Main */}
+          <main>
+            <div className="bg-white rounded-3xl border border-gray-200/80 shadow-sm p-6 md:p-8">
+              <div className="space-y-6">
+                {/* Type badge + flag */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn(
+                    "text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border",
+                    typeConfig.bgColor, typeConfig.color
+                  )}>
+                    <TypeIcon className="w-3.5 h-3.5" />
+                    {typeConfig.label}
+                  </span>
+                  <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 text-gray-700">
+                    {currentQ.points} điểm
+                  </span>
+                  <button
+                    onClick={toggleFlag}
+                    className={cn(
+                      "ml-auto text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-all",
+                      flagged.has(currentQ.id)
+                        ? "bg-amber-100 text-amber-700 border-amber-200"
+                        : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-amber-50 hover:text-amber-600"
+                    )}
+                  >
+                    <Flag className="w-3.5 h-3.5" />
+                    {flagged.has(currentQ.id) ? "Đã đánh dấu" : "Đánh dấu lại"}
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex items-start gap-4">
+                  <div className={cn(
+                    "w-13 h-13 min-w-[52px] min-h-[52px] rounded-2xl bg-gradient-to-br text-white flex items-center justify-center text-xl font-black shadow-lg",
+                    typeConfig.gradient
+                  )}>
+                    {currentIdx + 1}
+                  </div>
+                  <div className="flex-1 pt-1">
+                    <div className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">
+                      {currentQ.content}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Image */}
+                {(currentQ as any).imageUrl && (
+                  <div className="ml-16">
+                    <img src={(currentQ as any).imageUrl} alt="Hình ảnh câu hỏi" className="rounded-xl border border-gray-200 max-h-64 object-contain" />
+                  </div>
+                )}
+
+                {/* Audio outside the renderer for plain audio (the renderer also handles listening) */}
+                {currentQ.type !== "listening" && currentQ.type !== "video_interactive" && (currentQ as any).audioUrl && (
+                  <div className="ml-16">
+                    <AudioPlayer src={(currentQ as any).audioUrl} />
+                  </div>
+                )}
+
+                {/* Renderer */}
+                <div className="ml-16">
+                  <QuestionRenderer
+                    q={currentQ as any}
+                    value={currentAnswer}
+                    onChange={setAnswer}
+                  />
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between mt-10 pt-6 border-t border-gray-200/60">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
+                  disabled={currentIdx === 0}
+                  className="rounded-2xl gap-1.5 px-5"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Câu trước
+                </Button>
+                <div className="flex items-center gap-3">
+                  {questions.slice(Math.max(0, currentIdx - 2), Math.min(questions.length, currentIdx + 3)).map((_, relIdx) => {
+                    const absIdx = Math.max(0, currentIdx - 2) + relIdx;
+                    return (
+                      <button
+                        key={absIdx}
+                        onClick={() => setCurrentIdx(absIdx)}
+                        className={cn(
+                          "w-9 h-9 rounded-xl text-sm font-bold transition-all",
+                          absIdx === currentIdx ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        )}
+                      >
+                        {absIdx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+                {currentIdx < questions.length - 1 ? (
+                  <Button onClick={() => setCurrentIdx(i => i + 1)} className="rounded-2xl gap-1.5 px-5">
+                    Câu tiếp theo
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => handleSubmit(false)}
+                    disabled={submitting}
+                    className="rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 gap-1.5 px-6 shadow-md shadow-green-200"
+                  >
+                    <Send className="w-4 h-4" />
+                    {submitting ? "Đang nộp..." : "Nộp bài"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     );
@@ -211,37 +399,4 @@ export default function PublicPlacementTestPage() {
       </Card>
     </div>
   );
-}
-
-function QuestionInput({ q, value, onChange }: { q: { id: number; type: string; options: unknown }; value: string; onChange: (v: string) => void }) {
-  if (q.type === "mcq") {
-    const options = Array.isArray(q.options) ? (q.options as string[]) : [];
-    return (
-      <div className="space-y-1.5">
-        {options.map((o, i) => (
-          <label key={i} className={`flex items-center gap-2 p-2.5 border rounded cursor-pointer transition-colors ${value === o ? "bg-blue-50 border-blue-400" : "hover:bg-gray-50"}`}>
-            <input type="radio" name={`q_${q.id}`} checked={value === o} onChange={() => onChange(o)} />
-            <span className="text-sm">{o}</span>
-          </label>
-        ))}
-      </div>
-    );
-  }
-  if (q.type === "true_false") {
-    return (
-      <div className="grid grid-cols-2 gap-2">
-        {["Đúng", "Sai"].map(o => (
-          <label key={o} className={`flex items-center justify-center gap-2 p-3 border rounded cursor-pointer ${value === o ? "bg-blue-50 border-blue-400" : "hover:bg-gray-50"}`}>
-            <input type="radio" name={`q_${q.id}`} checked={value === o} onChange={() => onChange(o)} />
-            <span className="font-medium">{o}</span>
-          </label>
-        ))}
-      </div>
-    );
-  }
-  if (q.type === "long_answer") {
-    return <Textarea value={value} onChange={e => onChange(e.target.value)} rows={6} placeholder="Nhập câu trả lời của bạn..." />;
-  }
-  // short_answer, fill_blank
-  return <Input value={value} onChange={e => onChange(e.target.value)} placeholder="Nhập câu trả lời..." />;
 }

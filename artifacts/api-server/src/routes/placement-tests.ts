@@ -701,6 +701,11 @@ router.get("/public/placement-tests/:slug", async (req, res): Promise<void> => {
       content: placementTestQuestionsTable.content,
       options: placementTestQuestionsTable.options,
       points: placementTestQuestionsTable.points,
+      audioUrl: placementTestQuestionsTable.audioUrl,
+      videoUrl: placementTestQuestionsTable.videoUrl,
+      imageUrl: placementTestQuestionsTable.imageUrl,
+      passage: placementTestQuestionsTable.passage,
+      metadata: placementTestQuestionsTable.metadata,
     })
     .from(placementTestQuestionsTable)
     .where(eq(placementTestQuestionsTable.testId, test.id))
