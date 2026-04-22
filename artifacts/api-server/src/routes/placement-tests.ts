@@ -261,7 +261,37 @@ router.post("/placement-tests", requireAuth, async (req, res): Promise<void> => 
   res.status(201).json(row);
 });
 
-// GET /placement-tests/:id (teacher view with full details)
+// GET /placement-tests/quiz-templates  (list quiz templates available to import) — declared before /:id to avoid route shadowing
+router.get("/placement-tests/quiz-templates", requireAuth, async (req, res): Promise<void> => {
+  const user = req.dbUser!;
+  if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const rows = await db
+    .select({
+      id: quizTemplatesTable.id,
+      title: quizTemplatesTable.title,
+      description: quizTemplatesTable.description,
+      skill: quizTemplatesTable.skill,
+      level: quizTemplatesTable.level,
+      questionCount: sql<number>`(SELECT COUNT(*)::int FROM ${quizTemplateQuestionsTable} WHERE ${quizTemplateQuestionsTable.templateId} = ${quizTemplatesTable.id})`,
+    })
+    .from(quizTemplatesTable)
+    .orderBy(desc(quizTemplatesTable.updatedAt));
+  res.json(rows);
+});
+
+// GET /placement-tests/quiz-templates/:tid/questions
+router.get("/placement-tests/quiz-templates/:tid/questions", requireAuth, async (req, res): Promise<void> => {
+  const user = req.dbUser!;
+  if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const tid = Number(req.params["tid"]);
+  const rows = await db
+    .select()
+    .from(quizTemplateQuestionsTable)
+    .where(eq(quizTemplateQuestionsTable.templateId, tid))
+    .orderBy(quizTemplateQuestionsTable.orderIndex);
+  res.json(rows);
+});
+
 router.get("/placement-tests/:id", requireAuth, async (req, res): Promise<void> => {
   const user = req.dbUser!;
   if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
@@ -425,37 +455,6 @@ router.post("/placement-tests/:id/questions/bulk-import", requireAuth, async (re
   if (rows.length === 0) { res.json({ imported: 0 }); return; }
   const inserted = await db.insert(placementTestQuestionsTable).values(rows).returning();
   res.json({ imported: inserted.length, questions: inserted });
-});
-
-// GET /placement-tests/quiz-templates  (list quiz templates available to import)
-router.get("/placement-tests/quiz-templates", requireAuth, async (req, res): Promise<void> => {
-  const user = req.dbUser!;
-  if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
-  const rows = await db
-    .select({
-      id: quizTemplatesTable.id,
-      title: quizTemplatesTable.title,
-      description: quizTemplatesTable.description,
-      skill: quizTemplatesTable.skill,
-      level: quizTemplatesTable.level,
-      questionCount: sql<number>`(SELECT COUNT(*)::int FROM ${quizTemplateQuestionsTable} WHERE ${quizTemplateQuestionsTable.templateId} = ${quizTemplatesTable.id})`,
-    })
-    .from(quizTemplatesTable)
-    .orderBy(desc(quizTemplatesTable.updatedAt));
-  res.json(rows);
-});
-
-// GET /placement-tests/quiz-templates/:tid/questions
-router.get("/placement-tests/quiz-templates/:tid/questions", requireAuth, async (req, res): Promise<void> => {
-  const user = req.dbUser!;
-  if (!isTeacherOrAdmin(user.role)) { res.status(403).json({ error: "Forbidden" }); return; }
-  const tid = Number(req.params["tid"]);
-  const rows = await db
-    .select()
-    .from(quizTemplateQuestionsTable)
-    .where(eq(quizTemplateQuestionsTable.templateId, tid))
-    .orderBy(quizTemplateQuestionsTable.orderIndex);
-  res.json(rows);
 });
 
 // POST /placement-tests/:id/import-from-quiz  (import from quiz template)

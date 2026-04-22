@@ -132,6 +132,12 @@ export const placementApi = {
     req<PlacementTestQuestion>(`/placement-tests/${testId}/questions`, { method: "POST", body: JSON.stringify(q) }),
   bulkImport: (testId: number, questionIds: number[]) =>
     req<{ imported: number; questions: PlacementTestQuestion[] }>(`/placement-tests/${testId}/questions/bulk-import`, { method: "POST", body: JSON.stringify({ questionIds }) }),
+  listQuizTemplates: () =>
+    req<Array<{ id: number; title: string; description: string | null; skill: string | null; level: string | null; questionCount: number }>>(`/placement-tests/quiz-templates`),
+  getQuizTemplateQuestions: (tid: number) =>
+    req<Array<{ id: number; type: string; content: string; level: string | null; points: number }>>(`/placement-tests/quiz-templates/${tid}/questions`),
+  importFromQuiz: (testId: number, templateId: number, questionIds?: number[]) =>
+    req<{ imported: number; questions: PlacementTestQuestion[] }>(`/placement-tests/${testId}/import-from-quiz`, { method: "POST", body: JSON.stringify({ templateId, questionIds }) }),
   updateQuestion: (qid: number, patch: Partial<PlacementTestQuestion>) =>
     req<PlacementTestQuestion>(`/placement-test-questions/${qid}`, { method: "PATCH", body: JSON.stringify(patch) }),
   deleteQuestion: (qid: number) => req<void>(`/placement-test-questions/${qid}`, { method: "DELETE" }),

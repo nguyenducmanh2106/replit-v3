@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Save, Send, Copy, Link as LinkIcon, Plus, Trash2, ChevronUp, ChevronDown,
   Settings, ListOrdered, BookOpen, Pencil, Headphones, Video, Image as ImageIcon,
+  Download, Eye, ArrowRight, RefreshCw,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateQuestionDialog, type QuestionData } from "@/components/create-question-dialog";
@@ -51,6 +52,7 @@ export default function PlacementTestBuilderPage() {
   const [editingQ, setEditingQ] = useState<PlacementTestQuestion | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -236,6 +238,7 @@ export default function PlacementTestBuilderPage() {
         <TabsContent value="questions" className="space-y-3 mt-4">
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setBankOpen(true)}><BookOpen className="w-4 h-4 mr-1" /> Từ ngân hàng câu hỏi</Button>
+            <Button variant="outline" onClick={() => setQuizOpen(true)}><Download className="w-4 h-4 mr-1" /> Nhập từ Quiz</Button>
             <Button onClick={() => setCreateQOpen(true)}><Plus className="w-4 h-4 mr-1" /> Thêm câu hỏi mới</Button>
           </div>
           {test.questions.length === 0 ? (
@@ -300,6 +303,7 @@ export default function PlacementTestBuilderPage() {
       />
 
       <BankImportDialog open={bankOpen} onOpenChange={setBankOpen} testId={testId} onImported={load} />
+      <QuizImportDialog open={quizOpen} onOpenChange={setQuizOpen} testId={testId} onImported={load} />
     </div>
   );
 }
@@ -471,6 +475,163 @@ function BankImportDialog({ open, onOpenChange, testId, onImported }: { open: bo
           <span className="text-sm text-muted-foreground mr-auto">Đã chọn {selected.size} câu</span>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Huỷ</Button>
           <Button onClick={handleImport} disabled={selected.size === 0 || importing}>{importing ? "Đang thêm..." : `Thêm ${selected.size} câu`}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function QuizImportDialog({ open, onOpenChange, testId, onImported }: { open: boolean; onOpenChange: (o: boolean) => void; testId: number; onImported: () => void }) {
+  const { toast } = useToast();
+  const [templates, setTemplates] = useState<Awaited<ReturnType<typeof placementApi.listQuizTemplates>>>([]);
+  const [loadingList, setLoadingList] = useState(false);
+  const [previewId, setPreviewId] = useState<number | null>(null);
+  const [previewQs, setPreviewQs] = useState<Awaited<ReturnType<typeof placementApi.getQuizTemplateQuestions>>>([]);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [importing, setImporting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLoadingList(true);
+    placementApi.listQuizTemplates()
+      .then(setTemplates)
+      .catch(() => setTemplates([]))
+      .finally(() => setLoadingList(false));
+  }, [open]);
+
+  function reset() { setPreviewId(null); setPreviewQs([]); setSelectedIds([]); }
+
+  async function handlePreview(tid: number) {
+    setPreviewId(tid);
+    setLoadingPreview(true);
+    setSelectedIds([]);
+    setPreviewQs([]);
+    try {
+      const data = await placementApi.getQuizTemplateQuestions(tid);
+      setPreviewQs(data);
+      setSelectedIds(data.map(q => q.id));
+    } catch {
+      toast({ title: "Lỗi", description: "Không thể tải câu hỏi", variant: "destructive" });
+      setPreviewId(null);
+    } finally { setLoadingPreview(false); }
+  }
+
+  async function handleImportAll(tid: number) {
+    setImporting(true);
+    try {
+      const r = await placementApi.importFromQuiz(testId, tid);
+      toast({ title: "Nhập thành công", description: `Đã nhập ${r.imported} câu hỏi từ bộ quiz` });
+      onImported(); onOpenChange(false); reset();
+    } catch (e: any) {
+      toast({ title: "Lỗi", description: e.message, variant: "destructive" });
+    } finally { setImporting(false); }
+  }
+
+  async function handleImportSelected() {
+    if (!previewId || selectedIds.length === 0) return;
+    setImporting(true);
+    try {
+      const r = await placementApi.importFromQuiz(testId, previewId, selectedIds);
+      toast({ title: "Nhập thành công", description: `Đã nhập ${r.imported} câu hỏi` });
+      onImported(); onOpenChange(false); reset();
+    } catch (e: any) {
+      toast({ title: "Lỗi", description: e.message, variant: "destructive" });
+    } finally { setImporting(false); }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { onOpenChange(false); reset(); } }}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle>
+            {previewId ? (
+              <button className="flex items-center gap-2 text-left" onClick={reset}>
+                <ArrowRight className="w-4 h-4 rotate-180" /> Chọn câu hỏi để nhập
+              </button>
+            ) : "Nhập câu hỏi từ bộ Quiz"}
+          </DialogTitle>
+        </DialogHeader>
+
+        {!previewId ? (
+          <div className="flex-1 overflow-y-auto space-y-2 py-2">
+            {loadingList ? (
+              <p className="text-center text-muted-foreground py-8">Đang tải...</p>
+            ) : templates.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Chưa có bộ quiz nào. <Link href="/quiz-templates" className="text-primary underline">Tạo bộ quiz mới</Link>
+              </p>
+            ) : (
+              templates.map(t => (
+                <div key={t.id} className="flex items-center gap-3 p-3 rounded-lg border hover:border-primary/40 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{t.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.questionCount} câu
+                      {t.skill ? ` · ${SKILL_LABELS[t.skill] ?? t.skill}` : ""}
+                      {t.level ? ` · ${t.level}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => handlePreview(t.id)}>
+                      <Eye className="w-4 h-4 mr-1" />Xem trước
+                    </Button>
+                    <Button size="sm" onClick={() => handleImportAll(t.id)} disabled={importing}>
+                      {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Nhập tất cả"}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+              <span>Đã chọn {selectedIds.length}/{previewQs.length} câu</span>
+              <div className="flex gap-2">
+                <button className="text-primary text-xs hover:underline" onClick={() => setSelectedIds(previewQs.map(q => q.id))}>Chọn tất cả</button>
+                <button className="text-xs hover:underline" onClick={() => setSelectedIds([])}>Bỏ chọn</button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+              {loadingPreview ? (
+                <div className="text-center py-8 text-muted-foreground">Đang tải...</div>
+              ) : previewQs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">Bộ quiz chưa có câu hỏi</div>
+              ) : (
+                previewQs.map(q => {
+                  const checked = selectedIds.includes(q.id);
+                  return (
+                    <label key={q.id} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${checked ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => setSelectedIds(prev => prev.includes(q.id) ? prev.filter(x => x !== q.id) : [...prev, q.id])}
+                        className="mt-1"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap gap-1.5 mb-1">
+                          <Badge variant="outline" className="text-xs">{TYPE_LABELS[q.type] ?? q.type}</Badge>
+                          {q.level && <Badge variant="outline" className="text-xs">{q.level}</Badge>}
+                          <span className="text-xs text-muted-foreground">{q.points} điểm</span>
+                        </div>
+                        <p className="text-sm text-gray-900 line-clamp-2">{q.content}</p>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </>
+        )}
+
+        <DialogFooter>
+          {previewId && (
+            <Button onClick={handleImportSelected} disabled={importing || selectedIds.length === 0}>
+              {importing ? "Đang nhập..." : `Nhập ${selectedIds.length} câu hỏi`}
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => { onOpenChange(false); reset(); }}>Đóng</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
