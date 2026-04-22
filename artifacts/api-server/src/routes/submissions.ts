@@ -59,7 +59,7 @@ async function getSubmissionResult(id: number) {
         questionExplanation: q?.explanation ?? null,
         questionOptions: q?.options ?? null,
         answer: a.answer,
-        correctAnswer: null as string | null,
+        correctAnswer: q?.correctAnswer ?? null,
         isCorrect: a.isCorrect === "true" ? true : a.isCorrect === "false" ? false : null,
         pointsEarned: a.pointsEarned,
         points: q?.points ?? null,

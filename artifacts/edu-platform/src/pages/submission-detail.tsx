@@ -44,141 +44,6 @@ const QUESTION_TYPE_LABELS: Record<string, string> = {
   video_interactive: "Video tương tác", essay: "Bài luận", open_end: "Câu hỏi mở",
 };
 
-function formatStudentAnswer(answer: string | null, type: string | null): React.ReactNode {
-  if (!answer) return <span className="text-gray-400 italic">(Bỏ trống)</span>;
-  const t = type ?? "";
-
-  if (t === "mcq") {
-    const answers = answer.split(",").map(a => a.trim()).filter(Boolean);
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {answers.map((a, i) => (
-          <span key={i} className="px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-lg text-sm font-medium text-blue-800">{a}</span>
-        ))}
-      </div>
-    );
-  }
-  if (t === "true_false") {
-    return (
-      <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${
-        answer === "Đúng" ? "bg-green-50 border-green-300 text-green-700" : "bg-red-50 border-red-300 text-red-700"
-      }`}>{answer}</span>
-    );
-  }
-  if (t === "fill_blank") {
-    const blanks = safeJson<string[]>(answer, [answer]);
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {blanks.map((b, i) => (
-          <span key={i} className="px-2.5 py-1 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-800">
-            Ô {i + 1}: {b}
-          </span>
-        ))}
-      </div>
-    );
-  }
-  if (t === "word_selection") {
-    const words = safeJson<string[]>(answer, []);
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {words.map((w, i) => (
-          <span key={i} className="px-2 py-0.5 bg-amber-50 border border-amber-300 rounded text-sm font-medium text-amber-800">{w}</span>
-        ))}
-      </div>
-    );
-  }
-  if (t === "matching") {
-    // Format 1: [{left, right}, ...] array
-    const asArray = safeJson<Array<{ left: string; right: string }>>(answer, []);
-    if (Array.isArray(asArray) && asArray.length > 0 && asArray[0]?.left !== undefined) {
-      return (
-        <div className="space-y-1.5">
-          {asArray.map((p, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm">
-              <span className="px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 font-medium min-w-0 flex-1 text-center">{p.left}</span>
-              <span className="text-gray-400 shrink-0">↔</span>
-              <span className="px-2.5 py-1 bg-pink-50 border border-pink-200 rounded-lg text-pink-800 font-medium min-w-0 flex-1 text-center">{p.right}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    // Format 2: {term: definition, ...} plain object
-    const asObj = safeJson<Record<string, string>>(answer, {});
-    const entries = Object.entries(asObj).filter(([, v]) => typeof v === "string");
-    if (entries.length > 0) {
-      return (
-        <div className="space-y-1.5">
-          {entries.map(([left, right], i) => (
-            <div key={i} className="flex items-start gap-2 text-sm">
-              <span className="px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 font-medium shrink-0 max-w-[45%]">{left}</span>
-              <span className="text-gray-400 shrink-0 mt-1">↔</span>
-              <span className="px-2.5 py-1 bg-pink-50 border border-pink-200 rounded-lg text-pink-800 font-medium flex-1">{right}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    // Format 3: {category: [items], ...} — matching with groups
-    const asGroups = safeJson<Record<string, string[]>>(answer, {});
-    const groupEntries = Object.entries(asGroups).filter(([, v]) => Array.isArray(v));
-    if (groupEntries.length > 0) {
-      return (
-        <div className="space-y-2">
-          {groupEntries.map(([group, items], i) => (
-            <div key={i} className="rounded-lg border border-blue-100 bg-blue-50/40 p-2.5">
-              <p className="text-xs font-semibold text-blue-700 mb-1.5">{group}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(items as string[]).map((item, j) => (
-                  <span key={j} className="px-2 py-0.5 bg-pink-50 border border-pink-200 rounded text-sm text-pink-800 font-medium">{item}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{answer}</p>;
-  }
-  if (t === "sentence_reorder") {
-    const words = safeJson<string[]>(answer, [answer]);
-    const wordList = Array.isArray(words) ? words : [answer];
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {wordList.map((w, i) => (
-          <span key={i} className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-800 font-medium">
-            <span className="text-xs text-indigo-400 font-mono">{i + 1}.</span>
-            {w}
-          </span>
-        ))}
-      </div>
-    );
-  }
-  if (t === "drag_drop") {
-    // Format: {category: [items], ...}
-    const asGroups = safeJson<Record<string, unknown>>(answer, {});
-    const groupEntries = Object.entries(asGroups);
-    if (groupEntries.length > 0) {
-      return (
-        <div className="space-y-2">
-          {groupEntries.map(([group, items], i) => (
-            <div key={i} className="rounded-lg border border-violet-100 bg-violet-50/40 p-2.5">
-              <p className="text-xs font-semibold text-violet-700 mb-1.5">{group}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(Array.isArray(items) ? items : [items]).map((item: any, j: number) => (
-                  <span key={j} className="px-2 py-0.5 bg-white border border-violet-200 rounded text-sm text-violet-800 font-medium shadow-sm">{String(item)}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{answer}</p>;
-  }
-  return <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{answer}</p>;
-}
-
 // ── Reading / Listening sub-question answer view ──────────────────────────
 function ReadingSubAnswerView({
   studentAnswer, questionOptions, qType,
@@ -1058,12 +923,12 @@ export default function SubmissionDetailPage() {
                         )}
 
                         {/* Correct answer (for wrong auto-graded answers) */}
-                        {!isEssay && !answer.isCorrect && answer.correctAnswer && (
+                        {/* {!isEssay && !answer.isCorrect && answer.correctAnswer && (
                           <div className="p-3 bg-green-50 border border-green-100 rounded-lg">
                             <p className="text-xs font-semibold text-green-700 mb-1.5">✅ Đáp án đúng</p>
                             {formatCorrectAnswer(answer.correctAnswer, answer.questionOptions, qType)}
                           </div>
-                        )}
+                        )} */}
 
                         {/* Explanation */}
                         {answer.questionExplanation && (

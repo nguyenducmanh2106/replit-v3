@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckCircle2, XCircle, MousePointerClick, Layers, Type, GripVertical, GripHorizontal } from "lucide-react";
+import { CheckCircle2, XCircle, Layers, Type, GripVertical, GripHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function safeJson<T>(s: string | null | undefined, fallback: T): T {
@@ -42,31 +42,30 @@ function McqReview({ studentAnswer, correctAnswer, questionOptions }: {
       {opts.map((opt, i) => {
         const picked = studentSet.has(opt);
         const isCorrect = correctSet.has(opt);
-        // Color logic
         let cls = "border-gray-200 bg-white text-gray-700";
         let badgeCls = "bg-gray-100 text-gray-500";
         if (showCorrect) {
-          if (picked && isCorrect) { cls = "border-green-400 bg-green-50 text-green-900"; badgeCls = "bg-green-500 text-white"; }
-          else if (picked && !isCorrect) { cls = "border-red-400 bg-red-50 text-red-900"; badgeCls = "bg-red-500 text-white"; }
-          else if (!picked && isCorrect) { cls = "border-green-300 bg-green-50/40 text-green-800 border-dashed"; badgeCls = "bg-green-100 text-green-700"; }
+          if (picked && isCorrect) { cls = "border-green-500 bg-gradient-to-br from-green-50 to-emerald-50 text-green-900 shadow-sm"; badgeCls = "bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-sm"; }
+          else if (picked && !isCorrect) { cls = "border-red-500 bg-gradient-to-br from-red-50 to-rose-50 text-red-900 shadow-sm"; badgeCls = "bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-sm"; }
+          else if (!picked && isCorrect) { cls = "border-green-300 bg-green-50/40 text-green-800 border-dashed"; badgeCls = "bg-green-100 text-green-700 border border-green-300"; }
         } else if (picked) {
-          cls = "border-blue-400 bg-blue-50 text-blue-900"; badgeCls = "bg-blue-500 text-white";
+          cls = "border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-900 shadow-sm"; badgeCls = "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm";
         }
 
         return (
-          <div key={i} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-colors", cls)}>
-            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0", badgeCls)}>
+          <div key={i} className={cn("flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all", cls, picked && "shadow-md")}>
+            <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black flex-shrink-0", badgeCls)}>
               {LABELS[i] ?? i + 1}
             </div>
             <span className="text-sm font-medium flex-1 leading-relaxed">{opt}</span>
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {picked && (
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/80 border border-current">
-                  HS chọn
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-white/80 border border-current font-mono">
+                  HS
                 </span>
               )}
-              {showCorrect && isCorrect && <CheckCircle2 className="w-4 h-4 text-green-600" />}
-              {showCorrect && picked && !isCorrect && <XCircle className="w-4 h-4 text-red-500" />}
+              {showCorrect && isCorrect && <CheckCircle2 className="w-5 h-5 text-green-600" />}
+              {showCorrect && picked && !isCorrect && <XCircle className="w-5 h-5 text-red-500" />}
             </div>
           </div>
         );
@@ -75,8 +74,8 @@ function McqReview({ studentAnswer, correctAnswer, questionOptions }: {
         <p className="text-xs text-gray-400 italic">(Học sinh không chọn đáp án nào)</p>
       )}
       {showCorrect && correctSet.size > 0 && (
-        <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200">
-          <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+        <div className="mt-2 flex items-start gap-2 px-4 py-3 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 shadow-sm">
+          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-wider text-green-700 mb-0.5">Đáp án đúng</p>
             <p className="text-sm font-semibold text-green-900 leading-relaxed">
@@ -246,7 +245,6 @@ function WordSelectionReview({ studentAnswer, correctAnswer, questionContent, qu
   const showCorrect = correctAnswer != null;
 
   if (words.length === 0) {
-    // fallback: show student picks as chips
     const picks = [...studentSet];
     return (
       <div className="flex flex-wrap gap-2">
@@ -259,37 +257,54 @@ function WordSelectionReview({ studentAnswer, correctAnswer, questionContent, qu
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-xs font-medium text-indigo-600">
-        <MousePointerClick className="w-3.5 h-3.5" />
-        Các từ học sinh đã chọn
-      </div>
-      <div className="flex flex-wrap gap-1.5 p-3 bg-indigo-50/40 border border-indigo-100 rounded-xl">
-        {words.map((w, i) => {
-          const picked = studentSet.has(w);
-          const isCorrect = correctSet.has(w);
-          let cls = "bg-white text-gray-500 border-gray-200";
-          if (showCorrect) {
-            if (picked && isCorrect) cls = "bg-gradient-to-br from-green-500 to-emerald-600 text-white border-green-600 shadow-sm";
-            else if (picked && !isCorrect) cls = "bg-red-100 text-red-700 border-red-300 line-through";
-            else if (!picked && isCorrect) cls = "bg-green-50 text-green-700 border-green-300 border-dashed";
-          } else if (picked) {
-            cls = "bg-gradient-to-br from-indigo-500 to-blue-600 text-white border-indigo-600";
-          }
-          return (
-            <span key={i} className={cn("px-2 py-1 rounded-lg text-sm font-medium border-2 transition-colors", cls)}>
-              {picked && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
-              {w}
-            </span>
-          );
-        })}
-      </div>
-      {showCorrect && (
-        <div className="flex items-center gap-2 text-[11px] text-gray-500 px-1">
-          <span className="inline-block w-3 h-3 rounded-sm bg-gradient-to-br from-green-500 to-emerald-600" /> Đúng
-          <span className="inline-block w-3 h-3 rounded-sm bg-red-200 border border-red-300 ml-2" /> Sai
-          <span className="inline-block w-3 h-3 rounded-sm bg-green-50 border border-green-300 border-dashed ml-2" /> HS bỏ sót
+    <div className="space-y-3">
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Các từ trong đoạn văn</p>
+        <div className="flex flex-wrap gap-2 p-4 bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-slate-200 rounded-xl">
+          {words.map((w, i) => {
+            const picked = studentSet.has(w);
+            const isCorrect = correctSet.has(w);
+            let cls = "bg-white text-gray-600 border-gray-200";
+            if (showCorrect) {
+              if (picked && isCorrect) cls = "bg-gradient-to-br from-green-500 to-emerald-600 text-white border-green-600 shadow-sm font-semibold";
+              else if (picked && !isCorrect) cls = "bg-red-50 text-red-700 border-red-300 line-through opacity-80";
+              else if (!picked && isCorrect) cls = "bg-green-50 text-green-700 border-green-300 border-dashed";
+            } else if (picked) {
+              cls = "bg-gradient-to-br from-indigo-500 to-blue-600 text-white border-indigo-600 shadow-sm font-semibold";
+            }
+            return (
+              <span key={i} className={cn("px-3 py-1.5 rounded-lg text-sm border-2 transition-all", cls)}>
+                {picked && <CheckCircle2 className="w-3.5 h-3.5 inline mr-1 opacity-80" />}
+                {w}
+              </span>
+            );
+          })}
         </div>
+      </div>
+
+      {showCorrect && (
+        <div className="flex flex-wrap gap-4 text-[11px] text-gray-500 px-1">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3.5 h-3.5 rounded-sm bg-gradient-to-br from-green-500 to-emerald-600 shadow-sm" />
+            Đúng &amp; chọn
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3.5 h-3.5 rounded-sm bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm" />
+            Chọn (chờ đáp án)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3.5 h-3.5 rounded-sm bg-red-50 border border-red-300 line-through opacity-80" />
+            Sai
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3.5 h-3.5 rounded-sm bg-green-50 border border-green-300 border-dashed" />
+            Đáp án đúng (bỏ sót)
+          </span>
+        </div>
+      )}
+
+      {studentSet.size === 0 && (
+        <p className="text-xs text-gray-400 italic">(Học sinh không chọn từ nào)</p>
       )}
     </div>
   );
