@@ -33,8 +33,10 @@ export const SKILLS = ["reading", "writing", "listening", "speaking"] as const;
 export const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 export const SKILL_LABELS: Record<string, string> = { reading: "Đọc", writing: "Viết", listening: "Nghe", speaking: "Nói" };
 
-export function safeJson<T>(str: string | null | undefined, fallback: T): T {
-  if (!str) return fallback;
+export function safeJson<T>(str: unknown, fallback: T): T {
+  if (str == null) return fallback;
+  if (typeof str === "object") return str as T;
+  if (typeof str !== "string" || !str) return fallback;
   try { return JSON.parse(str) as T; } catch { return fallback; }
 }
 

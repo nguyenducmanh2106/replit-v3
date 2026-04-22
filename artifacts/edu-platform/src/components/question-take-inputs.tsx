@@ -1977,6 +1977,8 @@ export function ListeningInput({ audioUrl, options, value, onChange }: { audioUr
 
 // ─── Question Renderer (dispatcher used by both Bài tập & Bài test đầu vào) ──
 function safeJsonParse<T>(s: unknown, fb: T): T {
+  if (s == null) return fb;
+  if (typeof s === "object") return s as T;
   if (typeof s !== "string" || !s) return fb;
   try { const p = JSON.parse(s); return (p ?? fb) as T; } catch { return fb; }
 }
@@ -1990,7 +1992,7 @@ export interface RenderableQuestion {
   audioUrl?: string | null;
   videoUrl?: string | null;
   imageUrl?: string | null;
-  metadata?: string | null;
+  metadata?: unknown;
 }
 
 export function QuestionRenderer({
