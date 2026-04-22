@@ -59,6 +59,32 @@ export type PlacementTestQuestion = {
   options: unknown;
   correctAnswer: string | null;
   points: number;
+  skill?: string | null;
+  level?: string | null;
+  audioUrl?: string | null;
+  videoUrl?: string | null;
+  imageUrl?: string | null;
+  passage?: string | null;
+  explanation?: string | null;
+  metadata?: string | null;
+};
+
+export type AddPlacementQuestionInput = {
+  type: string;
+  content: string;
+  options?: unknown;
+  correctAnswer?: string | null;
+  points?: number;
+  sourceType?: string;
+  sourceId?: number | null;
+  skill?: string | null;
+  level?: string | null;
+  audioUrl?: string | null;
+  videoUrl?: string | null;
+  imageUrl?: string | null;
+  passage?: string | null;
+  explanation?: string | null;
+  metadata?: string | null;
 };
 
 export type PlacementSubmission = {
@@ -102,7 +128,7 @@ export const placementApi = {
   remove: (id: number) => req<void>(`/placement-tests/${id}`, { method: "DELETE" }),
   publish: (id: number) => req<PlacementTest & { publicUrl: string }>(`/placement-tests/${id}/publish`, { method: "POST" }),
 
-  addQuestion: (testId: number, q: { type: string; content: string; options?: unknown; correctAnswer?: string | null; points?: number; sourceType?: string; sourceId?: number | null }) =>
+  addQuestion: (testId: number, q: AddPlacementQuestionInput) =>
     req<PlacementTestQuestion>(`/placement-tests/${testId}/questions`, { method: "POST", body: JSON.stringify(q) }),
   bulkImport: (testId: number, questionIds: number[]) =>
     req<{ imported: number; questions: PlacementTestQuestion[] }>(`/placement-tests/${testId}/questions/bulk-import`, { method: "POST", body: JSON.stringify({ questionIds }) }),

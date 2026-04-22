@@ -8,31 +8,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Save, Send, Copy, Link as LinkIcon, Plus, Trash2, ChevronUp, ChevronDown, Settings, ListOrdered, BookOpen,
+  ArrowLeft, Save, Send, Copy, Link as LinkIcon, Plus, Trash2, ChevronUp, ChevronDown,
+  Settings, ListOrdered, BookOpen, Pencil, Headphones, Video, Image as ImageIcon,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreateQuestionDialog, type QuestionData } from "@/components/create-question-dialog";
+import {
+  QuestionEditDialog, TYPE_LABELS, SKILL_LABELS,
+  type EditDraft,
+} from "@/components/question-edit-dialog";
 
-const QUESTION_TYPES = [
-  { value: "mcq", label: "Trắc nghiệm 1 đáp án" },
-  { value: "true_false", label: "Đúng / Sai" },
-  { value: "short_answer", label: "Tự luận ngắn" },
-  { value: "long_answer", label: "Tự luận dài" },
-  { value: "fill_blank", label: "Điền vào chỗ trống" },
-];
-
-type AddQForm = {
-  type: string;
-  content: string;
-  points: number;
-  options: string[];
-  correctIdx: number;
-  correctTF: "true" | "false";
-  correctText: string;
+const LEVEL_COLORS: Record<string, string> = {
+  A1: "bg-green-100 text-green-700", A2: "bg-green-200 text-green-800",
+  B1: "bg-blue-100 text-blue-700", B2: "bg-blue-200 text-blue-800",
+  C1: "bg-purple-100 text-purple-700", C2: "bg-purple-200 text-purple-800",
 };
 
 export default function PlacementTestBuilderPage() {
@@ -53,13 +46,10 @@ export default function PlacementTestBuilderPage() {
   const [allowRetake, setAllowRetake] = useState(false);
   const [notifyTeacher, setNotifyTeacher] = useState(true);
 
-  const [qOpen, setQOpen] = useState(false);
-  const [qForm, setQForm] = useState<AddQForm>({
-    type: "mcq", content: "", points: 1,
-    options: ["", "", "", ""], correctIdx: 0,
-    correctTF: "true", correctText: "",
-  });
-  const [qSaving, setQSaving] = useState(false);
+  const [createQOpen, setCreateQOpen] = useState(false);
+  const [creatingQ, setCreatingQ] = useState(false);
+  const [editingQ, setEditingQ] = useState<PlacementTestQuestion | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [bankOpen, setBankOpen] = useState(false);
 
   async function load() {
@@ -119,43 +109,49 @@ export default function PlacementTestBuilderPage() {
     navigator.clipboard.writeText(url).then(() => toast({ title: "Đã sao chép link", description: url }));
   }
 
-  function resetQForm() {
-    setQForm({ type: "mcq", content: "", points: 1, options: ["", "", "", ""], correctIdx: 0, correctTF: "true", correctText: "" });
-  }
-
-  async function handleAddQuestion() {
-    if (!qForm.content.trim()) { toast({ title: "Nhập nội dung câu hỏi", variant: "destructive" }); return; }
-
-    let options: unknown = null;
-    let correctAnswer: string | null = null;
-
-    if (qForm.type === "mcq") {
-      const cleanOpts = qForm.options.map(o => o.trim()).filter(o => o !== "");
-      if (cleanOpts.length < 2) { toast({ title: "Cần ít nhất 2 đáp án", variant: "destructive" }); return; }
-      if (qForm.correctIdx < 0 || qForm.correctIdx >= cleanOpts.length) { toast({ title: "Chọn đáp án đúng", variant: "destructive" }); return; }
-      options = cleanOpts;
-      correctAnswer = cleanOpts[qForm.correctIdx];
-    } else if (qForm.type === "true_false") {
-      options = ["Đúng", "Sai"];
-      correctAnswer = qForm.correctTF === "true" ? "Đúng" : "Sai";
-    } else if (qForm.type === "short_answer" || qForm.type === "fill_blank") {
-      correctAnswer = qForm.correctText.trim();
-      if (!correctAnswer) { toast({ title: "Nhập đáp án đúng", variant: "destructive" }); return; }
-    } // long_answer: no correctAnswer
-
-    setQSaving(true);
+  async function handleCreateQuestion(data: QuestionData) {
+    setCreatingQ(true);
     try {
+      const optionsParsed = data.options ? safeParse(data.options) : null;
       await placementApi.addQuestion(testId, {
-        type: qForm.type, content: qForm.content.trim(),
-        options, correctAnswer, points: qForm.points || 1,
+        type: data.type,
+        content: data.content,
+        options: optionsParsed,
+        correctAnswer: data.correctAnswer,
+        points: data.points,
         sourceType: "custom",
+        skill: data.skill,
+        level: data.level,
+        audioUrl: data.audioUrl,
+        videoUrl: data.videoUrl,
+        imageUrl: data.imageUrl,
+        passage: data.passage,
+        explanation: data.explanation,
+        metadata: data.metadata,
       });
       toast({ title: "Đã thêm câu hỏi" });
-      setQOpen(false); resetQForm();
+      setCreateQOpen(false);
       load();
     } catch (e: any) {
       toast({ title: "Không thêm được", description: e.message, variant: "destructive" });
-    } finally { setQSaving(false); }
+    } finally { setCreatingQ(false); }
+  }
+
+  async function handleSaveEdit(patch: Partial<EditDraft>) {
+    if (!editingQ) return;
+    setSavingEdit(true);
+    try {
+      const apiPatch: Partial<PlacementTestQuestion> = {
+        ...patch,
+        options: typeof patch.options === "string" ? safeParse(patch.options) : patch.options,
+      } as any;
+      await placementApi.updateQuestion(editingQ.id, apiPatch);
+      toast({ title: "Đã lưu thay đổi" });
+      setEditingQ(null);
+      load();
+    } catch (e: any) {
+      toast({ title: "Không lưu được", description: e.message, variant: "destructive" });
+    } finally { setSavingEdit(false); }
   }
 
   async function handleDeleteQ(qid: number) {
@@ -184,6 +180,14 @@ export default function PlacementTestBuilderPage() {
   }
 
   const publicUrl = `${window.location.origin}/test/${test.linkSlug}`;
+
+  // Normalize options to string for QuestionEditDialog (it accepts string or object)
+  function toEditQ(q: PlacementTestQuestion): any {
+    return {
+      ...q,
+      options: typeof q.options === "string" ? q.options : q.options != null ? JSON.stringify(q.options) : null,
+    };
+  }
 
   return (
     <div className="space-y-6">
@@ -232,40 +236,22 @@ export default function PlacementTestBuilderPage() {
         <TabsContent value="questions" className="space-y-3 mt-4">
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setBankOpen(true)}><BookOpen className="w-4 h-4 mr-1" /> Từ ngân hàng câu hỏi</Button>
-            <Button onClick={() => setQOpen(true)}><Plus className="w-4 h-4 mr-1" /> Thêm câu hỏi mới</Button>
+            <Button onClick={() => setCreateQOpen(true)}><Plus className="w-4 h-4 mr-1" /> Thêm câu hỏi mới</Button>
           </div>
           {test.questions.length === 0 ? (
             <Card><CardContent className="py-12 text-center text-muted-foreground">Chưa có câu hỏi. Thêm câu đầu tiên để bắt đầu.</CardContent></Card>
           ) : (
             <div className="space-y-2">
               {test.questions.map((q, idx) => (
-                <Card key={q.id}>
-                  <CardContent className="py-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex flex-col gap-0.5">
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={idx === 0} onClick={() => handleMove(idx, -1)}><ChevronUp className="w-3.5 h-3.5" /></Button>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={idx === test.questions.length - 1} onClick={() => handleMove(idx, 1)}><ChevronDown className="w-3.5 h-3.5" /></Button>
-                      </div>
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold">{idx + 1}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <Badge variant="outline" className="text-xs">{QUESTION_TYPES.find(t => t.value === q.type)?.label ?? q.type}</Badge>
-                          <Badge variant="secondary" className="text-xs">{q.points} điểm</Badge>
-                          {q.sourceType === "bank" && <Badge variant="outline" className="text-xs">Từ ngân hàng</Badge>}
-                        </div>
-                        <p className="text-sm font-medium line-clamp-2">{q.content}</p>
-                        {Array.isArray(q.options) && q.options.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {(q.options as string[]).slice(0, 4).map((o, i) => (
-                              <span key={i} className={`text-xs px-2 py-0.5 rounded ${o === q.correctAnswer ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>{o}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <Button size="sm" variant="ghost" className="text-red-600" onClick={() => handleDeleteQ(q.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <PlacementQuestionCard
+                  key={q.id} q={q} idx={idx}
+                  isFirst={idx === 0}
+                  isLast={idx === test.questions.length - 1}
+                  onMoveUp={() => handleMove(idx, -1)}
+                  onMoveDown={() => handleMove(idx, 1)}
+                  onEdit={() => setEditingQ(q)}
+                  onDelete={() => handleDeleteQ(q.id)}
+                />
               ))}
             </div>
           )}
@@ -298,61 +284,129 @@ export default function PlacementTestBuilderPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Add Question dialog */}
-      <Dialog open={qOpen} onOpenChange={(o) => { setQOpen(o); if (!o) resetQForm(); }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Thêm câu hỏi mới</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
-                <Label>Loại câu hỏi</Label>
-                <Select value={qForm.type} onValueChange={v => setQForm({ ...qForm, type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{QUESTION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div><Label>Điểm</Label><Input type="number" min={1} value={qForm.points} onChange={e => setQForm({ ...qForm, points: Number(e.target.value) || 1 })} /></div>
-            </div>
-            <div><Label>Nội dung câu hỏi *</Label><Textarea value={qForm.content} onChange={e => setQForm({ ...qForm, content: e.target.value })} rows={3} /></div>
-            {qForm.type === "mcq" && (
-              <div>
-                <Label>Đáp án (tick vào đáp án đúng)</Label>
-                <div className="space-y-2 mt-1">
-                  {qForm.options.map((o, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <input type="radio" name="correct" checked={qForm.correctIdx === i} onChange={() => setQForm({ ...qForm, correctIdx: i })} />
-                      <Input value={o} onChange={e => { const a = [...qForm.options]; a[i] = e.target.value; setQForm({ ...qForm, options: a }); }} placeholder={`Đáp án ${i + 1}`} />
-                      {qForm.options.length > 2 && <Button size="sm" variant="ghost" onClick={() => setQForm({ ...qForm, options: qForm.options.filter((_, j) => j !== i), correctIdx: Math.min(qForm.correctIdx, qForm.options.length - 2) })}><Trash2 className="w-3.5 h-3.5" /></Button>}
-                    </div>
-                  ))}
-                  <Button size="sm" variant="outline" onClick={() => setQForm({ ...qForm, options: [...qForm.options, ""] })}><Plus className="w-3.5 h-3.5 mr-1" /> Thêm đáp án</Button>
-                </div>
-              </div>
-            )}
-            {qForm.type === "true_false" && (
-              <div>
-                <Label>Đáp án đúng</Label>
-                <Select value={qForm.correctTF} onValueChange={v => setQForm({ ...qForm, correctTF: v as "true" | "false" })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="true">Đúng</SelectItem><SelectItem value="false">Sai</SelectItem></SelectContent>
-                </Select>
-              </div>
-            )}
-            {(qForm.type === "short_answer" || qForm.type === "fill_blank") && (
-              <div><Label>Đáp án đúng (so sánh không phân biệt hoa-thường)</Label><Input value={qForm.correctText} onChange={e => setQForm({ ...qForm, correctText: e.target.value })} /></div>
-            )}
-            {qForm.type === "long_answer" && (
-              <p className="text-sm text-muted-foreground bg-yellow-50 border border-yellow-200 rounded p-3">Câu tự luận dài sẽ được giáo viên chấm thủ công sau khi học sinh nộp.</p>
-            )}
-          </div>
-          <DialogFooter><Button variant="outline" onClick={() => setQOpen(false)}>Huỷ</Button><Button onClick={handleAddQuestion} disabled={qSaving}>{qSaving ? "Đang thêm..." : "Thêm câu hỏi"}</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateQuestionDialog
+        open={createQOpen}
+        onClose={() => setCreateQOpen(false)}
+        onSave={handleCreateQuestion}
+        saving={creatingQ}
+      />
 
-      {/* Bank import dialog */}
+      <QuestionEditDialog
+        q={editingQ ? toEditQ(editingQ) : null}
+        open={!!editingQ}
+        onClose={() => setEditingQ(null)}
+        onSave={handleSaveEdit}
+        saving={savingEdit}
+      />
+
       <BankImportDialog open={bankOpen} onOpenChange={setBankOpen} testId={testId} onImported={load} />
     </div>
   );
+}
+
+function PlacementQuestionCard({ q, idx, isFirst, isLast, onMoveUp, onMoveDown, onEdit, onDelete }: {
+  q: PlacementTestQuestion; idx: number;
+  isFirst: boolean; isLast: boolean;
+  onMoveUp: () => void; onMoveDown: () => void;
+  onEdit: () => void; onDelete: () => void;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <div className="flex items-start gap-3 px-4 py-3">
+          <div className="flex flex-col gap-0.5 pt-0.5">
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={isFirst} onClick={onMoveUp}><ChevronUp className="w-3.5 h-3.5" /></Button>
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={isLast} onClick={onMoveDown}><ChevronDown className="w-3.5 h-3.5" /></Button>
+          </div>
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold mt-0.5">{idx + 1}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              <Badge variant="outline" className="text-xs">{TYPE_LABELS[q.type] ?? q.type}</Badge>
+              {q.skill && <Badge variant="outline" className="text-xs">{SKILL_LABELS[q.skill] ?? q.skill}</Badge>}
+              {q.level && <Badge className={`text-xs border-0 ${LEVEL_COLORS[q.level] ?? "bg-gray-100 text-gray-600"}`}>{q.level}</Badge>}
+              <span className="text-xs text-muted-foreground font-medium">{q.points} điểm</span>
+              {q.sourceType === "bank" && <Badge variant="outline" className="text-xs">Từ ngân hàng</Badge>}
+              {q.sourceType === "quiz" && <Badge variant="outline" className="text-xs">Từ quiz</Badge>}
+            </div>
+
+            {q.imageUrl && (
+              <div className="mb-2 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 max-w-xs">
+                <img src={q.imageUrl} alt="" className="w-full h-auto object-contain max-h-32" />
+              </div>
+            )}
+            {q.audioUrl && (
+              <div className="mb-2 flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                <Headphones className="w-3.5 h-3.5" /><span className="truncate">{q.audioUrl}</span>
+              </div>
+            )}
+            {q.videoUrl && (
+              <div className="mb-2 flex items-center gap-2 px-2 py-1 bg-purple-50 border border-purple-200 rounded text-xs text-purple-700">
+                <Video className="w-3.5 h-3.5" /><span className="truncate">{q.videoUrl}</span>
+              </div>
+            )}
+            {q.passage && (
+              <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900 line-clamp-3">
+                {q.passage}
+              </div>
+            )}
+
+            <p className="text-sm font-medium line-clamp-2">{q.content}</p>
+
+            <PlacementOptionsPreview type={q.type} options={q.options} correctAnswer={q.correctAnswer} />
+          </div>
+          <div className="flex flex-col gap-1 shrink-0">
+            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onEdit}><Pencil className="w-3.5 h-3.5" /></Button>
+            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-700" onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /></Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PlacementOptionsPreview({ type, options, correctAnswer }: { type: string; options: unknown; correctAnswer: string | null }) {
+  if (type === "mcq" || type === "true_false") {
+    const opts = parseOpts<string[]>(options, []);
+    if (!Array.isArray(opts) || opts.length === 0) return null;
+    const corrects = (correctAnswer ?? "").split(",").map(s => s.trim());
+    return (
+      <div className="mt-2 flex flex-wrap gap-1">
+        {opts.slice(0, 6).map((o, i) => (
+          <span key={i} className={`text-xs px-2 py-0.5 rounded ${corrects.includes(o) ? "bg-green-100 text-green-800 border border-green-300" : "bg-gray-100 text-gray-600"}`}>{o}</span>
+        ))}
+      </div>
+    );
+  }
+  if (type === "fill_blank") {
+    const arr = parseOpts<string[]>(correctAnswer, []);
+    const items = Array.isArray(arr) ? arr : (correctAnswer ? [correctAnswer] : []);
+    if (items.length === 0) return null;
+    return <div className="mt-2 text-xs text-gray-500">Đáp án: <span className="text-green-700 font-medium">{items.join(" · ")}</span></div>;
+  }
+  if (type === "matching") {
+    const pairs = parseOpts<Array<{ left: string; right: string }>>(options, []);
+    if (!Array.isArray(pairs) || pairs.length === 0) return null;
+    return <div className="mt-2 text-xs text-gray-500">{pairs.length} cặp ghép</div>;
+  }
+  if (type === "reading" || type === "listening") {
+    const subs = parseOpts<unknown[]>(options, []);
+    if (!Array.isArray(subs) || subs.length === 0) return null;
+    return <div className="mt-2 text-xs text-gray-500">{subs.length} câu thành phần</div>;
+  }
+  return null;
+}
+
+function parseOpts<T>(v: unknown, fallback: T): T {
+  if (v == null) return fallback;
+  if (typeof v === "string") {
+    try { return JSON.parse(v) as T; } catch { return fallback; }
+  }
+  return v as T;
+}
+
+function safeParse(s: string | null): unknown {
+  if (!s) return null;
+  try { return JSON.parse(s); } catch { return s; }
 }
 
 function BankImportDialog({ open, onOpenChange, testId, onImported }: { open: boolean; onOpenChange: (o: boolean) => void; testId: number; onImported: () => void }) {
@@ -405,7 +459,7 @@ function BankImportDialog({ open, onOpenChange, testId, onImported }: { open: bo
                 <input type="checkbox" checked={selected.has(q.id)} onChange={() => toggle(q.id)} className="mt-1" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="outline" className="text-xs">{q.type}</Badge>
+                    <Badge variant="outline" className="text-xs">{TYPE_LABELS[q.type] ?? q.type}</Badge>
                     <Badge variant="secondary" className="text-xs">{q.points} điểm</Badge>
                   </div>
                   <p className="text-sm line-clamp-2">{q.content}</p>
