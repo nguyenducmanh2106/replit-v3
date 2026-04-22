@@ -1983,6 +1983,37 @@ function safeJsonParse<T>(s: unknown, fb: T): T {
   try { const p = JSON.parse(s); return (p ?? fb) as T; } catch { return fb; }
 }
 
+function normalizeUnknownArray(input: unknown): unknown[] {
+  if (Array.isArray(input)) return input;
+
+  // Common backend shapes:
+  // - JSON string of array/object
+  // - object map (A/B/C/...) -> use values as options
+  // - { options: [...] } wrapper
+  if (typeof input === "string" && input) {
+    try {
+      const parsed: unknown = JSON.parse(input);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === "object") {
+        const maybeOptions = (parsed as Record<string, unknown>).options;
+        if (Array.isArray(maybeOptions)) return maybeOptions;
+        return Object.values(parsed as Record<string, unknown>);
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  if (input && typeof input === "object") {
+    const maybeOptions = (input as Record<string, unknown>).options;
+    if (Array.isArray(maybeOptions)) return maybeOptions;
+    return Object.values(input as Record<string, unknown>);
+  }
+
+  return [];
+}
+
 export interface RenderableQuestion {
   id: number | string;
   type: string;
@@ -2001,9 +2032,7 @@ export function QuestionRenderer({
   const meta = safeJsonParse<Record<string, unknown>>(q.metadata, {});
   const allowMultiple = meta.allowMultiple === true;
 
-  const rawOptionsArray: unknown[] = Array.isArray(q.options)
-    ? (q.options as unknown[])
-    : safeJsonParse<unknown[]>(q.options, []);
+  const rawOptionsArray: unknown[] = normalizeUnknownArray(q.options);
   const rawOptions = rawOptionsArray.filter(o => typeof o === "string") as string[];
 
   const wordSelectionWords: string[] = q.type === "word_selection" && q.passage

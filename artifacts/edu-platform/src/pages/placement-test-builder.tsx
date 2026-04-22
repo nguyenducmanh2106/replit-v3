@@ -15,6 +15,7 @@ import {
   ArrowLeft, Save, Send, Copy, Link as LinkIcon, Plus, Trash2, ChevronUp, ChevronDown,
   Settings, ListOrdered, BookOpen, Pencil, Headphones, Video, Image as ImageIcon,
   Download, Eye, ArrowRight, RefreshCw,
+  CheckCircle2, Circle, Clock,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateQuestionDialog, type QuestionData } from "@/components/create-question-dialog";
@@ -22,6 +23,7 @@ import {
   QuestionEditDialog, TYPE_LABELS, SKILL_LABELS,
   type EditDraft,
 } from "@/components/question-edit-dialog";
+import { MarkdownView } from "@/components/markdown-view";
 
 const LEVEL_COLORS: Record<string, string> = {
   A1: "bg-green-100 text-green-700", A2: "bg-green-200 text-green-800",
@@ -315,88 +317,317 @@ function PlacementQuestionCard({ q, idx, isFirst, isLast, onMoveUp, onMoveDown, 
   onEdit: () => void; onDelete: () => void;
 }) {
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardContent className="p-0">
-        <div className="flex items-start gap-3 px-4 py-3">
+        <div className="flex items-start gap-3 px-4 pt-4 pb-2">
           <div className="flex flex-col gap-0.5 pt-0.5">
             <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={isFirst} onClick={onMoveUp}><ChevronUp className="w-3.5 h-3.5" /></Button>
             <Button size="sm" variant="ghost" className="h-6 w-6 p-0" disabled={isLast} onClick={onMoveDown}><ChevronDown className="w-3.5 h-3.5" /></Button>
           </div>
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold mt-0.5">{idx + 1}</div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <Badge variant="outline" className="text-xs">{TYPE_LABELS[q.type] ?? q.type}</Badge>
+          <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Q{idx + 1}</span>
+              <Badge variant="outline" className="text-xs font-medium">{TYPE_LABELS[q.type] ?? q.type}</Badge>
               {q.skill && <Badge variant="outline" className="text-xs">{SKILL_LABELS[q.skill] ?? q.skill}</Badge>}
               {q.level && <Badge className={`text-xs border-0 ${LEVEL_COLORS[q.level] ?? "bg-gray-100 text-gray-600"}`}>{q.level}</Badge>}
-              <span className="text-xs text-muted-foreground font-medium">{q.points} điểm</span>
+              <span className="text-xs text-muted-foreground font-medium">{q.points} Pt</span>
               {q.sourceType === "bank" && <Badge variant="outline" className="text-xs">Từ ngân hàng</Badge>}
               {q.sourceType === "quiz" && <Badge variant="outline" className="text-xs">Từ quiz</Badge>}
             </div>
-
-            {q.imageUrl && (
-              <div className="mb-2 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 max-w-xs">
-                <img src={q.imageUrl} alt="" className="w-full h-auto object-contain max-h-32" />
-              </div>
-            )}
-            {q.audioUrl && (
-              <div className="mb-2 flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-                <Headphones className="w-3.5 h-3.5" /><span className="truncate">{q.audioUrl}</span>
-              </div>
-            )}
-            {q.videoUrl && (
-              <div className="mb-2 flex items-center gap-2 px-2 py-1 bg-purple-50 border border-purple-200 rounded text-xs text-purple-700">
-                <Video className="w-3.5 h-3.5" /><span className="truncate">{q.videoUrl}</span>
-              </div>
-            )}
-            {q.passage && (
-              <div className="mb-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900 line-clamp-3">
-                {q.passage}
-              </div>
-            )}
-
-            <p className="text-sm font-medium line-clamp-2">{q.content}</p>
-
-            <PlacementOptionsPreview type={q.type} options={q.options} correctAnswer={q.correctAnswer} />
+            <div className="flex gap-1 shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-xs text-gray-300 leading-8">|</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-600" onClick={onDelete}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-col gap-1 shrink-0">
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onEdit}><Pencil className="w-3.5 h-3.5" /></Button>
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-700" onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /></Button>
+        </div>
+
+        <div className="px-4 pb-4">
+          {q.imageUrl && (
+            <div className="mb-3 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 max-w-xs">
+              <img src={q.imageUrl} alt="" className="w-full h-auto object-contain max-h-48" />
+            </div>
+          )}
+
+          {q.audioUrl && (
+            <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+              <Headphones className="w-4 h-4" />
+              <a href={q.audioUrl} target="_blank" rel="noreferrer" className="underline truncate">{q.audioUrl}</a>
+            </div>
+          )}
+
+          {q.videoUrl && (
+            <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-700">
+              <Video className="w-4 h-4" />
+              <a href={q.videoUrl} target="_blank" rel="noreferrer" className="underline truncate">{q.videoUrl}</a>
+            </div>
+          )}
+
+          {q.passage && (
+            <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-center gap-1.5 mb-1 text-xs font-medium text-amber-700">
+                <BookOpen className="w-3.5 h-3.5" /> Bài đọc
+              </div>
+              <div className="text-sm text-amber-900 line-clamp-4">
+                <MarkdownView source={q.passage} compact />
+              </div>
+            </div>
+          )}
+
+          <div className="text-sm text-gray-800 leading-relaxed">
+            <MarkdownView source={q.content} compact />
           </div>
+
+          <PlacementOptionsView type={q.type} options={q.options} correctAnswer={q.correctAnswer} metadata={q.metadata} />
+
+          {q.explanation && (
+            <div className="mt-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+              <div className="font-medium text-yellow-700 mb-1">Giải thích:</div>
+              <div className="text-yellow-800">
+                <MarkdownView source={q.explanation} compact />
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function PlacementOptionsPreview({ type, options, correctAnswer }: { type: string; options: unknown; correctAnswer: string | null }) {
-  if (type === "mcq" || type === "true_false") {
-    const opts = parseOpts<string[]>(options, []);
-    if (!Array.isArray(opts) || opts.length === 0) return null;
+function PlacementOptionsView({ type, options, correctAnswer, metadata }: { type: string; options: unknown; correctAnswer: string | null; metadata?: unknown }) {
+  if (type === "mcq") {
+    const parsed = safeJson<string[]>(options, []);
+    const opts = Array.isArray(parsed) ? parsed : [];
     const corrects = (correctAnswer ?? "").split(",").map(s => s.trim());
+    if (opts.length === 0) return null;
     return (
-      <div className="mt-2 flex flex-wrap gap-1">
-        {opts.slice(0, 6).map((o, i) => (
-          <span key={i} className={`text-xs px-2 py-0.5 rounded ${corrects.includes(o) ? "bg-green-100 text-green-800 border border-green-300" : "bg-gray-100 text-gray-600"}`}>{o}</span>
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        {opts.map((opt, i) => {
+          const isCorrect = corrects.includes(opt);
+          return (
+            <div key={i} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${isCorrect ? "border-green-300 bg-green-50" : "border-gray-200 bg-white"}`}>
+              {isCorrect ? <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" /> : <Circle className="w-4 h-4 text-gray-300 shrink-0" />}
+              <span className={isCorrect ? "text-green-800 font-medium" : "text-gray-700"}>{opt}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (type === "true_false") {
+    const ca = (correctAnswer ?? "").toLowerCase();
+    const isTrue = ca === "true" || ca === "đúng";
+    return (
+      <div className="grid grid-cols-2 gap-3 mt-3">
+        <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium ${isTrue ? "border-green-300 bg-green-50 text-green-700" : "border-gray-200 text-gray-500"}`}>
+          {isTrue ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />} Đúng
+        </div>
+        <div className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium ${!isTrue ? "border-green-300 bg-green-50 text-green-700" : "border-gray-200 text-gray-500"}`}>
+          {!isTrue ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />} Sai
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "fill_blank") {
+    const answers = safeJson<string[]>(correctAnswer, correctAnswer ? [correctAnswer] : []);
+    return (
+      <div className="mt-3 space-y-1">
+        {answers.map((ans, i) => (
+          <div key={i} className="px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-sm">
+            <span className="text-blue-600 font-medium">Chỗ trống {answers.length > 1 ? i + 1 : ""}:</span>{" "}
+            <span className="text-blue-800">{ans || "—"}</span>
+          </div>
         ))}
       </div>
     );
   }
-  if (type === "fill_blank") {
-    const arr = parseOpts<string[]>(correctAnswer, []);
-    const items = Array.isArray(arr) ? arr : (correctAnswer ? [correctAnswer] : []);
-    if (items.length === 0) return null;
-    return <div className="mt-2 text-xs text-gray-500">Đáp án: <span className="text-green-700 font-medium">{items.join(" · ")}</span></div>;
+
+  if (type === "word_selection") {
+    const selected = safeJson<string[]>(correctAnswer, correctAnswer ? correctAnswer.split(",").map(s => s.trim()) : []);
+    if (selected.length === 0) return null;
+    return (
+      <div className="mt-3">
+        <span className="text-xs font-medium text-gray-500">Từ đúng:</span>
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {selected.map((t, i) => (
+            <span key={i} className="px-2.5 py-1 rounded-full text-sm border bg-green-100 border-green-300 text-green-800 font-medium">{t}</span>
+          ))}
+        </div>
+      </div>
+    );
   }
+
   if (type === "matching") {
-    const pairs = parseOpts<Array<{ left: string; right: string }>>(options, []);
-    if (!Array.isArray(pairs) || pairs.length === 0) return null;
-    return <div className="mt-2 text-xs text-gray-500">{pairs.length} cặp ghép</div>;
+    const rawParsed = safeJson<any[]>(options, []);
+    const raw = Array.isArray(rawParsed) ? rawParsed : [];
+    const pairs = raw.map((p: any) => {
+      if (typeof p === "string") {
+        const [left, right] = p.split(" | ");
+        return { left: left ?? "", right: right ?? "" };
+      }
+      return { left: p?.left ?? "", right: p?.right ?? "" };
+    });
+    if (pairs.length === 0) return null;
+    return (
+      <div className="mt-3 space-y-1.5">
+        {pairs.map((p: any, i: number) => (
+          <div key={i} className="flex items-center gap-2 text-sm">
+            <span className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg flex-1 text-center">{p.left}</span>
+            <span className="text-gray-400">↔</span>
+            <span className="px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg flex-1 text-center">{p.right}</span>
+          </div>
+        ))}
+      </div>
+    );
   }
+
+  if (type === "drag_drop") {
+    const parsed = safeJson<any>(options, {});
+    const items: string[] = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.items) ? parsed.items : []);
+    const zones: Array<{ label: string; accepts: string[] }> = Array.isArray(parsed.zones) ? parsed.zones : [];
+    if (items.length === 0 && zones.length === 0) return null;
+    return (
+      <div className="mt-3 space-y-3">
+        {items.length > 0 && (
+          <div>
+            <span className="text-xs font-medium text-gray-500 mb-1 block">Các mục:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {items.map((item, i) => (
+                <span key={i} className="px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-800">{item}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {zones.length > 0 && (
+          <div>
+            <span className="text-xs font-medium text-gray-500 mb-1 block">Vùng thả:</span>
+            <div className="space-y-1.5">
+              {zones.map((z, i) => (
+                <div key={i} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+                  <span className="font-medium text-gray-700">{z.label}</span>
+                  {z.accepts && z.accepts.length > 0 && (
+                    <span className="text-gray-400 ml-2">← {z.accepts.join(", ")}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (type === "sentence_reorder") {
+    const srParsed = safeJson<string[]>(options, []);
+    const items = Array.isArray(srParsed) ? srParsed : [];
+    if (items.length === 0) return null;
+    return (
+      <div className="mt-3 space-y-1.5">
+        {items.map((item, i) => (
+          <div key={i} className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm">
+            <span className="text-xs font-medium text-gray-400 w-5">{i + 1}.</span>
+            <span className="text-gray-700">{item}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (type === "reading" || type === "listening") {
-    const subs = parseOpts<unknown[]>(options, []);
-    if (!Array.isArray(subs) || subs.length === 0) return null;
-    return <div className="mt-2 text-xs text-gray-500">{subs.length} câu thành phần</div>;
+    const parsed = safeJson<Array<{ question: string; choices: string[]; correctAnswer: string }>>(options, []);
+    const subQs = Array.isArray(parsed) ? parsed : [];
+    if (subQs.length > 0) {
+      return (
+        <div className="mt-3 space-y-3">
+          {subQs.map((sq, i) => (
+            <div key={i} className={`pl-4 border-l-2 ${type === "reading" ? "border-slate-200" : "border-blue-200"}`}>
+              <p className="text-sm font-medium text-gray-700 mb-1">{i + 1}. {sq.question}</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(sq.choices ?? []).map((c, ci) => {
+                  const isC = c === sq.correctAnswer;
+                  return (
+                    <div key={ci} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isC ? "bg-green-50 text-green-700" : "text-gray-600"}`}>
+                      {isC ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3 text-gray-300" />}
+                      {c}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (correctAnswer) {
+      return (
+        <div className="mt-3 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-sm">
+          <span className="text-blue-600 font-medium">Đáp án:</span> <span className="text-blue-800">{correctAnswer}</span>
+        </div>
+      );
+    }
+    return null;
   }
+
+  if (type === "video_interactive") {
+    const vidParsed = safeJson<Array<{ timestamp: number; type?: string; content?: string; question: string; choices: string[]; correctAnswer: string }>>(options, []);
+    const vqs = Array.isArray(vidParsed) ? vidParsed : [];
+    if (vqs.length === 0) return null;
+    return (
+      <div className="mt-3 space-y-3">
+        {vqs.map((vq, i) => (
+          <div key={i} className="pl-4 border-l-2 border-purple-200">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-3 h-3 text-purple-500" />
+              <span className="text-xs text-purple-600 font-medium">
+                {Math.floor(vq.timestamp / 60)}:{String(vq.timestamp % 60).padStart(2, "0")}
+              </span>
+              {vq.type === "note" && <Badge className="text-[10px] bg-yellow-100 text-yellow-700 border-0">Ghi chú</Badge>}
+            </div>
+            <p className="text-sm text-gray-700 mb-1">{vq.type === "note" ? (vq.content || vq.question) : vq.question}</p>
+            {vq.type !== "note" && (vq.choices ?? []).length > 0 && (
+              <div className="grid grid-cols-2 gap-1.5">
+                {(vq.choices ?? []).map((c, ci) => {
+                  const isC = c === vq.correctAnswer;
+                  return (
+                    <div key={ci} className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded ${isC ? "bg-green-50 text-green-700" : "text-gray-600"}`}>
+                      {isC ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3 text-gray-300" />}
+                      {c}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "essay") {
+    return (
+      <div className="mt-3 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-500 italic">
+        Tự luận — chấm bằng tay hoặc AI
+      </div>
+    );
+  }
+
+  if (type === "open_end") {
+    const meta = safeJson<Record<string, unknown>>(metadata ?? null, {});
+    const allowedTypes = ((meta.allowedTypes as string[]) ?? ["text", "audio"]).filter(t => t !== "image");
+    const labels: Record<string, string> = { text: "Văn bản", audio: "Ghi âm" };
+    return (
+      <div className="mt-3 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-sm text-violet-600 italic">
+        Câu hỏi mở — trả lời bằng: {allowedTypes.map(t => labels[t] || t).join(", ")}
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -411,6 +642,14 @@ function parseOpts<T>(v: unknown, fallback: T): T {
 function safeParse(s: string | null): unknown {
   if (!s) return null;
   try { return JSON.parse(s); } catch { return s; }
+}
+
+function safeJson<T>(v: unknown, fallback: T): T {
+  if (v == null) return fallback;
+  if (typeof v === "string") {
+    try { return JSON.parse(v) as T; } catch { return fallback; }
+  }
+  return v as T;
 }
 
 function BankImportDialog({ open, onOpenChange, testId, onImported }: { open: boolean; onOpenChange: (o: boolean) => void; testId: number; onImported: () => void }) {

@@ -5,7 +5,7 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
-const rawPort = process.env.PORT;
+const rawPort = process.env.PORT ?? 3000;
 
 if (!rawPort) {
   throw new Error(
@@ -20,7 +20,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 const basePath = process.env.BASE_PATH ?? "/";
-const apiPort = process.env.API_PORT ? parseInt(process.env.API_PORT) : 3001;
+const apiPort = process.env.API_PORT ? parseInt(process.env.API_PORT) : 8080;
 
 export default defineConfig({
   base: basePath,

@@ -13,6 +13,13 @@ import { ArrowLeft, Save, Mail, CheckCircle, XCircle } from "lucide-react";
 
 type Grade = { manualScore: string; comment: string };
 
+function renderValue(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  try { return JSON.stringify(v); } catch { return String(v); }
+}
+
 export default function PlacementGradePage() {
   const { sid } = useParams<{ sid: string }>();
   const subId = Number(sid);
@@ -121,6 +128,12 @@ export default function PlacementGradePage() {
         {questions.map((q, idx) => {
           const a = ansMap.get(q.id);
           const g = a ? grades[a.id] : undefined;
+          const optionStrings = Array.isArray(q.options)
+            ? (q.options as unknown[]).filter((o): o is string => typeof o === "string")
+            : [];
+          const optionObjects = Array.isArray(q.options)
+            ? (q.options as unknown[]).filter((o): o is Record<string, unknown> => !!o && typeof o === "object")
+            : [];
           return (
             <Card key={q.id}>
               <CardContent className="py-4 space-y-3">
@@ -134,11 +147,28 @@ export default function PlacementGradePage() {
                       {a && a.isCorrect === false && <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" /> Sai</Badge>}
                     </div>
                     <p className="text-sm font-medium whitespace-pre-wrap">{q.content}</p>
-                    {Array.isArray(q.options) && q.options.length > 0 && q.type !== "long_answer" && (
+                    {optionStrings.length > 0 && q.type !== "long_answer" && (
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {(q.options as string[]).map((o, i) => (
+                        {optionStrings.map((o, i) => (
                           <span key={i} className={`text-xs px-2 py-0.5 rounded ${o === q.correctAnswer ? "bg-green-100 text-green-800 font-medium" : "bg-gray-100 text-gray-600"}`}>{o}</span>
                         ))}
+                      </div>
+                    )}
+                    {optionStrings.length === 0 && optionObjects.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-muted-foreground">Cấu trúc câu hỏi con:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {optionObjects.slice(0, 6).map((o, i) => (
+                            <span key={i} className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                              {renderValue((o as any).question ?? `Câu ${i + 1}`)}
+                            </span>
+                          ))}
+                          {optionObjects.length > 6 && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                              +{optionObjects.length - 6} câu nữa
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -146,10 +176,17 @@ export default function PlacementGradePage() {
                 <div className="pl-11 space-y-2">
                   <div>
                     <Label className="text-xs text-muted-foreground">Trả lời của học sinh</Label>
-                    <div className="mt-1 p-2 bg-gray-50 rounded text-sm whitespace-pre-wrap min-h-[2rem]">{a?.studentAnswer || <span className="text-muted-foreground italic">— không trả lời —</span>}</div>
+                    <div className="mt-1 p-2 bg-gray-50 rounded text-sm whitespace-pre-wrap min-h-[2rem]">
+                      {a?.studentAnswer != null && a.studentAnswer !== ""
+                        ? renderValue(a.studentAnswer)
+                        : <span className="text-muted-foreground italic">— không trả lời —</span>}
+                    </div>
                   </div>
                   {q.correctAnswer && q.type !== "mcq" && q.type !== "true_false" && (
-                    <div><Label className="text-xs text-muted-foreground">Đáp án đúng</Label><div className="mt-1 p-2 bg-green-50 rounded text-sm text-green-900">{q.correctAnswer}</div></div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Đáp án đúng</Label>
+                      <div className="mt-1 p-2 bg-green-50 rounded text-sm text-green-900">{renderValue(q.correctAnswer)}</div>
+                    </div>
                   )}
                   {a && (
                     <div className="grid grid-cols-3 gap-2 items-end">
