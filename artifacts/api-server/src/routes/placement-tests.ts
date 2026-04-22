@@ -270,12 +270,10 @@ router.get("/placement-tests/quiz-templates", requireAuth, async (req, res): Pro
       id: quizTemplatesTable.id,
       title: quizTemplatesTable.title,
       description: quizTemplatesTable.description,
-      skill: quizTemplatesTable.skill,
-      level: quizTemplatesTable.level,
       questionCount: sql<number>`(SELECT COUNT(*)::int FROM ${quizTemplateQuestionsTable} WHERE ${quizTemplateQuestionsTable.templateId} = ${quizTemplatesTable.id})`,
     })
     .from(quizTemplatesTable)
-    .orderBy(desc(quizTemplatesTable.updatedAt));
+    .orderBy(desc(quizTemplatesTable.createdAt));
   res.json(rows);
 });
 
