@@ -227,7 +227,8 @@ export function FillBlankInput({ content, value, onChange }: { content: string; 
     const next = [...answers];
     while (next.length < blankCount) next.push("");
     next[idx] = val;
-    onChange(blankCount <= 1 ? next[0] : JSON.stringify(next));
+    const hasContent = next.some(a => a.trim().length > 0);
+    onChange(hasContent ? (blankCount <= 1 ? next[0] : JSON.stringify(next)) : "");
   };
 
   if (blankCount > 0) {
@@ -585,7 +586,6 @@ export function DragDropInput({
 
   const dropIntoZone = (zoneLabel: string, item: string) => {
     const newMap = { ...zoneMap };
-    // Remove from its current location
     Object.keys(newMap).forEach(z => { newMap[z] = (newMap[z] ?? []).filter(i => i !== item); });
     newMap[zoneLabel] = [...(newMap[zoneLabel] ?? []), item];
     onChange(JSON.stringify(newMap));
@@ -594,7 +594,8 @@ export function DragDropInput({
   const removeFromZone = (zoneLabel: string, item: string) => {
     const newMap = { ...zoneMap };
     newMap[zoneLabel] = (newMap[zoneLabel] ?? []).filter(i => i !== item);
-    onChange(JSON.stringify(newMap));
+    const hasItems = Object.values(newMap).some(arr => Array.isArray(arr) && arr.length > 0);
+    onChange(hasItems ? JSON.stringify(newMap) : "");
   };
 
   const displayZones: DragDropZone[] = hasZones ? zones : [{ label: "__default__", accepts: items }];

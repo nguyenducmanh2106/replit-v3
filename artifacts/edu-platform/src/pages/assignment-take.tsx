@@ -546,7 +546,10 @@ export default function AssignmentTakePage() {
       return;
     }
     const interval = setInterval(
-      () => setTimeLeft((t) => (t !== null && !timeLimitReachedRef.current ? t - 1 : t)),
+      () =>
+        setTimeLeft((t) =>
+          t !== null && !timeLimitReachedRef.current ? t - 1 : t,
+        ),
       1000,
     );
     return () => clearInterval(interval);
@@ -626,8 +629,16 @@ export default function AssignmentTakePage() {
   }
 
   if (submitted && isPreview && previewResult) {
-    const { percentage, score, totalPoints, status, answers = [] } = previewResult;
-    const correctCount = answers.filter((a: any) => a.isCorrect === true).length;
+    const {
+      percentage,
+      score,
+      totalPoints,
+      status,
+      answers = [],
+    } = previewResult;
+    const correctCount = answers.filter(
+      (a: any) => a.isCorrect === true,
+    ).length;
     const wrongCount = answers.filter((a: any) => a.isCorrect === false).length;
     const blankCount = answers.length - correctCount - wrongCount;
 
@@ -638,32 +649,44 @@ export default function AssignmentTakePage() {
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-green-200">
               <CheckCircle2 className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">Hoàn thành làm thử!</h2>
-            <p className="text-muted-foreground">Kết quả không được lưu. Chỉ dành cho giáo viên xem trước.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">
+              Hoàn thành làm thử!
+            </h2>
+            <p className="text-muted-foreground">
+              Kết quả không được lưu. Chỉ dành cho giáo viên xem trước.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="text-center">
               <CardContent className="pt-4">
-                <p className="text-3xl font-black text-blue-600">{percentage ?? 0}%</p>
+                <p className="text-3xl font-black text-blue-600">
+                  {percentage ?? 0}%
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">Tỷ lệ đúng</p>
               </CardContent>
             </Card>
             <Card className="text-center">
               <CardContent className="pt-4">
-                <p className="text-3xl font-black text-emerald-600">{score ?? "—"}</p>
+                <p className="text-3xl font-black text-emerald-600">
+                  {score ?? "—"}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">Điểm đạt</p>
               </CardContent>
             </Card>
             <Card className="text-center">
               <CardContent className="pt-4">
-                <p className="text-3xl font-black text-gray-700">{totalPoints}</p>
+                <p className="text-3xl font-black text-gray-700">
+                  {totalPoints}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">Tổng điểm</p>
               </CardContent>
             </Card>
             <Card className="text-center">
               <CardContent className="pt-4">
-                <p className="text-3xl font-black text-amber-600">{status === "graded" ? "Đã chấm" : "Chờ duyệt"}</p>
+                <p className="text-3xl font-black text-amber-600">
+                  {status === "graded" ? "Đã chấm" : "Chờ duyệt"}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">Trạng thái</p>
               </CardContent>
             </Card>
@@ -675,9 +698,17 @@ export default function AssignmentTakePage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex gap-4 text-sm">
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> {correctCount} đúng</span>
-                <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-red-500" /> {wrongCount} sai</span>
-                <span className="flex items-center gap-1"><Circle className="w-4 h-4 text-gray-400" /> {blankCount} bỏ trống</span>
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />{" "}
+                  {correctCount} đúng
+                </span>
+                <span className="flex items-center gap-1">
+                  <XCircle className="w-4 h-4 text-red-500" /> {wrongCount} sai
+                </span>
+                <span className="flex items-center gap-1">
+                  <Circle className="w-4 h-4 text-gray-400" /> {blankCount} bỏ
+                  trống
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -686,32 +717,76 @@ export default function AssignmentTakePage() {
             <CardContent className="p-4">
               <div className="space-y-3">
                 {answers.map((ar: any, idx: number) => {
-                  const q = assignment?.questions?.find((aq: any) => aq.id === ar.questionId)?.question;
-                  const typeCfg = q ? (TYPE_CONFIG[q.type] || TYPE_CONFIG.essay) : TYPE_CONFIG.essay;
+                  const q = assignment?.questions?.find(
+                    (aq: any) => aq.id === ar.questionId,
+                  )?.question;
+                  const typeCfg = q
+                    ? TYPE_CONFIG[q.type] || TYPE_CONFIG.essay
+                    : TYPE_CONFIG.essay;
                   const TypeIcon = typeCfg.icon;
                   return (
                     <div key={idx} className="p-4 rounded-xl border bg-white">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white", ar.isCorrect === true ? "bg-emerald-500" : ar.isCorrect === false ? "bg-red-500" : "bg-gray-400")}>
+                        <span
+                          className={cn(
+                            "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white",
+                            ar.isCorrect === true
+                              ? "bg-emerald-500"
+                              : ar.isCorrect === false
+                                ? "bg-red-500"
+                                : "bg-gray-400",
+                          )}
+                        >
                           {idx + 1}
                         </span>
                         <TypeIcon className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground">{typeCfg.label}</span>
-                        <span className={cn("ml-auto text-xs font-bold px-2 py-0.5 rounded-full", ar.isCorrect === true ? "bg-emerald-100 text-emerald-700" : ar.isCorrect === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-500")}>
-                          {ar.isCorrect === true ? "Đúng" : ar.isCorrect === false ? "Sai" : "Bỏ trống"}
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {typeCfg.label}
                         </span>
-                        <span className="text-xs text-muted-foreground">{ar.pointsEarned}/{q?.points ?? 0} điểm</span>
+                        <span
+                          className={cn(
+                            "ml-auto text-xs font-bold px-2 py-0.5 rounded-full",
+                            ar.isCorrect === true
+                              ? "bg-emerald-100 text-emerald-700"
+                              : ar.isCorrect === false
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-500",
+                          )}
+                        >
+                          {ar.isCorrect === true
+                            ? "Đúng"
+                            : ar.isCorrect === false
+                              ? "Sai"
+                              : "Bỏ trống"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {ar.pointsEarned}/{q?.points ?? 0} điểm
+                        </span>
                       </div>
                       <p className="text-sm text-gray-800 mb-2">{q?.content}</p>
                       <div className="flex gap-4 text-xs">
                         <div className="flex-1">
-                          <span className="text-muted-foreground">Câu trả lời: </span>
-                          <span className={ar.isCorrect === false ? "text-red-600 font-medium" : "text-gray-700"}>{ar.answer || <span className="italic">—</span>}</span>
+                          <span className="text-muted-foreground">
+                            Câu trả lời:{" "}
+                          </span>
+                          <span
+                            className={
+                              ar.isCorrect === false
+                                ? "text-red-600 font-medium"
+                                : "text-gray-700"
+                            }
+                          >
+                            {ar.answer || <span className="italic">—</span>}
+                          </span>
                         </div>
                         {ar.correctAnswer && ar.isCorrect === false && (
                           <div className="flex-1">
-                            <span className="text-muted-foreground">Đáp án đúng: </span>
-                            <span className="text-emerald-600 font-medium">{ar.correctAnswer}</span>
+                            <span className="text-muted-foreground">
+                              Đáp án đúng:{" "}
+                            </span>
+                            <span className="text-emerald-600 font-medium">
+                              {ar.correctAnswer}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -723,7 +798,10 @@ export default function AssignmentTakePage() {
           </Card>
 
           <div className="flex justify-center">
-            <Button onClick={() => navigate(`/assignments/${assignmentId}`)} className="rounded-xl gap-2">
+            <Button
+              onClick={() => navigate(`/assignments/${assignmentId}`)}
+              className="rounded-xl gap-2"
+            >
               <ArrowRight className="w-4 h-4" />
               Quay lại bài tập
             </Button>
@@ -855,6 +933,8 @@ export default function AssignmentTakePage() {
     }
   };
 
+  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+
   const answeredCount = questions.filter((aq: any) => {
     const ans = answers[aq.id] ?? "";
     const qType = aq.question?.type ?? "";
@@ -875,10 +955,10 @@ export default function AssignmentTakePage() {
           ? parsed.length > 0
           : Object.keys(parsed).length > 0;
       } catch {
-        return ans.trim().length > 0;
+        return stripHtml(ans).length > 0;
       }
     }
-    return ans.trim().length > 0;
+    return stripHtml(ans).length > 0;
   }).length;
 
   const typeConfig = currentQ
@@ -908,7 +988,7 @@ export default function AssignmentTakePage() {
         return ans.trim().length > 0;
       }
     }
-    return ans.trim().length > 0;
+    return stripHtml(ans)?.length > 0;
   };
 
   return (
@@ -1088,22 +1168,32 @@ export default function AssignmentTakePage() {
         </aside>
 
         {/* ── Main Content ── */}
-        <main className="flex-1 p-8 overflow-y-auto">
-          <div className="max-w-3xl mx-auto">
+        <main className="flex-1 py-8 px-6 overflow-y-auto">
+          <div className="mx-auto">
             {currentQ && (
               <div className="space-y-6">
                 {/* Question header */}
                 <div className="flex items-start gap-4">
-                  <div
+                  {/* <div
                     className={cn(
                       "w-13 h-13 min-w-[52px] min-h-[52px] rounded-2xl bg-gradient-to-br text-white flex items-center justify-center text-xl font-black shadow-lg",
                       typeConfig.gradient,
                     )}
                   >
                     {currentIdx + 1}
-                  </div>
+                  </div> */}
                   <div className="flex-1">
                     <div className="flex flex-wrap gap-2 mb-3">
+                      <span
+                        className={cn(
+                          "text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border",
+                          typeConfig.bgColor,
+                          typeConfig.color,
+                          "border-current/20",
+                        )}
+                      >
+                        Câu {currentIdx + 1}
+                      </span>
                       <span
                         className={cn(
                           "text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border",
@@ -1177,7 +1267,7 @@ export default function AssignmentTakePage() {
                 )}
 
                 {/* Question type input */}
-                <div className="ml-16">
+                <div className="">
                   <QuestionRenderer
                     q={currentQ as any}
                     value={currentAnswer}
