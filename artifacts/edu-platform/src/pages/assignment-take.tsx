@@ -219,6 +219,7 @@ export default function AssignmentTakePage() {
   const intervalSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionReady = useRef(false);
+  const timeLimitReachedRef = useRef(false);
 
   const answersRef = useRef(answers);
   const flaggedRef = useRef(flagged);
@@ -378,6 +379,7 @@ export default function AssignmentTakePage() {
         const data = await res.json();
         setSessionId(data.sessionId ?? newId);
         sessionReady.current = true;
+        timeLimitReachedRef.current = false;
         if (assignment?.timeLimitMinutes)
           setTimeLeft(assignment.timeLimitMinutes * 60);
       }
@@ -389,6 +391,7 @@ export default function AssignmentTakePage() {
     if (!pendingSession) return;
     setSessionId(pendingSession.sessionId);
     sessionReady.current = true;
+    timeLimitReachedRef.current = false;
     const restoredAnswers: Record<number, string> = {};
     if (pendingSession.answers && typeof pendingSession.answers === "object") {
       for (const [key, val] of Object.entries(pendingSession.answers)) {
@@ -448,8 +451,10 @@ export default function AssignmentTakePage() {
   ]);
 
   useEffect(() => {
-    if (isPreview && assignment?.timeLimitMinutes)
+    if (isPreview && assignment?.timeLimitMinutes) {
+      timeLimitReachedRef.current = false;
       setTimeLeft(assignment.timeLimitMinutes * 60);
+    }
   }, [isPreview, assignment?.timeLimitMinutes]);
 
   useEffect(() => {
@@ -534,17 +539,18 @@ export default function AssignmentTakePage() {
   ]);
 
   useEffect(() => {
-    if (timeLeft === null) return;
+    if (submitted || timeLimitReachedRef.current || timeLeft === null) return;
     if (timeLeft <= 0) {
+      timeLimitReachedRef.current = true;
       handleSubmit();
       return;
     }
     const interval = setInterval(
-      () => setTimeLeft((t) => (t !== null ? t - 1 : null)),
+      () => setTimeLeft((t) => (t !== null && !timeLimitReachedRef.current ? t - 1 : t)),
       1000,
     );
     return () => clearInterval(interval);
-  }, [timeLeft, handleSubmit]);
+  }, [timeLeft, handleSubmit, submitted]);
 
   if (isLoading || (!isPreview && sessionLoading)) {
     return (
