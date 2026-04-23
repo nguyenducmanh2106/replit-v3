@@ -10,6 +10,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarkdownView } from "@/components/markdown-view";
 import { ReadingPassageViewer } from "@/components/reading-passage-viewer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -213,6 +214,7 @@ export default function AssignmentTakePage() {
   const [pendingSession, setPendingSession] = useState<any>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const [previewResult, setPreviewResult] = useState<any>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -496,6 +498,9 @@ export default function AssignmentTakePage() {
       {
         onSuccess: (result: any) => {
           setSubmitted(true);
+          if (isPreview) {
+            setPreviewResult(result);
+          }
           if (sessionId) {
             fetch(`/api/assignments/${assignmentId}/session/submit`, {
               method: "POST",
@@ -609,6 +614,114 @@ export default function AssignmentTakePage() {
           >
             Quay lại
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted && isPreview && previewResult) {
+    const { percentage, score, totalPoints, status, answers = [] } = previewResult;
+    const correctCount = answers.filter((a: any) => a.isCorrect === true).length;
+    const wrongCount = answers.filter((a: any) => a.isCorrect === false).length;
+    const blankCount = answers.length - correctCount - wrongCount;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/40 p-8">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <div className="text-center">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-green-200">
+              <CheckCircle2 className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Hoàn thành làm thử!</h2>
+            <p className="text-muted-foreground">Kết quả không được lưu. Chỉ dành cho giáo viên xem trước.</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="text-center">
+              <CardContent className="pt-4">
+                <p className="text-3xl font-black text-blue-600">{percentage ?? 0}%</p>
+                <p className="text-xs text-muted-foreground mt-1">Tỷ lệ đúng</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center">
+              <CardContent className="pt-4">
+                <p className="text-3xl font-black text-emerald-600">{score ?? "—"}</p>
+                <p className="text-xs text-muted-foreground mt-1">Điểm đạt</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center">
+              <CardContent className="pt-4">
+                <p className="text-3xl font-black text-gray-700">{totalPoints}</p>
+                <p className="text-xs text-muted-foreground mt-1">Tổng điểm</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center">
+              <CardContent className="pt-4">
+                <p className="text-3xl font-black text-amber-600">{status === "graded" ? "Đã chấm" : "Chờ duyệt"}</p>
+                <p className="text-xs text-muted-foreground mt-1">Trạng thái</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Chi tiết đáp án</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex gap-4 text-sm">
+                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> {correctCount} đúng</span>
+                <span className="flex items-center gap-1"><XCircle className="w-4 h-4 text-red-500" /> {wrongCount} sai</span>
+                <span className="flex items-center gap-1"><Circle className="w-4 h-4 text-gray-400" /> {blankCount} bỏ trống</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                {answers.map((ar: any, idx: number) => {
+                  const q = assignment?.questions?.find((aq: any) => aq.id === ar.questionId)?.question;
+                  const typeCfg = q ? (TYPE_CONFIG[q.type] || TYPE_CONFIG.essay) : TYPE_CONFIG.essay;
+                  const TypeIcon = typeCfg.icon;
+                  return (
+                    <div key={idx} className="p-4 rounded-xl border bg-white">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white", ar.isCorrect === true ? "bg-emerald-500" : ar.isCorrect === false ? "bg-red-500" : "bg-gray-400")}>
+                          {idx + 1}
+                        </span>
+                        <TypeIcon className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">{typeCfg.label}</span>
+                        <span className={cn("ml-auto text-xs font-bold px-2 py-0.5 rounded-full", ar.isCorrect === true ? "bg-emerald-100 text-emerald-700" : ar.isCorrect === false ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-500")}>
+                          {ar.isCorrect === true ? "Đúng" : ar.isCorrect === false ? "Sai" : "Bỏ trống"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{ar.pointsEarned}/{q?.points ?? 0} điểm</span>
+                      </div>
+                      <p className="text-sm text-gray-800 mb-2">{q?.content}</p>
+                      <div className="flex gap-4 text-xs">
+                        <div className="flex-1">
+                          <span className="text-muted-foreground">Câu trả lời: </span>
+                          <span className={ar.isCorrect === false ? "text-red-600 font-medium" : "text-gray-700"}>{ar.answer || <span className="italic">—</span>}</span>
+                        </div>
+                        {ar.correctAnswer && ar.isCorrect === false && (
+                          <div className="flex-1">
+                            <span className="text-muted-foreground">Đáp án đúng: </span>
+                            <span className="text-emerald-600 font-medium">{ar.correctAnswer}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-center">
+            <Button onClick={() => navigate(`/assignments/${assignmentId}`)} className="rounded-xl gap-2">
+              <ArrowRight className="w-4 h-4" />
+              Quay lại bài tập
+            </Button>
+          </div>
         </div>
       </div>
     );

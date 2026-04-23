@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeSanitize from "rehype-sanitize";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import rehypeRaw from "rehype-raw";
 import { cn } from "@/lib/utils";
 
 interface MarkdownViewProps {
@@ -13,6 +14,19 @@ export function MarkdownView({ source, className, compact = false }: MarkdownVie
   if (!source || !source.trim()) {
     return null;
   }
+
+  // Replace __BLANK__ with inline HTML span for styling
+  const processed = source.replace(/__BLANK__/g, '<span style="color: #27ae60" class="blank-token">__BLANK__</span>');
+
+  const sanitizeSchema = {
+    ...defaultSchema,
+    tagNames: [...(defaultSchema.tagNames || []), "span"],
+    attributes: {
+      ...defaultSchema.attributes,
+      span: [...(defaultSchema.attributes?.span || []), "style", "class"],
+    },
+  };
+
   return (
     <div
       className={cn(
@@ -25,9 +39,9 @@ export function MarkdownView({ source, className, compact = false }: MarkdownVie
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeSanitize]}
+        rehypePlugins={[[rehypeSanitize, sanitizeSchema], rehypeRaw]}
       >
-        {source}
+        {processed}
       </ReactMarkdown>
     </div>
   );

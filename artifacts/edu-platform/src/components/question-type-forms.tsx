@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MarkdownEditor } from "@/components/markdown-editor";
+import { MarkdownView } from "@/components/markdown-view";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -258,17 +259,6 @@ export function FillBlankForm({ content, setContent, blanksAnswers, setBlanksAns
     }
   }, [blanks]);
 
-  const preview = content.split("__BLANK__").map((part, i, arr) => (
-    <span key={i}>
-      <span className="text-gray-800">{part}</span>
-      {i < arr.length - 1 && (
-        <span className="inline-block mx-1 px-3 py-0.5 border-b-2 border-purple-400 bg-purple-50 text-purple-600 text-sm font-medium rounded-t min-w-[60px] text-center">
-          [{i + 1}]
-        </span>
-      )}
-    </span>
-  ));
-
   return (
     <div className="space-y-5">
       <div>
@@ -277,15 +267,14 @@ export function FillBlankForm({ content, setContent, blanksAnswers, setBlanksAns
           <Info className="w-3.5 h-3.5" />
           Gõ <code className="bg-purple-100 px-1 rounded font-mono">__BLANK__</code> để tạo chỗ trống
         </p>
-        <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="VD: The cat __BLANK__ on the mat and the dog __BLANK__ outside."
-          rows={4} className="text-sm font-mono" />
+        <MarkdownEditor value={content} onChange={setContent}
+          placeholder="VD: The cat __BLANK__ on the mat and the dog __BLANK__ outside." rows={4} className="font-mono" />
       </div>
 
       {blanks > 0 && (
         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
           <p className="text-xs font-medium text-gray-500 mb-2">Xem trước:</p>
-          <p className="text-sm leading-relaxed">{preview}</p>
+          <MarkdownView source={content} />
         </div>
       )}
 

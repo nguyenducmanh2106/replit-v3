@@ -411,7 +411,7 @@ export default function AssignmentDetailPage() {
   const [addQOpen, setAddQOpen] = useState(false);
   const [importTemplateOpen, setImportTemplateOpen] = useState(false);
   const [editingSettings, setEditingSettings] = useState(false);
-  const [settingsDraft, setSettingsDraft] = useState({ startTime: "", endTime: "", maxAttempts: 1, allowReview: false, autoGrade: false, courseId: null as number | null });
+  const [settingsDraft, setSettingsDraft] = useState({ startTime: "", endTime: "", maxAttempts: 1, allowReview: false, autoGrade: false, courseId: null as number | null, timeLimitMinutes: null as number | null });
   const [editingQ, setEditingQ] = useState<any>(null);
   const [createQOpen, setCreateQOpen] = useState(false);
   const [creatingQ, setCreatingQ] = useState(false);
@@ -662,6 +662,7 @@ export default function AssignmentDetailPage() {
                     allowReview: assignment.allowReview ?? false,
                     autoGrade: assignment.autoGrade ?? false,
                     courseId: assignment.courseId ?? null,
+                    timeLimitMinutes: assignment.timeLimitMinutes ?? null,
                   });
                 }}>
                   <Pencil className="w-3.5 h-3.5 mr-1" />Sửa
@@ -714,18 +715,27 @@ export default function AssignmentDetailPage() {
                       className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                     />
                   </div>
-                  <div className="flex items-end pb-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={settingsDraft.allowReview}
-                        onChange={e => setSettingsDraft(d => ({ ...d, allowReview: e.target.checked }))}
-                        className="rounded"
-                      />
-                      <span className="text-sm text-gray-700">Cho phép xem lại bài làm</span>
-                    </label>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600">Thời gian làm bài (phút)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="Không giới hạn"
+                      value={settingsDraft.timeLimitMinutes ?? ""}
+                      onChange={e => setSettingsDraft(d => ({ ...d, timeLimitMinutes: e.target.value ? Number(e.target.value) : null }))}
+                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    />
                   </div>
                 </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settingsDraft.allowReview}
+                    onChange={e => setSettingsDraft(d => ({ ...d, allowReview: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-gray-700">Cho phép xem lại bài làm</span>
+                </label>
                 {(() => {
                   const blockedEssays = (assignment.questions ?? []).filter((aq: any) => {
                     if (aq.question.type !== "essay" && aq.question.type !== "open_end") return false;
@@ -775,6 +785,7 @@ export default function AssignmentDetailPage() {
                         allowReview: settingsDraft.allowReview,
                         autoGrade: settingsDraft.autoGrade,
                         ...(settingsDraft.courseId != null ? { courseId: settingsDraft.courseId } : {}),
+                        timeLimitMinutes: settingsDraft.timeLimitMinutes,
                       },
                     }, { onSuccess: () => { setEditingSettings(false); invalidate(); } });
                   }} disabled={updatingAssignment}>
@@ -784,7 +795,7 @@ export default function AssignmentDetailPage() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
                 <div>
                   <span className="text-xs text-muted-foreground">Khóa học</span>
                   <p className="font-medium text-gray-700">{assignment.courseName || <span className="text-amber-600">Chưa gán</span>}</p>
@@ -804,6 +815,10 @@ export default function AssignmentDetailPage() {
                 <div>
                   <span className="text-xs text-muted-foreground">Xem lại bài làm</span>
                   <p className="font-medium text-gray-700">{assignment.allowReview ? "Có" : "Không"}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Thời gian làm bài</span>
+                  <p className="font-medium text-gray-700">{assignment.timeLimitMinutes ? `${assignment.timeLimitMinutes} phút` : "Không giới hạn"}</p>
                 </div>
               </div>
             )}

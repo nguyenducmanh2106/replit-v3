@@ -345,3 +345,15 @@
     inset: -1px;
   }
 }
+
+.blank-token {
+  display: inline-block;
+  padding: 0.5px 6px;
+  background-color: #f3e8ff;
+  color: #7c3aed;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-bottom: 2px solid #a855f7;
+}
