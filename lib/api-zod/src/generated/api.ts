@@ -557,6 +557,7 @@ export const ListSubmissionsResponse = zod.array(ListSubmissionsResponseItem)
  * @summary Submit answers for an assignment
  */
 export const CreateSubmissionBody = zod.object({
+  "isPreview": zod.boolean().optional(),
   "assignmentId": zod.number(),
   "answers": zod.array(zod.object({
   "questionId": zod.number(),

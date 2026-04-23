@@ -358,6 +358,7 @@ router.post("/submissions", requireAuth, async (req, res): Promise<void> => {
 
   const isTeacher = TEACHER_ROLES.includes(dbUser.role);
   const isPreview = parsed.data.isPreview === true && isTeacher;
+  console.log(parsed)
 
   const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, parsed.data.assignmentId));
   if (!assignment) { res.status(404).json({ error: "Assignment not found" }); return; }
