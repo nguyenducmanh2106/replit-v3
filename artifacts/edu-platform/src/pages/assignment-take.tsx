@@ -1,5 +1,12 @@
 import { useParams, useLocation } from "@/lib/routing";
-import { useGetAssignment, useCreateSubmission, useReportFraudEvent, useRequestUploadUrl, getGetAssignmentQueryKey, getListSubmissionsQueryKey } from "@workspace/api-client-react";
+import {
+  useGetAssignment,
+  useCreateSubmission,
+  useReportFraudEvent,
+  useRequestUploadUrl,
+  getGetAssignmentQueryKey,
+  getListSubmissionsQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,40 +16,124 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
-  Clock, ChevronLeft, ChevronRight, Send, Play, Pause, Volume2,
-  Bold, Italic, Underline, List, AlignLeft, CheckCircle2, XCircle,
-  ArrowRight, Headphones, BookOpen, Video, Type, X, HelpCircle,
-  MousePointerClick, ArrowUpDown, Layers, RotateCcw, Gauge,
-  GripVertical, GripHorizontal, Lightbulb, ChevronDown, ChevronUp,
-  FileText, Circle, Mic, Square, Loader2, AlertTriangle,
-  Flag, Save, Cloud, CloudOff, WifiOff, RefreshCw
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  Play,
+  Pause,
+  Volume2,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  AlignLeft,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
+  Headphones,
+  BookOpen,
+  Video,
+  Type,
+  X,
+  HelpCircle,
+  MousePointerClick,
+  ArrowUpDown,
+  Layers,
+  RotateCcw,
+  Gauge,
+  GripVertical,
+  GripHorizontal,
+  Lightbulb,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Circle,
+  Mic,
+  Square,
+  Loader2,
+  AlertTriangle,
+  Flag,
+  Save,
+  Cloud,
+  CloudOff,
+  WifiOff,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-
 import {
-  padTwo, TYPE_CONFIG, AudioPlayer, RichTextEditor,
-  TrueFalseInput, FillBlankInput, WordSelectionInput, MatchingInput,
-  DragDropInput, OpenEndInput, SentenceReorderInput, ReadingInput,
-  VideoInteractiveInput, ListeningInput, QuestionRenderer
+  padTwo,
+  TYPE_CONFIG,
+  AudioPlayer,
+  RichTextEditor,
+  TrueFalseInput,
+  FillBlankInput,
+  WordSelectionInput,
+  MatchingInput,
+  DragDropInput,
+  OpenEndInput,
+  SentenceReorderInput,
+  ReadingInput,
+  VideoInteractiveInput,
+  ListeningInput,
+  QuestionRenderer,
 } from "@/components/question-take-inputs";
-
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 type SaveStatus = "idle" | "pending" | "saving" | "saved" | "offline";
 
-function SaveIndicator({ status, lastSaved }: { status: SaveStatus; lastSaved: string | null }) {
+function SaveIndicator({
+  status,
+  lastSaved,
+}: {
+  status: SaveStatus;
+  lastSaved: string | null;
+}) {
   if (status === "idle") return null;
   const config = {
-    pending: { icon: Save, text: "Sẽ lưu sau 2s...", color: "text-amber-500", bg: "bg-amber-50", border: "border-amber-200" },
-    saving: { icon: Cloud, text: "Đang lưu...", color: "text-blue-500", bg: "bg-blue-50", border: "border-blue-200" },
-    saved: { icon: CheckCircle2, text: lastSaved ? `Đã lưu lúc ${lastSaved}` : "Đã lưu", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
-    offline: { icon: WifiOff, text: "Offline — đã lưu cục bộ", color: "text-red-500", bg: "bg-red-50", border: "border-red-200" },
+    pending: {
+      icon: Save,
+      text: "Sẽ lưu sau 2s...",
+      color: "text-amber-500",
+      bg: "bg-amber-50",
+      border: "border-amber-200",
+    },
+    saving: {
+      icon: Cloud,
+      text: "Đang lưu...",
+      color: "text-blue-500",
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+    },
+    saved: {
+      icon: CheckCircle2,
+      text: lastSaved ? `Đã lưu lúc ${lastSaved}` : "Đã lưu",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      border: "border-emerald-200",
+    },
+    offline: {
+      icon: WifiOff,
+      text: "Offline — đã lưu cục bộ",
+      color: "text-red-500",
+      bg: "bg-red-50",
+      border: "border-red-200",
+    },
   }[status];
   const Icon = config.icon;
   return (
-    <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all", config.bg, config.color, config.border)}>
-      <Icon className={cn("w-3.5 h-3.5", status === "saving" && "animate-spin")} />
+    <div
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all",
+        config.bg,
+        config.color,
+        config.border,
+      )}
+    >
+      <Icon
+        className={cn("w-3.5 h-3.5", status === "saving" && "animate-spin")}
+      />
       {config.text}
     </div>
   );
@@ -61,9 +152,12 @@ function ResumeSessionBanner({
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-200">
           <RefreshCw className="w-9 h-9 text-white" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Phát hiện phiên làm bài cũ</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">
+          Phát hiện phiên làm bài cũ
+        </h2>
         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-          Bạn đã có một phiên làm bài chưa hoàn thành. Bạn muốn tiếp tục hay bắt đầu lại từ đầu?
+          Bạn đã có một phiên làm bài chưa hoàn thành. Bạn muốn tiếp tục hay bắt
+          đầu lại từ đầu?
         </p>
         <div className="flex gap-3 justify-center">
           <Button
@@ -92,12 +186,18 @@ export default function AssignmentTakePage() {
   const assignmentId = Number(id);
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
-  const isPreview = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("preview") === "1";
+  const isPreview =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("preview") === "1";
 
   const { data: assignment, isLoading } = useGetAssignment(assignmentId, {
-    query: { enabled: !!assignmentId, queryKey: getGetAssignmentQueryKey(assignmentId) },
+    query: {
+      enabled: !!assignmentId,
+      queryKey: getGetAssignmentQueryKey(assignmentId),
+    },
   });
-  const { mutate: createSubmission, isPending: submitting } = useCreateSubmission();
+  const { mutate: createSubmission, isPending: submitting } =
+    useCreateSubmission();
   const { mutate: reportFraud } = useReportFraudEvent();
 
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -147,7 +247,9 @@ export default function AssignmentTakePage() {
       });
       if (res.ok) {
         const now = new Date();
-        setLastSavedTime(`${padTwo(now.getHours())}:${padTwo(now.getMinutes())}:${padTwo(now.getSeconds())}`);
+        setLastSavedTime(
+          `${padTwo(now.getHours())}:${padTwo(now.getMinutes())}:${padTwo(now.getSeconds())}`,
+        );
         setSaveStatus("saved");
         localStorage.removeItem(`quiz_draft_${sessionIdRef.current}`);
       } else {
@@ -155,13 +257,16 @@ export default function AssignmentTakePage() {
       }
     } catch {
       setSaveStatus("offline");
-      localStorage.setItem(`quiz_draft_${sessionIdRef.current}`, JSON.stringify({
-        answers: answersRef.current,
-        flagged: flaggedRef.current,
-        currentQuestion: currentIdxRef.current,
-        timeLeftSeconds: timeLeftRef.current,
-        savedLocally: Date.now(),
-      }));
+      localStorage.setItem(
+        `quiz_draft_${sessionIdRef.current}`,
+        JSON.stringify({
+          answers: answersRef.current,
+          flagged: flaggedRef.current,
+          currentQuestion: currentIdxRef.current,
+          timeLeftSeconds: timeLeftRef.current,
+          savedLocally: Date.now(),
+        }),
+      );
     }
   }, [assignmentId, isPreview]);
 
@@ -169,12 +274,16 @@ export default function AssignmentTakePage() {
     if (!sessionReady.current || isPreview) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSaveStatus("pending");
-    saveTimerRef.current = setTimeout(() => { autoSave(); }, 2000);
+    saveTimerRef.current = setTimeout(() => {
+      autoSave();
+    }, 2000);
   }, [autoSave, isPreview]);
 
   useEffect(() => {
     if (!sessionId || isPreview) return;
-    intervalSaveRef.current = setInterval(() => { autoSave(); }, 30000);
+    intervalSaveRef.current = setInterval(() => {
+      autoSave();
+    }, 30000);
     heartbeatRef.current = setInterval(async () => {
       try {
         await fetch(`/api/assignments/${assignmentId}/session/heartbeat`, {
@@ -194,13 +303,16 @@ export default function AssignmentTakePage() {
   useEffect(() => {
     if (!sessionId || isPreview) return;
     const handleBeforeUnload = () => {
-      localStorage.setItem(`quiz_draft_${sessionId}`, JSON.stringify({
-        answers: answersRef.current,
-        flagged: flaggedRef.current,
-        currentQuestion: currentIdxRef.current,
-        timeLeftSeconds: timeLeftRef.current,
-        savedLocally: Date.now(),
-      }));
+      localStorage.setItem(
+        `quiz_draft_${sessionId}`,
+        JSON.stringify({
+          answers: answersRef.current,
+          flagged: flaggedRef.current,
+          currentQuestion: currentIdxRef.current,
+          timeLeftSeconds: timeLeftRef.current,
+          savedLocally: Date.now(),
+        }),
+      );
       const body = JSON.stringify({
         sessionId,
         answers: answersRef.current,
@@ -208,7 +320,10 @@ export default function AssignmentTakePage() {
         currentQuestion: currentIdxRef.current,
         timeLeftSeconds: timeLeftRef.current,
       });
-      navigator.sendBeacon(`/api/assignments/${assignmentId}/session/beacon`, new Blob([body], { type: "application/json" }));
+      navigator.sendBeacon(
+        `/api/assignments/${assignmentId}/session/beacon`,
+        new Blob([body], { type: "application/json" }),
+      );
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -231,7 +346,9 @@ export default function AssignmentTakePage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/assignments/${assignmentId}/session`, { credentials: "include" });
+        const res = await fetch(`/api/assignments/${assignmentId}/session`, {
+          credentials: "include",
+        });
         if (cancelled) return;
         const data = await res.json();
         if (data.session) {
@@ -241,7 +358,9 @@ export default function AssignmentTakePage() {
       } catch {}
       if (!cancelled) setSessionLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [assignmentId, isPreview, assignment]);
 
   const startNewSession = useCallback(async () => {
@@ -257,7 +376,8 @@ export default function AssignmentTakePage() {
         const data = await res.json();
         setSessionId(data.sessionId ?? newId);
         sessionReady.current = true;
-        if (assignment?.timeLimitMinutes) setTimeLeft(assignment.timeLimitMinutes * 60);
+        if (assignment?.timeLimitMinutes)
+          setTimeLeft(assignment.timeLimitMinutes * 60);
       }
     } catch {}
     setSessionLoading(false);
@@ -274,9 +394,14 @@ export default function AssignmentTakePage() {
       }
     }
     setAnswers(restoredAnswers);
-    setFlagged(Array.isArray(pendingSession.flagged) ? pendingSession.flagged : []);
+    setFlagged(
+      Array.isArray(pendingSession.flagged) ? pendingSession.flagged : [],
+    );
     setCurrentIdx(pendingSession.currentQuestion ?? 0);
-    if (pendingSession.timeLeftSeconds !== null && pendingSession.timeLeftSeconds !== undefined) {
+    if (
+      pendingSession.timeLeftSeconds !== null &&
+      pendingSession.timeLeftSeconds !== undefined
+    ) {
       setTimeLeft(Math.max(0, pendingSession.timeLeftSeconds));
     } else if (assignment?.timeLimitMinutes) {
       setTimeLeft(assignment.timeLimitMinutes * 60);
@@ -298,14 +423,31 @@ export default function AssignmentTakePage() {
   }, [assignmentId, startNewSession]);
 
   useEffect(() => {
-    if (!assignmentId || isPreview || sessionLoading || showResumeBanner || sessionId) return;
+    if (
+      !assignmentId ||
+      isPreview ||
+      sessionLoading ||
+      showResumeBanner ||
+      sessionId
+    )
+      return;
     if (assignment && !pendingSession) {
       startNewSession();
     }
-  }, [assignmentId, isPreview, sessionLoading, showResumeBanner, sessionId, assignment, pendingSession, startNewSession]);
+  }, [
+    assignmentId,
+    isPreview,
+    sessionLoading,
+    showResumeBanner,
+    sessionId,
+    assignment,
+    pendingSession,
+    startNewSession,
+  ]);
 
   useEffect(() => {
-    if (isPreview && assignment?.timeLimitMinutes) setTimeLeft(assignment.timeLimitMinutes * 60);
+    if (isPreview && assignment?.timeLimitMinutes)
+      setTimeLeft(assignment.timeLimitMinutes * 60);
   }, [isPreview, assignment?.timeLimitMinutes]);
 
   useEffect(() => {
@@ -313,14 +455,28 @@ export default function AssignmentTakePage() {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         tabSwitchCount.current += 1;
-        const severity = tabSwitchCount.current >= 3 ? "high" : tabSwitchCount.current >= 2 ? "medium" : "low";
+        const severity =
+          tabSwitchCount.current >= 3
+            ? "high"
+            : tabSwitchCount.current >= 2
+              ? "medium"
+              : "low";
         reportFraud({
-          data: { assignmentId, eventType: tabSwitchCount.current >= 3 ? "multiple_tab_switches" : "tab_switch", severity, details: `Chuyển tab lần ${tabSwitchCount.current}` },
+          data: {
+            assignmentId,
+            eventType:
+              tabSwitchCount.current >= 3
+                ? "multiple_tab_switches"
+                : "tab_switch",
+            severity,
+            details: `Chuyển tab lần ${tabSwitchCount.current}`,
+          },
         });
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [assignmentId, submitted, reportFraud]);
 
   const handleSubmit = useCallback(() => {
@@ -330,7 +486,13 @@ export default function AssignmentTakePage() {
       answer: answers[aq.id] ?? "",
     }));
     createSubmission(
-      { data: { assignmentId, answers: answerPayload, ...(isPreview ? { isPreview: true } : {}) } },
+      {
+        data: {
+          assignmentId,
+          answers: answerPayload,
+          ...(isPreview ? { isPreview: true } : {}),
+        },
+      },
       {
         onSuccess: (result: any) => {
           setSubmitted(true);
@@ -347,18 +509,35 @@ export default function AssignmentTakePage() {
           if (intervalSaveRef.current) clearInterval(intervalSaveRef.current);
           if (heartbeatRef.current) clearInterval(heartbeatRef.current);
           if (!isPreview && result.id) {
-            queryClient.invalidateQueries({ queryKey: getListSubmissionsQueryKey() });
+            queryClient.invalidateQueries({
+              queryKey: getListSubmissionsQueryKey(),
+            });
             setTimeout(() => navigate(`/submissions/${result.id}`), 1500);
           }
         },
-      }
+      },
     );
-  }, [assignment, answers, assignmentId, createSubmission, navigate, queryClient, isPreview, sessionId]);
+  }, [
+    assignment,
+    answers,
+    assignmentId,
+    createSubmission,
+    navigate,
+    queryClient,
+    isPreview,
+    sessionId,
+  ]);
 
   useEffect(() => {
     if (timeLeft === null) return;
-    if (timeLeft <= 0) { handleSubmit(); return; }
-    const interval = setInterval(() => setTimeLeft((t) => (t !== null ? t - 1 : null)), 1000);
+    if (timeLeft <= 0) {
+      handleSubmit();
+      return;
+    }
+    const interval = setInterval(
+      () => setTimeLeft((t) => (t !== null ? t - 1 : null)),
+      1000,
+    );
     return () => clearInterval(interval);
   }, [timeLeft, handleSubmit]);
 
@@ -375,12 +554,15 @@ export default function AssignmentTakePage() {
   }
 
   if (showResumeBanner && pendingSession) {
-    return <ResumeSessionBanner onResume={handleResume} onRestart={handleRestart} />;
+    return (
+      <ResumeSessionBanner onResume={handleResume} onRestart={handleRestart} />
+    );
   }
 
   const myAttempts = assignment?.myAttemptCount ?? 0;
   const maxAttempts = assignment?.maxAttempts ?? 0;
-  const exceededLimit = !isPreview && maxAttempts > 0 && myAttempts >= maxAttempts;
+  const exceededLimit =
+    !isPreview && maxAttempts > 0 && myAttempts >= maxAttempts;
 
   if (!isLoading && assignment && exceededLimit) {
     return (
@@ -389,25 +571,44 @@ export default function AssignmentTakePage() {
           <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
             <XCircle className="w-8 h-8 text-red-400" />
           </div>
-          <p className="text-xl font-semibold text-gray-700">Đã hết lượt làm bài</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Bạn đã sử dụng hết {maxAttempts}/{maxAttempts} lượt cho phép của bài tập này.
+          <p className="text-xl font-semibold text-gray-700">
+            Đã hết lượt làm bài
           </p>
-          <Button className="mt-6 rounded-xl" onClick={() => navigate("/assignments")}>Quay lại danh sách</Button>
+          <p className="text-sm text-muted-foreground mt-2">
+            Bạn đã sử dụng hết {maxAttempts}/{maxAttempts} lượt cho phép của bài
+            tập này.
+          </p>
+          <Button
+            className="mt-6 rounded-xl"
+            onClick={() => navigate("/assignments")}
+          >
+            Quay lại danh sách
+          </Button>
         </div>
       </div>
     );
   }
 
-  if (!assignment || !assignment.questions || assignment.questions.length === 0) {
+  if (
+    !assignment ||
+    !assignment.questions ||
+    assignment.questions.length === 0
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center p-8 bg-white rounded-3xl shadow-lg border border-gray-100 max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <BookOpen className="w-8 h-8 text-gray-400" />
           </div>
-          <p className="text-xl font-semibold text-gray-700">Không tìm thấy bài tập hoặc bài tập chưa có câu hỏi</p>
-          <Button className="mt-6 rounded-xl" onClick={() => navigate("/assignments")}>Quay lại</Button>
+          <p className="text-xl font-semibold text-gray-700">
+            Không tìm thấy bài tập hoặc bài tập chưa có câu hỏi
+          </p>
+          <Button
+            className="mt-6 rounded-xl"
+            onClick={() => navigate("/assignments")}
+          >
+            Quay lại
+          </Button>
         </div>
       </div>
     );
@@ -424,10 +625,17 @@ export default function AssignmentTakePage() {
             {isPreview ? "Hoàn thành làm thử!" : "Bài thi đã nộp thành công!"}
           </h2>
           <p className="text-muted-foreground mb-4">
-            {isPreview ? "Đây là bài làm thử, không lưu kết quả." : "Đang chuyển đến trang kết quả..."}
+            {isPreview
+              ? "Đây là bài làm thử, không lưu kết quả."
+              : "Đang chuyển đến trang kết quả..."}
           </p>
           {isPreview ? (
-            <Button className="rounded-xl" onClick={() => navigate(`/assignments/${assignmentId}`)}>Quay lại bài tập</Button>
+            <Button
+              className="rounded-xl"
+              onClick={() => navigate(`/assignments/${assignmentId}`)}
+            >
+              Quay lại bài tập
+            </Button>
           ) : (
             <div className="flex justify-center">
               <div className="w-8 h-8 border-4 border-green-400 border-t-transparent rounded-full animate-spin" />
@@ -448,33 +656,57 @@ export default function AssignmentTakePage() {
 
   const parseJson = <T,>(str: string | null | undefined, fallback: T): T => {
     if (!str) return fallback;
-    try { return JSON.parse(str) as T; } catch { return fallback; }
+    try {
+      return JSON.parse(str) as T;
+    } catch {
+      return fallback;
+    }
   };
 
   const rawOptionsArray: unknown[] = currentQ?.options
-    ? (() => { const v = parseJson<unknown>(currentQ.options, []); return Array.isArray(v) ? v : []; })()
+    ? (() => {
+        const v = parseJson<unknown>(currentQ.options, []);
+        return Array.isArray(v) ? v : [];
+      })()
     : [];
   const rawOptions = rawOptionsArray as string[];
-  const questionMetadata = parseJson<Record<string, unknown>>(currentQ?.metadata, {});
-  const allowMultiple = questionMetadata.allowMultiple === true;
-  const wordSelectionWords: string[] = currentQ?.type === "word_selection" && currentQ?.passage
-    ? currentQ.passage.trim().split(/\s+/).filter(Boolean)
-    : [];
-  const pairs: Array<{ left: string; right: string }> = currentQ?.type === "matching"
-    ? (rawOptionsArray as Array<{ left?: string; right?: string } | string>).map(item => {
-        if (typeof item === "object" && item !== null) return { left: (item as {left?:string}).left ?? "", right: (item as {right?:string}).right ?? "" };
-        const [l, r] = String(item).split("|").map(x => x.trim());
-        return { left: l || String(item), right: r || "" };
-      })
-    : [];
-  const ddParsed = parseJson<{ items: string[]; zones: Array<{label:string;accepts:string[]}> }>(
-    currentQ?.options, { items: [], zones: [] }
+  const questionMetadata = parseJson<Record<string, unknown>>(
+    currentQ?.metadata,
+    {},
   );
-  const items: string[] = currentQ?.type === "sentence_reorder"
-    ? (rawOptionsArray as string[])
-    : currentQ?.type === "drag_drop"
-      ? (Array.isArray(ddParsed.items) ? ddParsed.items : [])
+  const allowMultiple = questionMetadata.allowMultiple === true;
+  const wordSelectionWords: string[] =
+    currentQ?.type === "word_selection" && currentQ?.passage
+      ? currentQ.passage.trim().split(/\s+/).filter(Boolean)
       : [];
+  const pairs: Array<{ left: string; right: string }> =
+    currentQ?.type === "matching"
+      ? (
+          rawOptionsArray as Array<{ left?: string; right?: string } | string>
+        ).map((item) => {
+          if (typeof item === "object" && item !== null)
+            return {
+              left: (item as { left?: string }).left ?? "",
+              right: (item as { right?: string }).right ?? "",
+            };
+          const [l, r] = String(item)
+            .split("|")
+            .map((x) => x.trim());
+          return { left: l || String(item), right: r || "" };
+        })
+      : [];
+  const ddParsed = parseJson<{
+    items: string[];
+    zones: Array<{ label: string; accepts: string[] }>;
+  }>(currentQ?.options, { items: [], zones: [] });
+  const items: string[] =
+    currentQ?.type === "sentence_reorder"
+      ? (rawOptionsArray as string[])
+      : currentQ?.type === "drag_drop"
+        ? Array.isArray(ddParsed.items)
+          ? ddParsed.items
+          : []
+        : [];
 
   const setAnswer = (v: string) => {
     if (currentAQ) {
@@ -483,7 +715,9 @@ export default function AssignmentTakePage() {
     }
   };
   const toggleFlag = (idx: number) => {
-    setFlagged((prev) => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+    setFlagged((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx],
+    );
     scheduleSave();
   };
   const isFlagged = (idx: number) => flagged.includes(idx);
@@ -492,30 +726,68 @@ export default function AssignmentTakePage() {
     try {
       const p = JSON.parse(ans);
       if (!p || typeof p !== "object") return false;
-      const hasText = typeof p.text_content === "string" && p.text_content.trim().length > 0;
-      const hasAudio = typeof p.audio_url === "string" && p.audio_url.length > 0;
+      const hasText =
+        typeof p.text_content === "string" && p.text_content.trim().length > 0;
+      const hasAudio =
+        typeof p.audio_url === "string" && p.audio_url.length > 0;
       return hasText || hasAudio;
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   };
 
   const answeredCount = questions.filter((aq: any) => {
     const ans = answers[aq.id] ?? "";
     const qType = aq.question?.type ?? "";
     if (qType === "open_end") return isOpenEndAnswered(ans);
-    if (["matching", "drag_drop", "sentence_reorder", "video_interactive", "listening", "reading"].includes(qType)) {
-      try { const parsed = JSON.parse(ans); return Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0; } catch { return ans.trim().length > 0; }
+    if (
+      [
+        "matching",
+        "drag_drop",
+        "sentence_reorder",
+        "video_interactive",
+        "listening",
+        "reading",
+      ].includes(qType)
+    ) {
+      try {
+        const parsed = JSON.parse(ans);
+        return Array.isArray(parsed)
+          ? parsed.length > 0
+          : Object.keys(parsed).length > 0;
+      } catch {
+        return ans.trim().length > 0;
+      }
     }
     return ans.trim().length > 0;
   }).length;
 
-  const typeConfig = currentQ ? (TYPE_CONFIG[currentQ.type] || TYPE_CONFIG.essay) : TYPE_CONFIG.essay;
+  const typeConfig = currentQ
+    ? TYPE_CONFIG[currentQ.type] || TYPE_CONFIG.essay
+    : TYPE_CONFIG.essay;
   const TypeIcon = typeConfig.icon;
   const progressPercent = (answeredCount / questions.length) * 100;
   const isAnswered = (aqId: number, qType: string) => {
     const ans = answers[aqId] ?? "";
     if (qType === "open_end") return isOpenEndAnswered(ans);
-    if (["matching", "drag_drop", "sentence_reorder", "video_interactive", "listening", "reading"].includes(qType)) {
-      try { const parsed = JSON.parse(ans); return Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0; } catch { return ans.trim().length > 0; }
+    if (
+      [
+        "matching",
+        "drag_drop",
+        "sentence_reorder",
+        "video_interactive",
+        "listening",
+        "reading",
+      ].includes(qType)
+    ) {
+      try {
+        const parsed = JSON.parse(ans);
+        return Array.isArray(parsed)
+          ? parsed.length > 0
+          : Object.keys(parsed).length > 0;
+      } catch {
+        return ans.trim().length > 0;
+      }
     }
     return ans.trim().length > 0;
   };
@@ -525,27 +797,42 @@ export default function AssignmentTakePage() {
       {/* ── Header ── */}
       <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/80 px-6 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-4">
-          <div className={cn("w-11 h-11 rounded-2xl bg-gradient-to-br text-white flex items-center justify-center font-black text-lg shadow-lg", "from-blue-500 to-indigo-600")}>
+          <div
+            className={cn(
+              "w-11 h-11 rounded-2xl bg-gradient-to-br text-white flex items-center justify-center font-black text-lg shadow-lg",
+              "from-blue-500 to-indigo-600",
+            )}
+          >
             {assignment.title.charAt(0)}
           </div>
           <div>
-            <h1 className="font-bold text-gray-900 text-base leading-tight">{assignment.title}</h1>
+            <h1 className="font-bold text-gray-900 text-base leading-tight">
+              {assignment.title}
+            </h1>
             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
               <span>{questions.length} câu hỏi</span>
               <span>·</span>
               <span>{assignment.totalPoints} điểm</span>
               <span>·</span>
-              <span className="font-semibold text-emerald-600">{answeredCount}/{questions.length} đã trả lời</span>
+              <span className="font-semibold text-emerald-600">
+                {answeredCount}/{questions.length} đã trả lời
+              </span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {!isPreview && <SaveIndicator status={saveStatus} lastSaved={lastSavedTime} />}
+          {!isPreview && (
+            <SaveIndicator status={saveStatus} lastSaved={lastSavedTime} />
+          )}
           {timeLeft !== null && (
-            <div className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-mono font-bold text-lg transition-all",
-              isLowTime ? "bg-red-100 text-red-600 animate-pulse ring-2 ring-red-200" : "bg-slate-100 text-slate-700"
-            )}>
+            <div
+              className={cn(
+                "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-mono font-bold text-lg transition-all",
+                isLowTime
+                  ? "bg-red-100 text-red-600 animate-pulse ring-2 ring-red-200"
+                  : "bg-slate-100 text-slate-700",
+              )}
+            >
               <Clock className="w-5 h-5" />
               {padTwo(minutes!)}:{padTwo(seconds!)}
             </div>
@@ -570,60 +857,112 @@ export default function AssignmentTakePage() {
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-gray-500 w-12 text-right">{Math.round(progressPercent)}%</span>
+          <span className="text-xs font-bold text-gray-500 w-12 text-right">
+            {Math.round(progressPercent)}%
+          </span>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── Sidebar ── */}
         <aside className="w-64 border-r border-gray-200/80 bg-white/90 backdrop-blur-sm p-5 overflow-y-auto flex-shrink-0">
-          <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Danh sách câu hỏi</p>
+          <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">
+            Danh sách câu hỏi
+          </p>
           <div className="space-y-1.5">
             {questions.map((aq: any, i: number) => {
               const answered = isAnswered(aq.id, aq.question?.type ?? "");
-              const qCfg = TYPE_CONFIG[aq.question?.type ?? ""] || TYPE_CONFIG.essay;
+              const qCfg =
+                TYPE_CONFIG[aq.question?.type ?? ""] || TYPE_CONFIG.essay;
               const QIcon = qCfg.icon;
               const active = i === currentIdx;
               return (
                 <button
                   key={aq.id}
-                  onClick={() => { setCurrentIdx(i); scheduleSave(); }}
+                  onClick={() => {
+                    setCurrentIdx(i);
+                    scheduleSave();
+                  }}
                   className={cn(
                     "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-left",
                     active
                       ? `bg-gradient-to-r ${qCfg.gradient.replace("from-", "from-").replace("to-", "to-")} text-white shadow-md`
                       : isFlagged(i)
-                      ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
-                      : answered
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
+                        : answered
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
                   )}
                 >
-                  <span className={cn(
-                    "w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0",
-                    active ? "bg-white/20 text-white" : isFlagged(i) ? "bg-amber-200 text-amber-700" : answered ? "bg-emerald-200 text-emerald-700" : "bg-gray-100 text-gray-500"
-                  )}>{i + 1}</span>
-                  <QIcon className={cn("w-3.5 h-3.5 flex-shrink-0", active ? "text-white/80" : answered ? "text-emerald-500" : "text-gray-400")} />
-                  <span className="truncate text-xs leading-tight">{qCfg.label}</span>
-                  {isFlagged(i) && !active && <Flag className="w-3.5 h-3.5 text-amber-500 ml-auto flex-shrink-0" />}
-                  {answered && !active && !isFlagged(i) && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 ml-auto flex-shrink-0" />}
+                  <span
+                    className={cn(
+                      "w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black flex-shrink-0",
+                      active
+                        ? "bg-white/20 text-white"
+                        : isFlagged(i)
+                          ? "bg-amber-200 text-amber-700"
+                          : answered
+                            ? "bg-emerald-200 text-emerald-700"
+                            : "bg-gray-100 text-gray-500",
+                    )}
+                  >
+                    {i + 1}
+                  </span>
+                  <QIcon
+                    className={cn(
+                      "w-3.5 h-3.5 flex-shrink-0",
+                      active
+                        ? "text-white/80"
+                        : answered
+                          ? "text-emerald-500"
+                          : "text-gray-400",
+                    )}
+                  />
+                  <span className="truncate text-xs leading-tight">
+                    {qCfg.label}
+                  </span>
+                  {isFlagged(i) && !active && (
+                    <Flag className="w-3.5 h-3.5 text-amber-500 ml-auto flex-shrink-0" />
+                  )}
+                  {answered && !active && !isFlagged(i) && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 ml-auto flex-shrink-0" />
+                  )}
                 </button>
               );
             })}
           </div>
           <div className="mt-5 pt-4 border-t border-gray-100 space-y-2 text-xs">
             <div className="flex items-center gap-2.5">
-              <div className="w-4 h-4 rounded-lg bg-emerald-100 border border-emerald-300 flex items-center justify-center"><CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" /></div>
-              <span className="text-gray-500">Đã trả lời <span className="font-bold text-emerald-600">{answeredCount}</span></span>
+              <div className="w-4 h-4 rounded-lg bg-emerald-100 border border-emerald-300 flex items-center justify-center">
+                <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+              </div>
+              <span className="text-gray-500">
+                Đã trả lời{" "}
+                <span className="font-bold text-emerald-600">
+                  {answeredCount}
+                </span>
+              </span>
             </div>
             <div className="flex items-center gap-2.5">
               <div className="w-4 h-4 rounded-lg bg-gray-100 border border-gray-200" />
-              <span className="text-gray-500">Chưa trả lời <span className="font-bold text-gray-600">{questions.length - answeredCount}</span></span>
+              <span className="text-gray-500">
+                Chưa trả lời{" "}
+                <span className="font-bold text-gray-600">
+                  {questions.length - answeredCount}
+                </span>
+              </span>
             </div>
             {flagged.length > 0 && (
               <div className="flex items-center gap-2.5">
-                <div className="w-4 h-4 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center"><Flag className="w-2.5 h-2.5 text-amber-500" /></div>
-                <span className="text-gray-500">Đánh dấu xem lại <span className="font-bold text-amber-600">{flagged.length}</span></span>
+                <div className="w-4 h-4 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center">
+                  <Flag className="w-2.5 h-2.5 text-amber-500" />
+                </div>
+                <span className="text-gray-500">
+                  Đánh dấu xem lại{" "}
+                  <span className="font-bold text-amber-600">
+                    {flagged.length}
+                  </span>
+                </span>
               </div>
             )}
           </div>
@@ -636,12 +975,24 @@ export default function AssignmentTakePage() {
               <div className="space-y-6">
                 {/* Question header */}
                 <div className="flex items-start gap-4">
-                  <div className={cn("w-13 h-13 min-w-[52px] min-h-[52px] rounded-2xl bg-gradient-to-br text-white flex items-center justify-center text-xl font-black shadow-lg", typeConfig.gradient)}>
+                  <div
+                    className={cn(
+                      "w-13 h-13 min-w-[52px] min-h-[52px] rounded-2xl bg-gradient-to-br text-white flex items-center justify-center text-xl font-black shadow-lg",
+                      typeConfig.gradient,
+                    )}
+                  >
                     {currentIdx + 1}
                   </div>
                   <div className="flex-1">
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <span className={cn("text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border", typeConfig.bgColor, typeConfig.color, "border-current/20")}>
+                      <span
+                        className={cn(
+                          "text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border",
+                          typeConfig.bgColor,
+                          typeConfig.color,
+                          "border-current/20",
+                        )}
+                      >
                         <TypeIcon className="w-3.5 h-3.5" />
                         {typeConfig.label}
                       </span>
@@ -660,7 +1011,7 @@ export default function AssignmentTakePage() {
                           "text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-all ml-auto",
                           isFlagged(currentIdx)
                             ? "bg-amber-100 text-amber-600 border-amber-300"
-                            : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-amber-50 hover:text-amber-500 hover:border-amber-200"
+                            : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-amber-50 hover:text-amber-500 hover:border-amber-200",
                         )}
                       >
                         <Flag className="w-3.5 h-3.5" />
@@ -668,7 +1019,29 @@ export default function AssignmentTakePage() {
                       </button>
                     </div>
                     <div className="text-base font-semibold text-gray-900 leading-relaxed">
-                      <MarkdownView source={currentQ.content} />
+                      <MarkdownView
+                        source={
+                          currentQ.type === "fill_blank"
+                            ? (() => {
+                                const blankToken = currentQ.content.includes(
+                                  "__BLANK__",
+                                )
+                                  ? "__BLANK__"
+                                  : null;
+                                const parts = blankToken
+                                  ? currentQ.content.split("__BLANK__")
+                                  : currentQ.content.split(/_{3,}/);
+                                const blankCount = parts.length - 1;
+                                const circled = blankCount;
+                                let n = 0;
+                                return currentQ.content.replace(
+                                  /__BLANK__/g,
+                                  () => `***[___${++n}___]***`,
+                                );
+                              })()
+                            : currentQ.content
+                        }
+                      />
                     </div>
                   </div>
                 </div>
@@ -676,13 +1049,21 @@ export default function AssignmentTakePage() {
                 {/* Image (if any) */}
                 {currentQ?.imageUrl && (
                   <div className="ml-16">
-                    <img src={currentQ?.imageUrl} alt="Hình ảnh câu hỏi" className="rounded-xl border border-gray-200 max-h-64 object-contain" />
+                    <img
+                      src={currentQ?.imageUrl}
+                      alt="Hình ảnh câu hỏi"
+                      className="rounded-xl border border-gray-200 max-h-64 object-contain"
+                    />
                   </div>
                 )}
 
                 {/* Question type input */}
                 <div className="ml-16">
-                  <QuestionRenderer q={currentQ as any} value={currentAnswer} onChange={setAnswer} />
+                  <QuestionRenderer
+                    q={currentQ as any}
+                    value={currentAnswer}
+                    onChange={setAnswer}
+                  />
                 </div>
 
                 {/* Giải thích chỉ hiển thị sau khi nộp bài, không hiển thị trong lúc làm */}
@@ -701,24 +1082,34 @@ export default function AssignmentTakePage() {
                 Câu trước
               </Button>
               <div className="flex items-center gap-3">
-                {questions.slice(Math.max(0, currentIdx - 2), Math.min(questions.length, currentIdx + 3)).map((_: any, relIdx: number) => {
-                  const absIdx = Math.max(0, currentIdx - 2) + relIdx;
-                  return (
-                    <button
-                      key={absIdx}
-                      onClick={() => setCurrentIdx(absIdx)}
-                      className={cn(
-                        "w-9 h-9 rounded-xl text-sm font-bold transition-all",
-                        absIdx === currentIdx ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                      )}
-                    >
-                      {absIdx + 1}
-                    </button>
-                  );
-                })}
+                {questions
+                  .slice(
+                    Math.max(0, currentIdx - 2),
+                    Math.min(questions.length, currentIdx + 3),
+                  )
+                  .map((_: any, relIdx: number) => {
+                    const absIdx = Math.max(0, currentIdx - 2) + relIdx;
+                    return (
+                      <button
+                        key={absIdx}
+                        onClick={() => setCurrentIdx(absIdx)}
+                        className={cn(
+                          "w-9 h-9 rounded-xl text-sm font-bold transition-all",
+                          absIdx === currentIdx
+                            ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200",
+                        )}
+                      >
+                        {absIdx + 1}
+                      </button>
+                    );
+                  })}
               </div>
               {currentIdx < questions.length - 1 ? (
-                <Button onClick={() => setCurrentIdx((i) => i + 1)} className="rounded-2xl gap-1.5 px-5">
+                <Button
+                  onClick={() => setCurrentIdx((i) => i + 1)}
+                  className="rounded-2xl gap-1.5 px-5"
+                >
                   Câu tiếp theo
                   <ChevronRight className="w-4 h-4" />
                 </Button>

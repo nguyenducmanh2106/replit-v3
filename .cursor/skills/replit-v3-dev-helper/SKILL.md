@@ -1,6 +1,8 @@
 ---
 name: replit-v3-dev-helper
 description: Standardize development workflows for the replit-v3 pnpm monorepo (workspace filtering, dev servers, build/typecheck, and git hygiene around generated output and .env files). Use when working in this repo, when running `pnpm --filter`, when working on `artifacts/edu-platform` (Vite) or `artifacts/api-server` (Node/Express), or when git shows `dist/`, `*.map`, `.env*`, or generated route tree changes.
+
+You are an autonomous coding agent. Your job is not just to suggest code — you **execute, observe, debug, and iterate** until the task is fully working. Think like Replit Agent: write → run → read errors → fix → repeat.
 ---
 
 # Replit v3 Dev Helper (pnpm monorepo)

@@ -231,34 +231,44 @@ export function FillBlankInput({ content, value, onChange }: { content: string; 
   };
 
   if (blankCount > 0) {
-    let blankIdx = 0;
     return (
       <div>
         <p className="text-sm text-purple-600 font-medium mb-3 flex items-center gap-2">
           <Type className="w-4 h-4" />
           Điền từ thích hợp vào chỗ trống
         </p>
-        <div className="p-5 bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 rounded-2xl text-base leading-loose text-gray-800 font-medium">
+        {/* Passage with numbered blanks */}
+        {/* <div className="p-5 bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 rounded-2xl text-base leading-loose text-gray-800 font-medium mb-4">
           {parts.map((part, i) => {
-            const curIdx = blankIdx;
             const showBlank = i < parts.length - 1;
-            if (showBlank) blankIdx++;
             return (
               <span key={i}>
                 <span>{part}</span>
                 {showBlank && (
-                  <input
-                    type="text"
-                    value={answers[curIdx] ?? ""}
-                    onChange={(e) => updateAnswer(curIdx, e.target.value)}
-                    placeholder={`(${curIdx + 1})`}
-                    className="inline-block mx-1 border-0 border-b-2 border-purple-400 bg-white/60 text-purple-700 font-bold text-base focus:outline-none focus:border-purple-600 rounded-t-lg min-w-[100px] text-center px-3 py-1"
-                    style={{ width: Math.max(100, (answers[curIdx]?.length ?? 0) * 10 + 50) }}
-                  />
+                  <span className="inline-flex items-center justify-center mx-1 w-7 h-7 rounded-full bg-purple-600 text-white text-xs font-bold shadow-sm">
+                    {i + 1}
+                  </span>
                 )}
               </span>
             );
           })}
+        </div> */}
+        {/* Student answer lines */}
+        <div className="space-y-2.5">
+          {Array.from({ length: blankCount }).map((_, idx) => (
+            <div key={idx} className="flex items-center gap-3">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-bold border border-purple-300 shrink-0">
+                {idx + 1}
+              </span>
+              <input
+                type="text"
+                value={answers[idx] ?? ""}
+                onChange={(e) => updateAnswer(idx, e.target.value)}
+                placeholder="Nhập câu trả lời..."
+                className="flex-1 border-2 border-purple-200 rounded-xl px-4 py-2.5 text-base font-medium text-gray-800 bg-white focus:outline-none focus:border-purple-500 transition-colors placeholder:text-gray-400 placeholder:font-normal"
+              />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -266,7 +276,7 @@ export function FillBlankInput({ content, value, onChange }: { content: string; 
 
   return (
     <div>
-      <label className="text-sm font-semibold text-purple-700 mb-3 flex items-center gap-2">
+      {/* <label className="text-sm font-semibold text-purple-700 mb-3 flex items-center gap-2">
         <Type className="w-4 h-4" />
         Câu trả lời của bạn:
       </label>
@@ -275,7 +285,7 @@ export function FillBlankInput({ content, value, onChange }: { content: string; 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="text-base border-2 border-purple-200 focus:border-purple-500 rounded-xl h-12 px-4 font-medium"
-      />
+      /> */}
     </div>
   );
 }
