@@ -82,6 +82,7 @@
     "better-auth": "^1.6.5",
     "jspdf": "^4.2.1",
     "react-markdown": "^10.1.0",
+    "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "vinxi": "^0.5.11",
