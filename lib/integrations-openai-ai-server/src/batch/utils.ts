@@ -45,6 +45,13 @@ export function isRateLimitError(error: unknown): boolean {
   );
 }
 
+export class AbortError extends Error {
+  constructor(cause: Error) {
+    super(cause.message, { cause });
+    this.name = "AbortError";
+  }
+}
+
 export async function batchProcess<T, R>(
   items: T[],
   processor: (item: T, index: number) => Promise<R>,
@@ -74,7 +81,7 @@ export async function batchProcess<T, R>(
             if (isRateLimitError(error)) {
               throw error;
             }
-            throw new pRetry.AbortError(
+            throw new AbortError(
               error instanceof Error ? error : new Error(String(error))
             );
           }
@@ -114,7 +121,7 @@ export async function batchProcessWithSSE<T, R>(
           factor: 2,
           onFailedAttempt: (error) => {
             if (!isRateLimitError(error)) {
-              throw new pRetry.AbortError(
+              throw new AbortError(
                 error instanceof Error ? error : new Error(String(error))
               );
             }

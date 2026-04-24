@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, submissionsTable, submissionAnswersTable, assignmentsTable, usersTable, questionsTable } from "@workspace/db";
+import {
+  db,
+  submissionsTable,
+  submissionAnswersTable,
+  assignmentsTable,
+  usersTable,
+  questionsTable,
+} from "@workspace/db";
 import {
   GradeEssayBody,
   GradeEssayResponse,
@@ -12,13 +19,22 @@ import {
   GenerateQuestionsResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
-import { openai } from "@workspace/integrations-openai-ai-server";
-import { speechToText, ensureCompatibleFormat } from "@workspace/integrations-openai-ai-server/audio";
+import {
+  speechToText,
+  ensureCompatibleFormat,
+} from "@workspace/integrations-openai-ai-server/audio";
+import { chat } from "../ai/chat";
 import multer from "multer";
 
 const router: IRouter = Router();
 
-const TEACHER_ROLES = ["teacher", "center_admin", "school_admin", "system_admin", "enterprise_admin"];
+const TEACHER_ROLES = [
+  "teacher",
+  "center_admin",
+  "school_admin",
+  "system_admin",
+  "enterprise_admin",
+];
 
 router.post("/ai/grade-essay", requireAuth, async (req, res): Promise<void> => {
   const dbUser = req.dbUser;
@@ -61,13 +77,10 @@ Evaluate and return a JSON object with EXACTLY these fields (no extra text, just
 
 Be fair but encouraging. Respond only with the JSON object.`;
 
-    const response = await openai.chat.completions.create({
+    const rawContent = await chat([{ role: "user", content: prompt }], {
       model: "gpt-5-mini",
-      max_completion_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
+      maxTokens: 2048,
     });
-
-    const rawContent = response.choices[0]?.message?.content ?? "{}";
     let parsed2: Record<string, unknown>;
 
     try {
@@ -79,7 +92,8 @@ Be fair but encouraging. Respond only with the JSON object.`;
     }
 
     const score = Math.min(maxPoints, Math.max(0, Number(parsed2.score ?? 0)));
-    const percentage = maxPoints > 0 ? Math.round((score / maxPoints) * 100 * 10) / 10 : 0;
+    const percentage =
+      maxPoints > 0 ? Math.round((score / maxPoints) * 100 * 10) / 10 : 0;
 
     const result = {
       score,
@@ -89,11 +103,15 @@ Be fair but encouraging. Respond only with the JSON object.`;
       vocabularyScore: Number(parsed2.vocabularyScore ?? 70),
       structureScore: Number(parsed2.structureScore ?? 70),
       contentScore: Number(parsed2.contentScore ?? 70),
-      overallFeedback: String(parsed2.overallFeedback ?? "Bài viết đã được hoàn thành."),
+      overallFeedback: String(
+        parsed2.overallFeedback ?? "Bài viết đã được hoàn thành.",
+      ),
       grammarFeedback: String(parsed2.grammarFeedback ?? ""),
       vocabularyFeedback: String(parsed2.vocabularyFeedback ?? ""),
       structureFeedback: String(parsed2.structureFeedback ?? ""),
-      suggestions: Array.isArray(parsed2.suggestions) ? parsed2.suggestions.map(String) : [],
+      suggestions: Array.isArray(parsed2.suggestions)
+        ? parsed2.suggestions.map(String)
+        : [],
     };
 
     res.json(GradeEssayResponse.parse(result));
@@ -103,39 +121,50 @@ Be fair but encouraging. Respond only with the JSON object.`;
   }
 });
 
-router.post("/ai/suggest-questions", requireAuth, async (req, res): Promise<void> => {
-  const dbUser = req.dbUser;
-  if (!dbUser) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+router.post(
+  "/ai/suggest-questions",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const dbUser = req.dbUser;
+    if (!dbUser) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
 
-  const parsed = SuggestQuestionsBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+    const parsed = SuggestQuestionsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
 
-  const { skill, currentLevel, count, studentId } = parsed.data;
-  const targetCount = count ?? 5;
+    const { skill, currentLevel, count, studentId } = parsed.data;
+    const targetCount = count ?? 5;
 
-  const allQuestions = await db.select().from(questionsTable).where(eq(questionsTable.skill, skill));
+    const allQuestions = await db
+      .select()
+      .from(questionsTable)
+      .where(eq(questionsTable.skill, skill));
 
-  if (allQuestions.length === 0) {
-    res.json(SuggestQuestionsResponse.parse({
-      questions: [],
-      reasoning: "Không có câu hỏi nào cho kỹ năng này trong hệ thống.",
-      recommendedLevel: currentLevel ?? "B1",
-    }));
-    return;
-  }
+    if (allQuestions.length === 0) {
+      res.json(
+        SuggestQuestionsResponse.parse({
+          questions: [],
+          reasoning: "Không có câu hỏi nào cho kỹ năng này trong hệ thống.",
+          recommendedLevel: currentLevel ?? "B1",
+        }),
+      );
+      return;
+    }
 
-  try {
-    const questionList = allQuestions.map(q =>
-      `ID:${q.id} Level:${q.level} Type:${q.type} Content:"${q.content.slice(0, 80)}"`
-    ).join("\n");
+    try {
+      const questionList = allQuestions
+        .map(
+          (q) =>
+            `ID:${q.id} Level:${q.level} Type:${q.type} Content:"${q.content.slice(0, 80)}"`,
+        )
+        .join("\n");
 
-    const prompt = `You are an adaptive learning system. Select the most suitable questions for a student.
+      const prompt = `You are an adaptive learning system. Select the most suitable questions for a student.
 
 Student skill area: ${skill}
 Current level: ${currentLevel ?? "Unknown - assess from history"}
@@ -151,109 +180,148 @@ Return ONLY a JSON object like this:
   "reasoning": "<brief reasoning in Vietnamese>"
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      max_completion_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    });
+      const rawContent = await chat([{ role: "user", content: prompt }], {
+        model: "gpt-5-mini",
+        maxTokens: 1024,
+      });
 
-    const rawContent = response.choices[0]?.message?.content ?? "{}";
-    let aiResult: { questionIds?: number[]; recommendedLevel?: string; reasoning?: string };
+      const rawText = rawContent;
+      let aiResult: {
+        questionIds?: number[];
+        recommendedLevel?: string;
+        reasoning?: string;
+      };
+
+      try {
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+      } catch {
+        aiResult = {
+          questionIds: [],
+          recommendedLevel: currentLevel ?? "B1",
+          reasoning: "Gợi ý tự động",
+        };
+      }
+
+      const selectedIds = (aiResult.questionIds ?? []).slice(0, targetCount);
+      const selectedQuestions = allQuestions.filter((q) =>
+        selectedIds.includes(q.id),
+      );
+
+      if (selectedQuestions.length < targetCount) {
+        const remaining = allQuestions
+          .filter((q) => !selectedIds.includes(q.id))
+          .slice(0, targetCount - selectedQuestions.length);
+        selectedQuestions.push(...remaining);
+      }
+
+      res.json(
+        SuggestQuestionsResponse.parse({
+          questions: selectedQuestions.map((q) => ({
+            id: q.id,
+            type: q.type,
+            skill: q.skill,
+            level: q.level,
+            content: q.content,
+            options: q.options ?? null,
+            correctAnswer: q.correctAnswer ?? null,
+            audioUrl: q.audioUrl ?? null,
+            points: q.points,
+            createdAt: q.createdAt.toISOString(),
+          })),
+          reasoning:
+            aiResult.reasoning ??
+            "Câu hỏi được chọn phù hợp với trình độ học viên.",
+          recommendedLevel: aiResult.recommendedLevel ?? currentLevel ?? "B1",
+        }),
+      );
+    } catch (err) {
+      console.error("AI suggest questions error:", err);
+      const fallback = allQuestions.slice(0, targetCount);
+      res.json(
+        SuggestQuestionsResponse.parse({
+          questions: fallback.map((q) => ({
+            id: q.id,
+            type: q.type,
+            skill: q.skill,
+            level: q.level,
+            content: q.content,
+            options: q.options ?? null,
+            correctAnswer: q.correctAnswer ?? null,
+            audioUrl: q.audioUrl ?? null,
+            points: q.points,
+            createdAt: q.createdAt.toISOString(),
+          })),
+          reasoning: "Gợi ý tự động (AI không khả dụng).",
+          recommendedLevel: currentLevel ?? "B1",
+        }),
+      );
+    }
+  },
+);
+
+router.post(
+  "/ai/personalized-feedback/:submissionId",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const dbUser = req.dbUser;
+    if (!dbUser) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const raw = Array.isArray(req.params.submissionId)
+      ? req.params.submissionId[0]
+      : req.params.submissionId;
+    const params = GetPersonalizedFeedbackParams.safeParse({
+      submissionId: parseInt(raw!, 10),
+    });
+    if (!params.success) {
+      res.status(400).json({ error: "Invalid submission ID" });
+      return;
+    }
+
+    const { submissionId } = params.data;
+
+    const [submission] = await db
+      .select()
+      .from(submissionsTable)
+      .where(eq(submissionsTable.id, submissionId));
+    if (!submission) {
+      res.status(404).json({ error: "Submission not found" });
+      return;
+    }
+
+    if (
+      !TEACHER_ROLES.includes(dbUser.role) &&
+      submission.studentId !== dbUser.id
+    ) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const [student] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, submission.studentId));
+    const [assignment] = await db
+      .select()
+      .from(assignmentsTable)
+      .where(eq(assignmentsTable.id, submission.assignmentId));
+    const answers = await db
+      .select()
+      .from(submissionAnswersTable)
+      .where(eq(submissionAnswersTable.submissionId, submissionId));
+
+    const correctCount = answers.filter((a) => a.isCorrect === "true").length;
+    const totalAnswers = answers.length;
+    const percentage =
+      submission.totalPoints > 0 && submission.score != null
+        ? Math.round((submission.score / submission.totalPoints) * 100)
+        : null;
 
     try {
-      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-      aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : rawContent);
-    } catch {
-      aiResult = { questionIds: [], recommendedLevel: currentLevel ?? "B1", reasoning: "Gợi ý tự động" };
-    }
-
-    const selectedIds = (aiResult.questionIds ?? []).slice(0, targetCount);
-    const selectedQuestions = allQuestions.filter(q => selectedIds.includes(q.id));
-
-    if (selectedQuestions.length < targetCount) {
-      const remaining = allQuestions
-        .filter(q => !selectedIds.includes(q.id))
-        .slice(0, targetCount - selectedQuestions.length);
-      selectedQuestions.push(...remaining);
-    }
-
-    res.json(SuggestQuestionsResponse.parse({
-      questions: selectedQuestions.map(q => ({
-        id: q.id,
-        type: q.type,
-        skill: q.skill,
-        level: q.level,
-        content: q.content,
-        options: q.options ?? null,
-        correctAnswer: q.correctAnswer ?? null,
-        audioUrl: q.audioUrl ?? null,
-        points: q.points,
-        createdAt: q.createdAt.toISOString(),
-      })),
-      reasoning: aiResult.reasoning ?? "Câu hỏi được chọn phù hợp với trình độ học viên.",
-      recommendedLevel: aiResult.recommendedLevel ?? currentLevel ?? "B1",
-    }));
-  } catch (err) {
-    console.error("AI suggest questions error:", err);
-    const fallback = allQuestions.slice(0, targetCount);
-    res.json(SuggestQuestionsResponse.parse({
-      questions: fallback.map(q => ({
-        id: q.id,
-        type: q.type,
-        skill: q.skill,
-        level: q.level,
-        content: q.content,
-        options: q.options ?? null,
-        correctAnswer: q.correctAnswer ?? null,
-        audioUrl: q.audioUrl ?? null,
-        points: q.points,
-        createdAt: q.createdAt.toISOString(),
-      })),
-      reasoning: "Gợi ý tự động (AI không khả dụng).",
-      recommendedLevel: currentLevel ?? "B1",
-    }));
-  }
-});
-
-router.post("/ai/personalized-feedback/:submissionId", requireAuth, async (req, res): Promise<void> => {
-  const dbUser = req.dbUser;
-  if (!dbUser) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  const raw = Array.isArray(req.params.submissionId) ? req.params.submissionId[0] : req.params.submissionId;
-  const params = GetPersonalizedFeedbackParams.safeParse({ submissionId: parseInt(raw!, 10) });
-  if (!params.success) {
-    res.status(400).json({ error: "Invalid submission ID" });
-    return;
-  }
-
-  const { submissionId } = params.data;
-
-  const [submission] = await db.select().from(submissionsTable).where(eq(submissionsTable.id, submissionId));
-  if (!submission) {
-    res.status(404).json({ error: "Submission not found" });
-    return;
-  }
-
-  if (!TEACHER_ROLES.includes(dbUser.role) && submission.studentId !== dbUser.id) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-
-  const [student] = await db.select().from(usersTable).where(eq(usersTable.id, submission.studentId));
-  const [assignment] = await db.select().from(assignmentsTable).where(eq(assignmentsTable.id, submission.assignmentId));
-  const answers = await db.select().from(submissionAnswersTable).where(eq(submissionAnswersTable.submissionId, submissionId));
-
-  const correctCount = answers.filter(a => a.isCorrect === "true").length;
-  const totalAnswers = answers.length;
-  const percentage = submission.totalPoints > 0 && submission.score != null
-    ? Math.round((submission.score / submission.totalPoints) * 100)
-    : null;
-
-  try {
-    const prompt = `You are a supportive and encouraging English teacher in Vietnam. Generate personalized feedback for a student.
+      const prompt = `You are a supportive and encouraging English teacher in Vietnam. Generate personalized feedback for a student.
 
 Student: ${student?.name ?? "Học viên"}
 Assignment: ${assignment?.title ?? "Bài tập"}
@@ -269,107 +337,132 @@ Generate encouraging, personalized feedback in Vietnamese. Return ONLY this JSON
   "encouragement": "<motivational closing message>"
 }`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      max_completion_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    });
+      const rawContent = await chat([{ role: "user", content: prompt }], {
+        model: "gemma-4-31b-it",
+        // maxTokens: 1024,
+      });
 
-    const rawContent = response.choices[0]?.message?.content ?? "{}";
-    let aiResult: Record<string, unknown>;
+      let aiResult: Record<string, unknown>;
 
-    try {
-      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-      aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : rawContent);
-    } catch {
-      aiResult = {};
+      try {
+        const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+        aiResult = JSON.parse(jsonMatch ? jsonMatch[0] : rawContent);
+        console.log(aiResult);
+      } catch {
+        aiResult = {};
+      }
+
+      res.json(
+        GetPersonalizedFeedbackResponse.parse({
+          submissionId,
+          studentName: student?.name ?? "Học viên",
+          overallMessage: String(
+            aiResult.overallMessage ?? "Bạn đã hoàn thành bài tập tốt!",
+          ),
+          strengths: Array.isArray(aiResult.strengths)
+            ? aiResult.strengths.map(String)
+            : ["Hoàn thành bài đúng hạn"],
+          areasForImprovement: Array.isArray(aiResult.areasForImprovement)
+            ? aiResult.areasForImprovement.map(String)
+            : ["Cần ôn luyện thêm"],
+          nextSteps: Array.isArray(aiResult.nextSteps)
+            ? aiResult.nextSteps.map(String)
+            : ["Tiếp tục học tập chăm chỉ"],
+          encouragement: String(
+            aiResult.encouragement ?? "Cố lên! Bạn đang tiến bộ rất tốt!",
+          ),
+        }),
+      );
+    } catch (err) {
+      console.error("AI personalized feedback error:", err);
+      res.json(
+        GetPersonalizedFeedbackResponse.parse({
+          submissionId,
+          studentName: student?.name ?? "Học viên",
+          overallMessage: "Bạn đã hoàn thành bài tập. Hãy tiếp tục cố gắng!",
+          strengths: ["Hoàn thành bài đúng hạn", "Nỗ lực làm bài"],
+          areasForImprovement: ["Cần ôn luyện thêm các dạng bài khó"],
+          nextSteps: ["Ôn tập lại các câu sai", "Luyện thêm bài tập tương tự"],
+          encouragement: "Hãy tiếp tục cố gắng! Mỗi ngày bạn đang tiến bộ hơn.",
+        }),
+      );
     }
-
-    res.json(GetPersonalizedFeedbackResponse.parse({
-      submissionId,
-      studentName: student?.name ?? "Học viên",
-      overallMessage: String(aiResult.overallMessage ?? "Bạn đã hoàn thành bài tập tốt!"),
-      strengths: Array.isArray(aiResult.strengths) ? aiResult.strengths.map(String) : ["Hoàn thành bài đúng hạn"],
-      areasForImprovement: Array.isArray(aiResult.areasForImprovement) ? aiResult.areasForImprovement.map(String) : ["Cần ôn luyện thêm"],
-      nextSteps: Array.isArray(aiResult.nextSteps) ? aiResult.nextSteps.map(String) : ["Tiếp tục học tập chăm chỉ"],
-      encouragement: String(aiResult.encouragement ?? "Cố lên! Bạn đang tiến bộ rất tốt!"),
-    }));
-  } catch (err) {
-    console.error("AI personalized feedback error:", err);
-    res.json(GetPersonalizedFeedbackResponse.parse({
-      submissionId,
-      studentName: student?.name ?? "Học viên",
-      overallMessage: "Bạn đã hoàn thành bài tập. Hãy tiếp tục cố gắng!",
-      strengths: ["Hoàn thành bài đúng hạn", "Nỗ lực làm bài"],
-      areasForImprovement: ["Cần ôn luyện thêm các dạng bài khó"],
-      nextSteps: ["Ôn tập lại các câu sai", "Luyện thêm bài tập tương tự"],
-      encouragement: "Hãy tiếp tục cố gắng! Mỗi ngày bạn đang tiến bộ hơn.",
-    }));
-  }
-});
+  },
+);
 
 const transcribeUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-router.post("/ai/transcribe", requireAuth, transcribeUpload.single("audio"), async (req, res): Promise<void> => {
-  try {
-    if (!req.file) {
-      res.status(400).json({ error: "No audio file provided" });
+router.post(
+  "/ai/transcribe",
+  requireAuth,
+  transcribeUpload.single("audio"),
+  async (req, res): Promise<void> => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No audio file provided" });
+        return;
+      }
+
+      const audioBuffer = Buffer.from(req.file.buffer);
+      const { buffer, format } = await ensureCompatibleFormat(audioBuffer);
+      const transcript = await speechToText(buffer, format);
+
+      res.json({ transcript, model: "gpt-4o-mini-transcribe" });
+    } catch (err) {
+      console.error("Transcription error:", err);
+      res.status(500).json({ error: "Transcription failed" });
+    }
+  },
+);
+
+router.post(
+  "/ai/generate-questions",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const dbUser = req.dbUser;
+    if (!dbUser) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (!TEACHER_ROLES.includes(dbUser.role)) {
+      res.status(403).json({ error: "Forbidden" });
       return;
     }
 
-    const audioBuffer = Buffer.from(req.file.buffer);
-    const { buffer, format } = await ensureCompatibleFormat(audioBuffer);
-    const transcript = await speechToText(buffer, format);
+    const parsed = GenerateQuestionsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
 
-    res.json({ transcript, model: "gpt-4o-mini-transcribe" });
-  } catch (err) {
-    console.error("Transcription error:", err);
-    res.status(500).json({ error: "Transcription failed" });
-  }
-});
+    const { topic, type, skill, level, count, language, instructions } =
+      parsed.data;
+    const lang = language ?? "vi";
+    const targetCount = Math.min(Math.max(count, 1), 10);
 
-router.post("/ai/generate-questions", requireAuth, async (req, res): Promise<void> => {
-  const dbUser = req.dbUser;
-  if (!dbUser) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  if (!TEACHER_ROLES.includes(dbUser.role)) {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
+    const langName = lang === "vi" ? "Vietnamese" : "English";
 
-  const parsed = GenerateQuestionsBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const { topic, type, skill, level, count, language, instructions } = parsed.data;
-  const lang = language ?? "vi";
-  const targetCount = Math.min(Math.max(count, 1), 10);
-
-  const langName = lang === "vi" ? "Vietnamese" : "English";
-
-  const typeSpec: Record<string, string> = {
-    mcq: `Multiple choice with EXACTLY 4 options. Use this JSON in the "options" field as a STRING:
+    const typeSpec: Record<string, string> = {
+      mcq: `Multiple choice with EXACTLY 4 options. Use this JSON in the "options" field as a STRING:
 "[{\\"id\\":\\"a\\",\\"text\\":\\"...\\",\\"isCorrect\\":true},{\\"id\\":\\"b\\",\\"text\\":\\"...\\",\\"isCorrect\\":false},{\\"id\\":\\"c\\",\\"text\\":\\"...\\",\\"isCorrect\\":false},{\\"id\\":\\"d\\",\\"text\\":\\"...\\",\\"isCorrect\\":false}]"
 Set "correctAnswer" to the id of the correct option (e.g. "a"). Only one correct answer.`,
-    true_false: `True/False question. Set "correctAnswer" to "true" or "false". Leave "options" null.`,
-    fill_blank: `Fill in the blank. Use ___ (3 underscores) in "content" to mark blanks. Set "correctAnswer" to a JSON string array of answers, e.g. "[\\"answer1\\",\\"answer2\\"]". Leave "options" null.`,
-    reading: `Reading comprehension. Put the reading text in "passage" (200-400 words appropriate for the level). In "content" put short instructions. In "options" put a JSON STRING of sub-questions:
+      true_false: `True/False question. Set "correctAnswer" to "true" or "false". Leave "options" null.`,
+      fill_blank: `Fill in the blank. Use ___ (3 underscores) in "content" to mark blanks. Set "correctAnswer" to a JSON string array of answers, e.g. "[\\"answer1\\",\\"answer2\\"]". Leave "options" null.`,
+      reading: `Reading comprehension. Put the reading text in "passage" (200-400 words appropriate for the level). In "content" put short instructions. In "options" put a JSON STRING of sub-questions:
 "[{\\"id\\":1,\\"question\\":\\"...\\",\\"type\\":\\"mcq\\",\\"options\\":[{\\"id\\":\\"a\\",\\"text\\":\\"...\\",\\"isCorrect\\":true},{\\"id\\":\\"b\\",\\"text\\":\\"...\\",\\"isCorrect\\":false}]}]"
 Generate 3-5 sub-questions. Leave "correctAnswer" null.`,
-    essay: `Essay/open-ended question. Leave "options" and "correctAnswer" null. The "explanation" should describe ideal answer points.`,
-    open_end: `Short open-ended question. Leave "options" null. Put model answer in "correctAnswer".`,
-  };
+      essay: `Essay/open-ended question. Leave "options" and "correctAnswer" null. The "explanation" should describe ideal answer points.`,
+      open_end: `Short open-ended question. Leave "options" null. Put model answer in "correctAnswer".`,
+    };
 
-  const spec = typeSpec[type] ?? `Generate a "${type}" question. Use sensible defaults for options/correctAnswer.`;
+    const spec =
+      typeSpec[type] ??
+      `Generate a "${type}" question. Use sensible defaults for options/correctAnswer.`;
 
-  const prompt = `You are an expert ${langName} language teacher creating CEFR-level ${level} ${skill} questions.
+    const prompt = `You are an expert ${langName} language teacher creating CEFR-level ${level} ${skill} questions.
 
 Topic / context: ${topic}
 Question type: ${type}
@@ -401,43 +494,62 @@ Return ONLY valid JSON (no prose, no markdown fences):
   "notes": "<brief note in ${langName} about the generated set>"
 }`;
 
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 8192,
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-    });
-
-    const rawContent = response.choices[0]?.message?.content ?? "{}";
-    let aiResult: { questions?: any[]; notes?: string };
     try {
-      aiResult = JSON.parse(rawContent);
-    } catch {
-      const m = rawContent.match(/\{[\s\S]*\}/);
-      aiResult = m ? JSON.parse(m[0]) : { questions: [] };
+      const rawContent = await chat([{ role: "user", content: prompt }], {
+        model: "gemini-3.1-flash-lite-preview",
+        // maxTokens: 8192,
+        jsonMode: true,
+      });
+      console.log(rawContent)
+
+      let aiResult: { questions?: any[]; notes?: string };
+      try {
+        aiResult = JSON.parse(rawContent);
+      } catch {
+        const m = rawContent.match(/\{[\s\S]*\}/);
+        aiResult = m ? JSON.parse(m[0]) : { questions: [] };
+      }
+
+      const questions = (aiResult.questions ?? [])
+        .slice(0, targetCount)
+        .map((q: any) => ({
+          type: String(q.type ?? type),
+          skill: String(q.skill ?? skill),
+          level: String(q.level ?? level),
+          content: String(q.content ?? ""),
+          explanation: q.explanation ? String(q.explanation) : null,
+          options:
+            q.options == null
+              ? null
+              : typeof q.options === "string"
+                ? q.options
+                : JSON.stringify(q.options),
+          correctAnswer:
+            q.correctAnswer == null
+              ? null
+              : typeof q.correctAnswer === "string"
+                ? q.correctAnswer
+                : JSON.stringify(q.correctAnswer),
+          passage: q.passage ? String(q.passage) : null,
+          points: typeof q.points === "number" ? q.points : 1,
+        }));
+
+      res.json(
+        GenerateQuestionsResponse.parse({
+          questions,
+          notes: aiResult.notes ?? null,
+        }),
+      );
+    } catch (err) {
+      console.error("AI generate questions error:", err);
+      res
+        .status(500)
+        .json({
+          error: "AI generation failed",
+          detail: err instanceof Error ? err.message : String(err),
+        });
     }
-
-    const questions = (aiResult.questions ?? []).slice(0, targetCount).map((q: any) => ({
-      type: String(q.type ?? type),
-      skill: String(q.skill ?? skill),
-      level: String(q.level ?? level),
-      content: String(q.content ?? ""),
-      explanation: q.explanation ? String(q.explanation) : null,
-      options: q.options == null ? null : (typeof q.options === "string" ? q.options : JSON.stringify(q.options)),
-      correctAnswer: q.correctAnswer == null ? null : (typeof q.correctAnswer === "string" ? q.correctAnswer : JSON.stringify(q.correctAnswer)),
-      passage: q.passage ? String(q.passage) : null,
-      points: typeof q.points === "number" ? q.points : 1,
-    }));
-
-    res.json(GenerateQuestionsResponse.parse({
-      questions,
-      notes: aiResult.notes ?? null,
-    }));
-  } catch (err) {
-    console.error("AI generate questions error:", err);
-    res.status(500).json({ error: "AI generation failed", detail: err instanceof Error ? err.message : String(err) });
-  }
-});
+  },
+);
 
 export default router;
