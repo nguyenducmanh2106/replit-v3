@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type PublicCourseDetailChaptersItemPreviewLessonsItem = {
-  id: number;
-  title: string;
+export type ListQuestions200Meta = {
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
 };

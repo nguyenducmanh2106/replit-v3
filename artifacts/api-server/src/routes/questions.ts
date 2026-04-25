@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql, count } from "drizzle-orm";
 import { db, questionsTable } from "@workspace/db";
 import {
   ListQuestionsQueryParams,
@@ -601,16 +601,44 @@ router.get("/questions", requireAuth, requireTeacherRole(), async (req, res): Pr
     return;
   }
 
+  const { skill, level, type, page = 1, limit = 10 } = params.data;
+  const offset = (page - 1) * limit;
+
   const conditions = [];
-  if (params.data.skill) conditions.push(eq(questionsTable.skill, params.data.skill));
-  if (params.data.level) conditions.push(eq(questionsTable.level, params.data.level));
-  if (params.data.type) conditions.push(eq(questionsTable.type, params.data.type));
+  if (skill) conditions.push(eq(questionsTable.skill, skill));
+  if (level) conditions.push(eq(questionsTable.level, level));
+  if (type) conditions.push(eq(questionsTable.type, type));
 
-  const questions = conditions.length > 0
-    ? await db.select().from(questionsTable).where(and(...conditions))
-    : await db.select().from(questionsTable);
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  res.json(ListQuestionsResponse.parse(questions.map(q => mapQuestion(q, includeAnswer))));
+  // Get total count
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(questionsTable)
+    .where(whereClause);
+  const total = countResult?.total ?? 0;
+  const totalPages = Math.ceil(total / limit);
+
+  // Get paginated data
+  const questions = await db
+    .select()
+    .from(questionsTable)
+    .where(whereClause)
+    .orderBy(sql`${questionsTable.createdAt} DESC`)
+    .limit(limit)
+    .offset(offset);
+
+  const response = {
+    data: questions.map(q => mapQuestion(q, includeAnswer)),
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+  };
+
+  res.json(ListQuestionsResponse.parse(response));
 });
 
 router.post("/questions", requireAuth, requireTeacherRole(), async (req, res): Promise<void> => {

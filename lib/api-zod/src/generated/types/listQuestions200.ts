@@ -5,10 +5,10 @@
  * EduPlatform — Nền tảng Giáo dục MVP API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListQuestions200Meta } from './listQuestions200Meta';
 import type { Question } from './question';
 
-export interface SuggestQuestionsResult {
-  questions: Question[];
-  reasoning: string;
-  recommendedLevel: string;
-}
+export type ListQuestions200 = {
+  data?: Question[];
+  meta?: ListQuestions200Meta;
+};

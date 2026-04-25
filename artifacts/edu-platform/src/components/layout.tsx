@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "@/lib/routing";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from "@/components/ui/sidebar";
 import { LayoutDashboard, BookOpen, Library, PenSquare, FileCheck, UserCircle, LogOut, BarChart2, Target, Settings, Trophy, Building2, Link2, ShieldAlert, FolderOpen, Award, Compass, ClipboardList } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useGetMe } from "@workspace/api-client-react";
@@ -21,203 +20,241 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex h-screen w-full bg-gray-50">
-        <Sidebar className="border-r border-gray-200">
-          <SidebarHeader className="border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-bold text-primary">EduPlatform</h2>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Menu</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location === "/dashboard"}>
-                      <Link href="/dashboard" className="flex items-center gap-3">
-                        <LayoutDashboard className="h-4 w-4" />
-                        <span>Tổng quan</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location.startsWith("/courses")}>
-                      <Link href="/courses" className="flex items-center gap-3">
-                        <BookOpen className="h-4 w-4" />
-                        <span>Khoá học</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {isTeacherOrAdmin && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.startsWith("/questions")}>
-                        <Link href="/questions" className="flex items-center gap-3">
-                          <Library className="h-4 w-4" />
-                          <span>Ngân hàng câu hỏi</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {isTeacherOrAdmin && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.startsWith("/quiz-templates")}>
-                        <Link href="/quiz-templates" className="flex items-center gap-3">
-                          <FolderOpen className="h-4 w-4" />
-                          <span>Kho Quiz nguồn</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location.startsWith("/assignments")}>
-                      <Link href="/assignments" className="flex items-center gap-3">
-                        <PenSquare className="h-4 w-4" />
-                        <span>Bài tập</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {isTeacherOrAdmin && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.startsWith("/placement-tests")}>
-                        <Link href="/placement-tests" className="flex items-center gap-3">
-                          <ClipboardList className="h-4 w-4" />
-                          <span>Bài test đầu vào</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location.startsWith("/submissions")}>
-                      <Link href="/submissions" className="flex items-center gap-3">
-                        <FileCheck className="h-4 w-4" />
-                        <span>Bài nộp</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location.startsWith("/reports")}>
-                      <Link href="/reports" className="flex items-center gap-3">
-                        <BarChart2 className="h-4 w-4" />
-                        <span>Báo cáo</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {isTeacherOrAdmin && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.startsWith("/rubrics")}>
-                        <Link href="/rubrics" className="flex items-center gap-3">
-                          <Target className="h-4 w-4" />
-                          <span>Rubric</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {isSystemAdmin && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.startsWith("/system")}>
-                        <Link href="/system" className="flex items-center gap-3">
-                          <Settings className="h-4 w-4" />
-                          <span>Cài đặt hệ thống</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location.startsWith("/certificates")}>
-                      <Link href="/certificates" className="flex items-center gap-3">
-                        <Award className="h-4 w-4" />
-                        <span>Chứng chỉ</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location.startsWith("/catalog")}>
-                      <Link href="/catalog" className="flex items-center gap-3">
-                        <Compass className="h-4 w-4" />
-                        <span>Khám phá khóa học</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location === "/profile"}>
-                      <Link href="/profile" className="flex items-center gap-3">
-                        <UserCircle className="h-4 w-4" />
-                        <span>Hồ sơ</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+    <div className="flex h-screen w-full font-['Lexend'] text-sm">
+      <aside className="fixed left-0 top-0 h-full flex flex-col p-4 z-40 bg-white border-r border-[#A3B18A]/10 shadow-sm w-64">
+        {/* Header - Nature-inspired branding */}
+        <div className="border-b border-[#A3B18A]/10 px-2 pb-4 mb-4">
+          <h1 className="text-lg font-black text-[#3A5A40] mb-0.5">IELTS Garden</h1>
+          <p className="text-stone-400 text-xs">Nurturing Success</p>
+        </div>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Tính năng mới</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={location === "/gamification"}>
-                      <Link href="/gamification" className="flex items-center gap-3">
-                        <Trophy className="h-4 w-4" />
-                        <span>Gamification</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {isTeacherOrAdmin && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.startsWith("/fraud")}>
-                        <Link href="/fraud" className="flex items-center gap-3">
-                          <ShieldAlert className="h-4 w-4" />
-                          <span>Phát hiện gian lận</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                  {isEnterpriseOrAdmin && (
-                    <>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={location === "/enterprise"}>
-                          <Link href="/enterprise" className="flex items-center gap-3">
-                            <Building2 className="h-4 w-4" />
-                            <span>Enterprise HR</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={location === "/lms"}>
-                          <Link href="/lms" className="flex items-center gap-3">
-                            <Link2 className="h-4 w-4" />
-                            <span>LMS Integration</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          <div className="mt-auto p-4 border-t border-gray-200">
-            {user && (
-              <div className="px-2 py-2 mb-2">
-                <p className="text-xs font-medium text-gray-700 truncate">{user.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-              </div>
-            )}
-            <button
-              onClick={handleSignOut}
-              className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              Đăng xuất
-            </button>
+        {/* Scrollable menu area */}
+        <div className="flex-1 overflow-y-auto flex flex-col gap-6">
+          {/* Main Menu */}
+          <div>
+            <p className="text-stone-400 text-xs font-medium uppercase tracking-wider px-2 mb-2">Menu</p>
+            <nav className="flex flex-col gap-1">
+              <Link
+                href="/dashboard"
+                className={location === "/dashboard"
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span>Dashboard</span>
+              </Link>
+              <Link
+                href="/courses"
+                className={location.startsWith("/courses")
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>Khoá học</span>
+              </Link>
+              {isTeacherOrAdmin && (
+                <Link
+                  href="/questions"
+                  className={location.startsWith("/questions")
+                    ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                    : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                  }
+                >
+                  <Library className="h-4 w-4" />
+                  <span>Ngân hàng câu hỏi</span>
+                </Link>
+              )}
+              {isTeacherOrAdmin && (
+                <Link
+                  href="/quiz-templates"
+                  className={location.startsWith("/quiz-templates")
+                    ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                    : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                  }
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span>Kho Quiz nguồn</span>
+                </Link>
+              )}
+              <Link
+                href="/assignments"
+                className={location.startsWith("/assignments")
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <PenSquare className="h-4 w-4" />
+                <span>Bài tập</span>
+              </Link>
+              {isTeacherOrAdmin && (
+                <Link
+                  href="/placement-tests"
+                  className={location.startsWith("/placement-tests")
+                    ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                    : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                  }
+                >
+                  <ClipboardList className="h-4 w-4" />
+                  <span>Bài test đầu vào</span>
+                </Link>
+              )}
+              <Link
+                href="/submissions"
+                className={location.startsWith("/submissions")
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <FileCheck className="h-4 w-4" />
+                <span>Bài nộp</span>
+              </Link>
+              <Link
+                href="/reports"
+                className={location.startsWith("/reports")
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <BarChart2 className="h-4 w-4" />
+                <span>Báo cáo</span>
+              </Link>
+              {isTeacherOrAdmin && (
+                <Link
+                  href="/rubrics"
+                  className={location.startsWith("/rubrics")
+                    ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                    : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                  }
+                >
+                  <Target className="h-4 w-4" />
+                  <span>Rubric</span>
+                </Link>
+              )}
+              {isSystemAdmin && (
+                <Link
+                  href="/system"
+                  className={location.startsWith("/system")
+                    ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                    : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                  }
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Cài đặt hệ thống</span>
+                </Link>
+              )}
+              <Link
+                href="/certificates"
+                className={location.startsWith("/certificates")
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <Award className="h-4 w-4" />
+                <span>Chứng chỉ</span>
+              </Link>
+              <Link
+                href="/catalog"
+                className={location.startsWith("/catalog")
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <Compass className="h-4 w-4" />
+                <span>Khám phá khóa học</span>
+              </Link>
+              <Link
+                href="/profile"
+                className={location === "/profile"
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <UserCircle className="h-4 w-4" />
+                <span>Hồ sơ</span>
+              </Link>
+            </nav>
           </div>
-        </Sidebar>
-        <main className="flex-1 overflow-y-auto bg-gray-50/50">
-          <div className="container mx-auto p-6 max-w-7xl">
-            {children}
+
+          {/* Features Section */}
+          <div>
+            <p className="text-stone-400 text-xs font-medium uppercase tracking-wider px-2 mb-2">Tính năng</p>
+            <nav className="flex flex-col gap-1">
+              <Link
+                href="/gamification"
+                className={location === "/gamification"
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <Trophy className="h-4 w-4" />
+                <span>Gamification</span>
+              </Link>
+              {isTeacherOrAdmin && (
+                <Link
+                  href="/fraud"
+                  className={location.startsWith("/fraud")
+                    ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                    : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                  }
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  <span>Phát hiện gian lận</span>
+                </Link>
+              )}
+              {isEnterpriseOrAdmin && (
+                <Link
+                  href="/enterprise"
+                  className={location === "/enterprise"
+                    ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                    : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                  }
+                >
+                  <Building2 className="h-4 w-4" />
+                  <span>Enterprise HR</span>
+                </Link>
+              )}
+              {isEnterpriseOrAdmin && (
+                <Link
+                  href="/lms"
+                  className={location === "/lms"
+                    ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                    : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                  }
+                >
+                  <Link2 className="h-4 w-4" />
+                  <span>LMS Integration</span>
+                </Link>
+              )}
+            </nav>
           </div>
-        </main>
-      </div>
-    </SidebarProvider>
+        </div>
+
+        {/* Footer with user info and sign out */}
+        <div className="pt-4 border-t border-[#A3B18A]/10 px-2 mt-4">
+          {user && (
+            <div className="px-2 py-2 mb-2">
+              <p className="text-sm font-semibold text-[#3A5A40] truncate">{user.name}</p>
+              <p className="text-xs text-stone-400 truncate">{user.email}</p>
+            </div>
+          )}
+          <button
+            onClick={handleSignOut}
+            className="flex w-full items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main content area */}
+      <main className="ml-64 flex-1 overflow-y-auto bg-[#FAFDF6]">
+        <div className="container p-6">
+          {children}
+        </div>
+      </main>
+    </div>
   );
 }

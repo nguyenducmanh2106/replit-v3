@@ -550,7 +550,7 @@ export default function AssignmentDetailPage() {
   if (!assignment) return <div className="text-center py-20 text-muted-foreground">Không tìm thấy bài tập</div>;
 
   const assignedQuestionIds = new Set(assignment.questions?.map((aq: any) => aq.questionId) ?? []);
-  const availableQuestions = (allQuestions ?? []).filter((q: any) => !assignedQuestionIds.has(q.id));
+  const availableQuestions = (allQuestions?.data ?? []).filter((q: any) => !assignedQuestionIds.has(q.id));
   const canPublish = !!assignment.courseId;
 
   return (

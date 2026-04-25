@@ -20,29 +20,95 @@ import {
   ArrowLeft, Save, Plus, Trash2, CheckCircle2, Circle, GripVertical,
   ChevronUp, ChevronDown, Play, Pause, Volume2, Video as VideoIcon,
   BookOpen, Headphones, Clock, Info, AlertCircle, X, RotateCcw,
-  MessageSquare, HelpCircle, StickyNote, Sparkles,
+  MessageSquare, HelpCircle, StickyNote, Sparkles, Check, ChevronRight,
+  FileQuestion, Type, Image, Mic, AlignLeft, ListOrdered, Layers,
 } from "lucide-react";
+
+// ─── Design System: Nature-Inspired IELTS Platform ─────────────────────────────
+// Colors
+const DS = {
+  // Surfaces
+  surface: '#fbf9f4',
+  surfaceDim: '#dbdad5',
+  surfaceContainerLowest: '#ffffff',
+  surfaceContainerLow: '#f5f3ee',
+  surfaceContainer: '#f0eee9',
+  surfaceContainerHigh: '#eae8e3',
+  surfaceContainerHighest: '#e4e2dd',
+  // On
+  onSurface: '#1b1c19',
+  onSurfaceVariant: '#424843',
+  inverseSurface: '#30312e',
+  inverseOnSurface: '#f2f1ec',
+  // Primary (Sage Green)
+  primary: '#4b6451',
+  primaryLight: '#7e9983',
+  primaryPale: '#cdead1',
+  primaryPaleDim: '#b1ceb6',
+  onPrimary: '#ffffff',
+  onPrimaryContainer: '#183020',
+  inversePrimary: '#b1ceb6',
+  // Secondary (Forest Green)
+  secondary: '#45664b',
+  secondaryContainer: '#c4e9c7',
+  onSecondary: '#ffffff',
+  onSecondaryContainer: '#4a6a4f',
+  // Tertiary (Wood Tones)
+  tertiary: '#725a38',
+  tertiaryContainer: '#aa8e68',
+  onTertiary: '#ffffff',
+  onTertiaryContainer: '#3b280a',
+  // Error
+  error: '#ba1a1a',
+  errorContainer: '#ffdad6',
+  onError: '#ffffff',
+  onErrorContainer: '#93000a',
+  // Utility
+  outline: '#737972',
+  outlineVariant: '#c2c8c0',
+  surfaceTint: '#4b6451',
+} as const;
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
 const SKILLS = ["reading", "writing", "listening", "speaking"] as const;
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
-const SKILL_LABELS: Record<string, string> = { reading: "Đọc", writing: "Viết", listening: "Nghe", speaking: "Nói" };
+const SKILL_LABELS: Record<string, string> = { reading: "Reading", writing: "Writing", listening: "Listening", speaking: "Speaking" };
+const SKILL_COLORS: Record<string, string> = { reading: "emerald", writing: "amber", listening: "blue", speaking: "rose" };
 
 const QUESTION_TYPES = [
-  { value: "mcq", label: "Trắc nghiệm", icon: "🔤", desc: "Nhiều lựa chọn, 1 đáp án" },
-  { value: "true_false", label: "Đúng/Sai", icon: "✓✗", desc: "Xác định đúng hay sai" },
-  { value: "fill_blank", label: "Điền vào chỗ trống", icon: "___", desc: "Điền từ vào chỗ trống" },
-  { value: "word_selection", label: "Chọn từ", icon: "Aa", desc: "Click chọn từ trong đoạn" },
-  { value: "matching", label: "Nối cặp", icon: "↔", desc: "Ghép đôi hai cột" },
-  { value: "drag_drop", label: "Kéo thả", icon: "⇅", desc: "Kéo thả vào vùng đúng" },
-  { value: "sentence_reorder", label: "Sắp xếp câu", icon: "↕", desc: "Sắp xếp lại thứ tự" },
-  { value: "reading", label: "Đọc hiểu", icon: "📖", desc: "Bài đọc + câu hỏi" },
-  { value: "listening", label: "Nghe hiểu", icon: "🎧", desc: "Audio + câu hỏi" },
-  { value: "video_interactive", label: "Video tương tác", icon: "🎬", desc: "Video + câu hỏi theo mốc" },
-  { value: "essay", label: "Bài luận", icon: "✍️", desc: "Viết tự do" },
-  { value: "open_end", label: "Câu hỏi mở", icon: "💬", desc: "Trả lời bằng text, audio, hoặc hình ảnh" },
+  { value: "mcq", label: "Multiple Choice", icon: "A", color: "primary" },
+  { value: "true_false", label: "True / False", icon: "T/F", color: "secondary" },
+  { value: "fill_blank", label: "Fill in the Blank", icon: "_", color: "tertiary" },
+  { value: "word_selection", label: "Word Selection", icon: "W", color: "primary" },
+  { value: "matching", label: "Matching", icon: "M", color: "secondary" },
+  { value: "drag_drop", label: "Drag & Drop", icon: "D", color: "tertiary" },
+  { value: "sentence_reorder", label: "Sentence Reorder", icon: "S", color: "primary" },
+  { value: "reading", label: "Reading Comprehension", icon: "R", color: "secondary" },
+  { value: "listening", label: "Listening Comprehension", icon: "L", color: "primary" },
+  { value: "video_interactive", label: "Video Interactive", icon: "V", color: "tertiary" },
+  { value: "essay", label: "Essay", icon: "E", color: "secondary" },
+  { value: "open_end", label: "Open Ended", icon: "O", color: "tertiary" },
 ] as const;
+
+const QUESTION_CATEGORIES = [
+  {
+    title: "Basic",
+    types: ["mcq", "true_false", "fill_blank", "word_selection"],
+  },
+  {
+    title: "Interactive",
+    types: ["matching", "drag_drop", "sentence_reorder"],
+  },
+  {
+    title: "Comprehension",
+    types: ["reading", "listening", "video_interactive"],
+  },
+  {
+    title: "Writing",
+    types: ["essay", "open_end"],
+  },
+];
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -66,11 +132,40 @@ function newVideoQuestion(type: "note" | "question" = "question", timestamp = 0)
   return { timestamp, type, content: "", question: "", choices: ["", "", "", ""], correctAnswer: "", points: 10 };
 }
 
+type ColorKey = "primary" | "secondary" | "tertiary";
+
+function getColorClasses(color: ColorKey) {
+  const map: Record<ColorKey, { bg: string; border: string; text: string; light: string; hover: string }> = {
+    primary: {
+      bg: DS.primary,
+      border: DS.primary,
+      text: DS.primary,
+      light: DS.primaryPale,
+      hover: DS.primaryPaleDim,
+    },
+    secondary: {
+      bg: DS.secondary,
+      border: DS.secondary,
+      text: DS.secondary,
+      light: DS.secondaryContainer,
+      hover: DS.onSecondaryContainer,
+    },
+    tertiary: {
+      bg: DS.tertiary,
+      border: DS.tertiary,
+      text: DS.tertiary,
+      light: DS.tertiaryContainer,
+      hover: DS.onTertiaryContainer,
+    },
+  };
+  return map[color];
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function SubQuestionBuilder({
-  items, onChange,
-}: { items: SubQuestion[]; onChange: (v: SubQuestion[]) => void }) {
+  items, onChange, accentColor,
+}: { items: SubQuestion[]; onChange: (v: SubQuestion[]) => void; accentColor: ColorKey }) {
   function update(i: number, patch: Partial<SubQuestion>) {
     const next = items.map((q, idx) => idx === i ? { ...q, ...patch } : q);
     onChange(next);
@@ -91,38 +186,47 @@ function SubQuestionBuilder({
       : q);
     onChange(next);
   }
+  const colors = getColorClasses(accentColor);
 
   return (
     <div className="space-y-4">
       {items.map((sq, qi) => (
-        <div key={qi} className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-700">Câu hỏi {qi + 1}</span>
+        <div key={qi} className="rounded-xl p-5" style={{ backgroundColor: DS.surfaceContainerLow, border: `1px solid ${DS.outlineVariant}` }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white" style={{ backgroundColor: DS.primary }}>
+                {qi + 1}
+              </span>
+              <span className="text-sm font-medium" style={{ color: DS.onSurface }}>Question {qi + 1}</span>
+            </div>
             <button type="button" onClick={() => onChange(items.filter((_, i) => i !== qi))}
-              className="text-red-400 hover:text-red-600 transition-colors">
+              className="p-2 rounded-lg transition-colors hover:bg-red-50" style={{ color: DS.error }}>
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
           <Textarea
             value={sq.question}
             onChange={e => update(qi, { question: e.target.value })}
-            placeholder="Nhập nội dung câu hỏi..."
+            placeholder="Enter question content..."
             rows={2}
-            className="text-sm"
+            className="text-sm mb-3"
+            style={{ backgroundColor: DS.surfaceContainerLowest, borderColor: DS.outlineVariant }}
           />
           <div className="space-y-2">
-            <p className="text-xs font-medium text-gray-500">Các lựa chọn (click vòng tròn để đánh dấu đúng)</p>
+            <p className="text-xs font-medium" style={{ color: DS.onSurfaceVariant }}>Choices (click circle to mark correct)</p>
             {(sq.choices ?? []).map((ch, ci) => (
-              <div key={ci} className="flex items-center gap-2">
+              <div key={ci} className="flex items-center gap-3">
                 <button type="button" onClick={() => update(qi, { correctAnswer: ch })}
-                  className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                    sq.correctAnswer === ch ? "border-green-500 bg-green-500" : "border-gray-300 hover:border-green-400"
-                  }`}>
+                  className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
+                  style={{
+                    borderColor: sq.correctAnswer === ch ? DS.secondary : DS.outlineVariant,
+                    backgroundColor: sq.correctAnswer === ch ? DS.secondary : 'transparent',
+                  }}>
                   {sq.correctAnswer === ch && <div className="w-2 h-2 rounded-full bg-white" />}
                 </button>
-                <span className="text-xs font-bold text-gray-400 w-5">{String.fromCharCode(65 + ci)}.</span>
+                <span className="text-xs font-semibold w-5" style={{ color: DS.onSurfaceVariant }}>{String.fromCharCode(65 + ci)}.</span>
                 <Input value={ch} onChange={e => updateChoice(qi, ci, e.target.value)}
-                  placeholder={`Lựa chọn ${String.fromCharCode(65 + ci)}`} className="flex-1 h-8 text-sm" />
+                  placeholder={`Choice ${String.fromCharCode(65 + ci)}`} className="flex-1 h-8 text-sm" />
                 {(sq.choices ?? []).length > 2 && (
                   <button type="button" onClick={() => removeChoice(qi, ci)} className="text-gray-400 hover:text-red-400 transition-colors">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -130,15 +234,16 @@ function SubQuestionBuilder({
                 )}
               </div>
             ))}
-            <Button type="button" variant="ghost" size="sm" onClick={() => addChoice(qi)} className="h-7 text-xs text-blue-600">
-              <Plus className="w-3 h-3 mr-1" /> Thêm lựa chọn
+            <Button type="button" variant="ghost" size="sm" onClick={() => addChoice(qi)} className="h-7 text-xs" style={{ color: DS.primary }}>
+              <Plus className="w-3 h-3 mr-1" /> Add choice
             </Button>
           </div>
         </div>
       ))}
       <Button type="button" variant="outline" size="sm" onClick={() => onChange([...items, newSubQuestion()])}
-        className="w-full border-dashed">
-        <Plus className="w-4 h-4 mr-2" /> Thêm câu hỏi
+        className="w-full border-2"
+        style={{ borderColor: DS.outlineVariant, color: DS.primary, backgroundColor: DS.surfaceContainerLow }}>
+        <Plus className="w-4 h-4 mr-2" /> Add question
       </Button>
     </div>
   );
@@ -171,66 +276,76 @@ function McqForm({ content, setContent, options, setOptions, allowMultiple, setA
   const letters = "ABCDEFGHIJ";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nội dung câu hỏi *</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Question Content *</Label>
         <MarkdownEditor value={content} onChange={setContent} rows={4}
-          placeholder="Nhập nội dung câu hỏi (hỗ trợ Markdown)..." />
+          placeholder="Enter question content (Markdown supported)..." />
       </div>
 
-      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+      <div className="flex items-center gap-3 p-4 rounded-xl" style={{ backgroundColor: DS.primaryPale, border: `1px solid ${DS.primaryPaleDim}` }}>
         <Switch checked={allowMultiple} onCheckedChange={setAllowMultiple} id="allow-multiple" />
-        <Label htmlFor="allow-multiple" className="text-sm font-medium text-blue-800 cursor-pointer">
-          Cho phép nhiều đáp án
+        <Label htmlFor="allow-multiple" className="text-sm font-medium cursor-pointer" style={{ color: DS.onPrimaryContainer }}>
+          Allow multiple correct answers
         </Label>
-        <span className="text-xs text-blue-600 ml-auto">{allowMultiple ? "Chọn nhiều đáp án đúng" : "Chỉ 1 đáp án đúng"}</span>
+        <span className="text-xs ml-auto px-2 py-1 rounded-full" style={{ backgroundColor: DS.secondaryContainer, color: DS.onSecondaryContainer }}>
+          {allowMultiple ? "Multiple answers" : "Single answer"}
+        </span>
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label className="text-sm font-semibold text-gray-700">
-            Các lựa chọn
-            <span className="ml-2 text-xs font-normal text-gray-400">Click vòng tròn để đánh dấu đáp án đúng</span>
-          </Label>
-          <span className="text-xs text-green-600 font-medium">
-            {options.filter(o => o.isCorrect).length} đáp án đúng
+        <div className="flex items-center justify-between mb-3">
+          <Label className="text-sm font-medium" style={{ color: DS.onSurface }}>Answer Choices</Label>
+          <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ backgroundColor: DS.secondaryContainer, color: DS.onSecondaryContainer }}>
+            {options.filter(o => o.isCorrect).length} correct
           </span>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {options.map((opt, i) => (
-            <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-              opt.isCorrect ? "border-green-300 bg-green-50" : "border-gray-200 bg-white hover:border-gray-300"
-            }`}>
+            <div key={i} className="flex items-center gap-3 p-4 rounded-xl transition-all"
+              style={{
+                backgroundColor: opt.isCorrect ? DS.secondaryContainer : DS.surfaceContainerLowest,
+                border: `2px solid ${opt.isCorrect ? DS.secondary : DS.outlineVariant}`,
+              }}>
               <button type="button" onClick={() => toggleCorrect(i)}
-                className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                  opt.isCorrect ? "border-green-500 bg-green-500 text-white" : "border-gray-300 hover:border-green-400 hover:bg-green-50"
-                }`}>
+                className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all"
+                style={{
+                  borderColor: opt.isCorrect ? DS.secondary : DS.outlineVariant,
+                  backgroundColor: opt.isCorrect ? DS.secondary : 'transparent',
+                }}>
                 {opt.isCorrect
-                  ? allowMultiple ? <CheckCircle2 className="w-3.5 h-3.5" /> : <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                  : <Circle className="w-3.5 h-3.5 text-gray-300" />}
+                  ? allowMultiple ? <CheckCircle2 className="w-4 h-4 text-white" /> : <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                  : <Circle className="w-4 h-4" style={{ color: DS.outline }} />}
               </button>
-              <span className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${
-                opt.isCorrect ? "bg-green-500 text-white" : "bg-gray-100 text-gray-500"
-              }`}>{letters[i]}</span>
+              <span className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+                style={{
+                  backgroundColor: opt.isCorrect ? DS.secondary : DS.surfaceContainer,
+                  color: opt.isCorrect ? DS.onSecondary : DS.onSurfaceVariant,
+                }}>
+                {letters[i]}
+              </span>
               <Input value={opt.text} onChange={e => updateOption(i, { text: e.target.value })}
-                placeholder={`Lựa chọn ${letters[i]}`} className="flex-1 border-0 shadow-none p-0 h-auto text-sm focus-visible:ring-0 bg-transparent" />
+                placeholder={`Choice ${letters[i]}`}
+                className="flex-1 border-0 shadow-none p-0 h-auto text-sm focus-visible:ring-0 bg-transparent"
+                style={{ backgroundColor: 'transparent' }} />
               <button type="button" onClick={() => removeOption(i)} disabled={options.length <= 2}
-                className="text-gray-300 hover:text-red-400 disabled:opacity-30 transition-colors">
+                className="text-gray-400 hover:text-red-400 disabled:opacity-30 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           ))}
         </div>
         <Button type="button" variant="outline" size="sm" onClick={addOption}
-          className="mt-2 w-full border-dashed text-blue-600 border-blue-300 hover:bg-blue-50">
-          <Plus className="w-4 h-4 mr-1" /> Thêm lựa chọn
+          className="mt-3 w-full border-2 border-dashed"
+          style={{ borderColor: DS.outlineVariant, color: DS.primary, backgroundColor: DS.surfaceContainerLow }}>
+          <Plus className="w-4 h-4 mr-1" /> Add choice
         </Button>
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
         <MarkdownEditor value={explanation} onChange={setExplanation} rows={3}
-          placeholder="Giải thích tại sao đây là đáp án đúng (hỗ trợ Markdown)..." />
+          placeholder="Explain why this is the correct answer (Markdown supported)..." />
       </div>
     </div>
   );
@@ -240,37 +355,40 @@ function TrueFalseForm({ content, setContent, correctAnswer, setCorrectAnswer, e
   { content: string; setContent: (v: string) => void; correctAnswer: string; setCorrectAnswer: (v: string) => void;
     explanation: string; setExplanation: (v: string) => void }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nhận định *</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Statement *</Label>
         <MarkdownEditor value={content} onChange={setContent} rows={3}
-          placeholder="Nhập nhận định cần đánh giá đúng/sai (hỗ trợ Markdown)..." />
+          placeholder="Enter the statement to evaluate as true or false (Markdown supported)..." />
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-2">Đáp án đúng *</Label>
-        <div className="grid grid-cols-2 gap-3">
-          {[{ value: "Đúng", label: "✓ Đúng", color: "green" }, { value: "Sai", label: "✗ Sai", color: "red" }].map(({ value, label, color }) => (
-            <button key={value} type="button" onClick={() => setCorrectAnswer(value)}
-              className={`py-5 rounded-2xl border-2 text-lg font-bold transition-all ${
-                correctAnswer === value
-                  ? color === "green"
-                    ? "border-green-400 bg-green-500 text-white shadow-md scale-105"
-                    : "border-red-400 bg-red-500 text-white shadow-md scale-105"
-                  : color === "green"
-                    ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
-                    : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-              }`}>
-              {label}
-            </button>
-          ))}
+        <Label className="text-sm font-medium block mb-3" style={{ color: DS.onSurface }}>Correct Answer *</Label>
+        <div className="grid grid-cols-2 gap-4">
+          {[{ value: "Đúng", label: "True", color: "secondary" }, { value: "Sai", label: "False", color: "tertiary" }].map(({ value, label, color }) => {
+            const c = getColorClasses(color as ColorKey);
+            const isSelected = correctAnswer === value;
+            return (
+              <button key={value} type="button" onClick={() => setCorrectAnswer(value)}
+                className="py-6 rounded-2xl border-2 text-xl font-semibold transition-all"
+                style={{
+                  borderColor: isSelected ? c.bg : c.light,
+                  backgroundColor: isSelected ? c.bg : c.light,
+                  color: isSelected ? c.text === DS.secondary ? DS.onSecondary : DS.onTertiary : c.text,
+                  boxShadow: isSelected ? `0 4px 12px ${c.bg}30` : 'none',
+                  transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                }}>
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
         <MarkdownEditor value={explanation} onChange={setExplanation} rows={3}
-          placeholder="Giải thích tại sao nhận định này đúng/sai (hỗ trợ Markdown)..." />
+          placeholder="Explain why this statement is true or false (Markdown supported)..." />
       </div>
     </div>
   );
@@ -290,9 +408,9 @@ function FillBlankForm({ content, setContent, blanksAnswers, setBlanksAnswers, e
 
   const preview = content.split("__BLANK__").map((part, i, arr) => (
     <span key={i}>
-      <span className="text-gray-800">{part}</span>
+      <span style={{ color: DS.onSurface }}>{part}</span>
       {i < arr.length - 1 && (
-        <span className="inline-block mx-1 px-3 py-0.5 border-b-2 border-purple-400 bg-purple-50 text-purple-600 text-sm font-medium rounded-t min-w-[60px] text-center">
+        <span className="inline-block mx-1 px-3 py-0.5 rounded font-medium text-sm" style={{ backgroundColor: DS.tertiaryContainer, color: DS.onTertiaryContainer }}>
           [{i + 1}]
         </span>
       )}
@@ -300,55 +418,57 @@ function FillBlankForm({ content, setContent, blanksAnswers, setBlanksAnswers, e
   ));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1">Soạn văn bản *</Label>
-        <p className="text-xs text-purple-600 mb-1.5 flex items-center gap-1">
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Text Content *</Label>
+        <p className="text-xs mb-2 flex items-center gap-1" style={{ color: DS.tertiary }}>
           <Info className="w-3.5 h-3.5" />
-          Gõ <code className="bg-purple-100 px-1 rounded font-mono">__BLANK__</code> để tạo chỗ trống
+          Type <code className="px-1 rounded text-xs font-mono" style={{ backgroundColor: DS.tertiaryContainer }}>__BLANK__</code> to create a blank
         </p>
         <Textarea value={content} onChange={e => setContent(e.target.value)}
-          placeholder="VD: The cat __BLANK__ on the mat and the dog __BLANK__ outside."
-          rows={4} className="text-sm font-mono" />
+          placeholder="Example: The cat __BLANK__ on the mat and the dog __BLANK__ outside."
+          rows={4} className="text-sm font-mono"
+          style={{ backgroundColor: DS.surfaceContainerLowest, borderColor: DS.outlineVariant }} />
       </div>
 
       {blanks > 0 && (
-        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-          <p className="text-xs font-medium text-gray-500 mb-2">Xem trước:</p>
-          <p className="text-sm leading-relaxed">{preview}</p>
+        <div className="p-4 rounded-xl" style={{ backgroundColor: DS.surfaceContainerLow, border: `1px solid ${DS.outlineVariant}` }}>
+          <p className="text-xs font-medium mb-2" style={{ color: DS.onSurfaceVariant }}>Preview:</p>
+          <p className="text-sm leading-relaxed" style={{ color: DS.onSurface }}>{preview}</p>
         </div>
       )}
 
       {blanks > 0 ? (
         <div>
-          <Label className="text-sm font-semibold text-gray-700 block mb-2">
-            Đáp án cho {blanks} chỗ trống
+          <Label className="text-sm font-medium block mb-3" style={{ color: DS.onSurface }}>
+            Answers for {blanks} blank{blanks > 1 ? "s" : ""}
           </Label>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {Array.from({ length: blanks }, (_, i) => (
               <div key={i} className="flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-sm font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                <span className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: DS.tertiaryContainer, color: DS.onTertiaryContainer }}>{i + 1}</span>
                 <Input value={blanksAnswers[i] ?? ""}
                   onChange={e => {
                     const next = [...blanksAnswers];
                     next[i] = e.target.value;
                     setBlanksAnswers(next);
                   }}
-                  placeholder={`Đáp án chỗ trống ${i + 1}`}
-                  className="flex-1 text-sm border-purple-200 focus-visible:ring-purple-400" />
+                  placeholder={`Answer for blank ${i + 1}`}
+                  className="flex-1 text-sm"
+                  style={{ borderColor: DS.tertiaryContainer }} />
               </div>
             ))}
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl text-center text-sm text-purple-600">
-          Chưa có chỗ trống. Hãy gõ <code className="font-mono bg-purple-100 px-1 rounded">__BLANK__</code> vào văn bản.
+        <div className="p-4 rounded-xl text-center text-sm" style={{ backgroundColor: DS.tertiaryContainer, color: DS.onTertiaryContainer }}>
+          No blanks yet. Type <code className="font-mono px-1 rounded">__BLANK__</code> in the text above.
         </div>
       )}
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain the answers (Markdown supported)..." />
       </div>
     </div>
   );
@@ -359,7 +479,6 @@ function WordSelectionForm({ instruction, setInstruction, passage, setPassage, s
     selectedWords: string[]; setSelectedWords: (v: string[]) => void; explanation: string; setExplanation: (v: string) => void }) {
 
   const words = passage.trim() ? passage.trim().split(/\s+/) : [];
-  const uniqueWords = [...new Set(words)];
 
   function toggleWord(w: string) {
     setSelectedWords(selectedWords.includes(w)
@@ -368,36 +487,36 @@ function WordSelectionForm({ instruction, setInstruction, passage, setPassage, s
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Câu lệnh / Yêu cầu *</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Instructions *</Label>
         <Input value={instruction} onChange={e => setInstruction(e.target.value)}
-          placeholder="VD: Chọn các từ sai chính tả trong đoạn văn sau" className="text-sm" />
+          placeholder="Example: Select the misspelled words in the passage" className="text-sm" />
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Nhập đoạn văn *</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Passage *</Label>
         <Textarea value={passage} onChange={e => { setPassage(e.target.value); setSelectedWords([]); }}
-          placeholder="Nhập đoạn văn để học sinh click chọn từ..." rows={4} className="text-sm" />
+          placeholder="Enter the passage for students to select words from..." rows={4} className="text-sm" />
       </div>
 
       {words.length > 0 && (
         <div>
-          <Label className="text-sm font-semibold text-gray-700 block mb-2">
-            Click trực tiếp vào từ để đánh dấu đáp án đúng
+          <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>
+            Click words to mark as correct answer
           </Label>
-          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 leading-loose">
+          <div className="p-5 rounded-xl leading-loose" style={{ backgroundColor: DS.surfaceContainerLow, border: `1px solid ${DS.outlineVariant}` }}>
             {passage.trim().split(/\s+/).map((word, i) => {
               const clean = word.replace(/[^\w]/g, "");
               const isSelected = selectedWords.includes(word) || selectedWords.includes(clean);
               return (
                 <span key={i}>
                   <button type="button" onClick={() => toggleWord(word)}
-                    className={`inline-block px-1 py-0.5 rounded text-sm font-medium mx-0.5 transition-all ${
-                      isSelected
-                        ? "bg-indigo-500 text-white shadow-sm scale-105"
-                        : "hover:bg-indigo-100 text-gray-700"
-                    }`}>
+                    className="inline-block px-1.5 py-1 rounded-lg text-sm font-medium mx-0.5 transition-all"
+                    style={{
+                      backgroundColor: isSelected ? DS.primary : 'transparent',
+                      color: isSelected ? DS.onPrimary : DS.onSurface,
+                    }}>
                     {word}
                   </button>
                   {" "}
@@ -407,11 +526,11 @@ function WordSelectionForm({ instruction, setInstruction, passage, setPassage, s
           </div>
           {selectedWords.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-xs font-semibold text-gray-500 w-full">Từ được chọn ({selectedWords.length}):</span>
+              <span className="text-xs font-medium w-full mb-1" style={{ color: DS.onSurfaceVariant }}>Selected words ({selectedWords.length}):</span>
               {selectedWords.map((w, i) => (
-                <span key={i} className="flex items-center gap-1 bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-1 rounded-full">
+                <span key={i} className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: DS.primaryPale, color: DS.onPrimaryContainer }}>
                   {w}
-                  <button type="button" onClick={() => toggleWord(w)} className="hover:text-red-500">×</button>
+                  <button type="button" onClick={() => toggleWord(w)} className="font-bold ml-1 hover:opacity-70">×</button>
                 </span>
               ))}
             </div>
@@ -420,8 +539,8 @@ function WordSelectionForm({ instruction, setInstruction, passage, setPassage, s
       )}
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain the answers (Markdown supported)..." />
       </div>
     </div>
   );
@@ -441,54 +560,57 @@ function MatchingForm({ content, setContent, pairs, setPairs, explanation, setEx
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Câu lệnh</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Instructions</Label>
         <Input value={content} onChange={e => setContent(e.target.value)}
-          placeholder="VD: Nối từ với nghĩa tương ứng" className="text-sm" />
+          placeholder="Example: Match the words with their corresponding meanings" className="text-sm" />
       </div>
 
       <div>
-        <div className="grid grid-cols-2 gap-3 mb-2">
-          <div className="text-center py-2 bg-blue-50 border border-blue-200 rounded-xl">
-            <span className="text-sm font-bold text-blue-700">Cột A (bên trái)</span>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="text-center py-2.5 rounded-xl" style={{ backgroundColor: DS.primaryPale, border: `1px solid ${DS.primaryPaleDim}` }}>
+            <span className="text-sm font-semibold" style={{ color: DS.onPrimaryContainer }}>Column A (Left)</span>
           </div>
-          <div className="text-center py-2 bg-pink-50 border border-pink-200 rounded-xl">
-            <span className="text-sm font-bold text-pink-700">Cột B (bên phải)</span>
+          <div className="text-center py-2.5 rounded-xl" style={{ backgroundColor: DS.secondaryContainer, border: `1px solid ${DS.onSecondaryContainer}` }}>
+            <span className="text-sm font-semibold" style={{ color: DS.onSecondaryContainer }}>Column B (Right)</span>
           </div>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {pairs.map((pair, i) => (
             <div key={i} className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+              <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: DS.primaryPale, color: DS.onPrimaryContainer }}>{i + 1}</span>
               <Input value={pair.left} onChange={e => updatePair(i, "left", e.target.value)}
-                placeholder={`A${i + 1}`} className="flex-1 text-sm border-blue-200 focus-visible:ring-blue-400" />
-              <span className="text-gray-400 font-bold">↔</span>
+                placeholder={`A${i + 1}`} className="flex-1 text-sm"
+                style={{ borderColor: DS.primaryPaleDim, backgroundColor: DS.surfaceContainerLowest }} />
+              <span className="text-lg font-bold" style={{ color: DS.onSurfaceVariant }}>↔</span>
               <Input value={pair.right} onChange={e => updatePair(i, "right", e.target.value)}
-                placeholder={`B${i + 1}`} className="flex-1 text-sm border-pink-200 focus-visible:ring-pink-400" />
+                placeholder={`B${i + 1}`} className="flex-1 text-sm"
+                style={{ borderColor: DS.secondaryContainer }} />
               <button type="button" onClick={() => removePair(i)} disabled={pairs.length <= 2}
-                className="text-gray-300 hover:text-red-400 disabled:opacity-30 transition-colors flex-shrink-0">
+                className="text-gray-400 hover:text-red-400 disabled:opacity-30 transition-colors flex-shrink-0">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           ))}
         </div>
         <Button type="button" variant="outline" size="sm" onClick={addPair}
-          className="mt-2 w-full border-dashed text-pink-600 border-pink-300 hover:bg-pink-50">
-          <Plus className="w-4 h-4 mr-1" /> Thêm cặp nối
+          className="mt-3 w-full border-2 border-dashed"
+          style={{ borderColor: DS.outlineVariant, color: DS.tertiary, backgroundColor: DS.surfaceContainerLow }}>
+          <Plus className="w-4 h-4 mr-1" /> Add pair
         </Button>
       </div>
 
-      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-        <p className="text-xs text-amber-700 flex items-center gap-1">
+      <div className="p-3 rounded-xl" style={{ backgroundColor: DS.surfaceContainer, border: `1px solid ${DS.outlineVariant}` }}>
+        <p className="text-xs flex items-center gap-1" style={{ color: DS.onSurfaceVariant }}>
           <Info className="w-3.5 h-3.5 flex-shrink-0" />
-          Khi học sinh làm bài, cột B sẽ được trộn ngẫu nhiên. Thứ tự nhập vào là đáp án đúng.
+          When students take the quiz, Column B will be shuffled randomly. The order you entered is the correct answer.
         </p>
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain the answers (Markdown supported)..." />
       </div>
     </div>
   );
@@ -505,30 +627,30 @@ function DragDropForm({ content, setContent, items, setItems, zones, setZones, e
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Câu lệnh</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Instructions</Label>
         <Input value={content} onChange={e => setContent(e.target.value)}
-          placeholder="VD: Kéo thả các từ vào đúng nhóm từ loại" className="text-sm" />
+          placeholder="Example: Drag words to their correct word type categories" className="text-sm" />
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label className="text-sm font-semibold text-gray-700">Danh sách mục kéo thả</Label>
+        <div className="flex items-center justify-between mb-3">
+          <Label className="text-sm font-medium" style={{ color: DS.onSurface }}>Draggable Items</Label>
           <Button type="button" variant="ghost" size="sm" onClick={() => setItems([...items, ""])}
-            className="h-7 text-xs text-orange-600">
-            <Plus className="w-3 h-3 mr-1" /> Thêm mục
+            className="h-7 text-xs" style={{ color: DS.tertiary }}>
+            <Plus className="w-3 h-3 mr-1" /> Add item
           </Button>
         </div>
         <div className="space-y-2">
           {items.map((item, i) => (
             <div key={i} className="flex items-center gap-2">
-              <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0" />
-              <span className="w-6 h-6 rounded bg-orange-100 text-orange-600 text-xs font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+              <GripVertical className="w-4 h-4 flex-shrink-0" style={{ color: DS.outline }} />
+              <span className="w-7 h-7 rounded flex items-center justify-center text-xs font-bold" style={{ backgroundColor: DS.tertiaryContainer, color: DS.onTertiaryContainer }}>{i + 1}</span>
               <Input value={item} onChange={e => setItems(items.map((x, idx) => idx === i ? e.target.value : x))}
-                placeholder={`Mục ${i + 1}`} className="flex-1 h-8 text-sm" />
+                placeholder={`Item ${i + 1}`} className="flex-1 h-9 text-sm" />
               <button type="button" onClick={() => setItems(items.filter((_, idx) => idx !== i))}
-                className="text-gray-300 hover:text-red-400 transition-colors">
+                className="text-gray-400 hover:text-red-400 transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -537,43 +659,47 @@ function DragDropForm({ content, setContent, items, setItems, zones, setZones, e
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <Label className="text-sm font-semibold text-gray-700">Cấu hình vùng thả</Label>
+        <div className="flex items-center justify-between mb-3">
+          <Label className="text-sm font-medium" style={{ color: DS.onSurface }}>Drop Zones</Label>
           <Button type="button" variant="ghost" size="sm"
-            onClick={() => setZones([...zones, { label: `Vùng ${zones.length + 1}`, accepts: [] }])}
-            className="h-7 text-xs text-orange-600">
-            <Plus className="w-3 h-3 mr-1" /> Thêm vùng
+            onClick={() => setZones([...zones, { label: `Zone ${zones.length + 1}`, accepts: [] }])}
+            className="h-7 text-xs" style={{ color: DS.tertiary }}>
+            <Plus className="w-3 h-3 mr-1" /> Add zone
           </Button>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {zones.map((zone, zi) => (
-            <div key={zi} className="border border-orange-200 rounded-xl p-3 bg-orange-50">
-              <div className="flex items-center gap-2 mb-2">
+            <div key={zi} className="p-4 rounded-xl" style={{ backgroundColor: DS.surfaceContainer, border: `2px solid ${DS.outlineVariant}` }}>
+              <div className="flex items-center gap-2 mb-3">
                 <Input value={zone.label}
                   onChange={e => setZones(zones.map((z, i) => i === zi ? { ...z, label: e.target.value } : z))}
-                  className="h-8 text-sm font-medium flex-1 bg-white" />
+                  className="h-9 text-sm font-medium flex-1"
+                  style={{ backgroundColor: DS.surfaceContainerLowest }} />
                 <button type="button" onClick={() => setZones(zones.filter((_, i) => i !== zi))}
                   className="text-gray-400 hover:text-red-400 transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mb-2">Chọn mục nào được chấp nhận vào vùng này:</p>
+              <p className="text-xs mb-2" style={{ color: DS.onSurfaceVariant }}>Select items accepted by this zone:</p>
               <div className="flex flex-wrap gap-2">
                 {items.filter(Boolean).map((item, ii) => {
                   const accepted = zone.accepts.includes(item);
                   return (
                     <button key={ii} type="button"
                       onClick={() => updateZoneAccepts(zi, item, !accepted)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium border-2 transition-all ${
-                        accepted ? "border-orange-400 bg-orange-400 text-white" : "border-gray-200 bg-white text-gray-600 hover:border-orange-300"
-                      }`}>
-                      {item || `Mục ${ii + 1}`}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all"
+                      style={{
+                        borderColor: accepted ? DS.tertiary : DS.outlineVariant,
+                        backgroundColor: accepted ? DS.tertiary : DS.surfaceContainerLowest,
+                        color: accepted ? DS.onTertiary : DS.onSurfaceVariant,
+                      }}>
+                      {item || `Item ${ii + 1}`}
                       {accepted && " ✓"}
                     </button>
                   );
                 })}
                 {items.filter(Boolean).length === 0 && (
-                  <span className="text-xs text-gray-400 italic">Thêm mục vào danh sách trước</span>
+                  <span className="text-xs italic" style={{ color: DS.onSurfaceVariant }}>Add items above first</span>
                 )}
               </div>
             </div>
@@ -582,8 +708,8 @@ function DragDropForm({ content, setContent, items, setItems, zones, setZones, e
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain the answers (Markdown supported)..." />
       </div>
     </div>
   );
@@ -611,38 +737,46 @@ function SentenceReorderForm({ content, setContent, sentences, setSentences, exp
   const completeSentence = sentences.filter(s => s.trim()).join(" ");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1">Câu gốc đúng thứ tự</Label>
-        <p className="text-xs text-gray-400 mb-2">Nhập câu hoàn chỉnh. Hệ thống sẽ tách thành các từ và xáo trộn khi hiển thị cho học viên.</p>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Correct Sentence</Label>
+        <p className="text-xs mb-2" style={{ color: DS.onSurfaceVariant }}>Enter the complete sentence. The system will split it into words and shuffle them when displaying to students.</p>
         <div className="flex gap-2">
           <Input value={rawSentence} onChange={e => setRawSentence(e.target.value)}
-            placeholder="VD: xin chào bạn" className="flex-1 text-sm"
+            placeholder="Example: how are you today" className="flex-1 text-sm"
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); splitWords(); } }} />
-          <Button type="button" variant="outline" onClick={splitWords} className="shrink-0 text-sm font-semibold">
-            Tách từ
+          <Button type="button" variant="outline" onClick={splitWords} className="shrink-0 text-sm font-medium"
+            style={{ borderColor: DS.primary, color: DS.primary }}>
+            Split
           </Button>
         </div>
       </div>
 
       {sentences.filter(s => s.trim()).length > 0 && (
         <div>
-          <Label className="text-sm font-semibold text-gray-700 block mb-1">
-            Thứ tự đúng <span className="text-xs font-normal text-gray-400">(dùng mũi tên để sắp xếp lại thứ tự đúng)</span>
+          <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>
+            Correct Order <span className="text-xs font-normal" style={{ color: DS.onSurfaceVariant }}>(use arrows to reorder)</span>
           </Label>
-          <div className="space-y-1.5 mt-2">
+          <div className="space-y-2 mt-2">
             {sentences.map((s, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 w-5 text-right font-medium">{i + 1}.</span>
+                <span className="text-xs w-5 text-right font-medium" style={{ color: DS.onSurfaceVariant }}>{i + 1}.</span>
                 <Input value={s} onChange={e => setSentences(sentences.map((x, idx) => idx === i ? e.target.value : x))}
-                  placeholder={`Từ ${i + 1}...`} className="flex-1 h-9 text-sm bg-gray-50 border-gray-200" />
+                  placeholder={`Word ${i + 1}...`} className="flex-1 h-9 text-sm"
+                  style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }} />
                 <div className="flex gap-0.5 flex-shrink-0">
                   <button type="button" onClick={() => move(i, -1)} disabled={i === 0}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-20 transition-colors">
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30"
+                    style={{ color: DS.onSurfaceVariant }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.surfaceContainerHigh}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                     <ChevronUp className="w-4 h-4" />
                   </button>
                   <button type="button" onClick={() => move(i, 1)} disabled={i === sentences.length - 1}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-20 transition-colors">
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors disabled:opacity-30"
+                    style={{ color: DS.onSurfaceVariant }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.surfaceContainerHigh}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                     <ChevronDown className="w-4 h-4" />
                   </button>
                 </div>
@@ -654,22 +788,22 @@ function SentenceReorderForm({ content, setContent, sentences, setSentences, exp
             ))}
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={() => setSentences([...sentences, ""])}
-            className="mt-1.5 text-xs text-gray-500 hover:text-gray-700">
-            <Plus className="w-3 h-3 mr-1" /> Thêm từ
+            className="mt-2 text-xs" style={{ color: DS.onSurfaceVariant }}>
+            <Plus className="w-3 h-3 mr-1" /> Add word
           </Button>
 
           {completeSentence && (
-            <div className="mt-3 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
-              <span className="text-sm text-gray-500">Câu hoàn chỉnh: </span>
-              <span className="text-sm font-bold text-gray-800">{completeSentence}</span>
+            <div className="mt-3 px-4 py-3 rounded-xl" style={{ backgroundColor: DS.surfaceContainerLow, border: `1px solid ${DS.outlineVariant}` }}>
+              <span className="text-sm" style={{ color: DS.onSurfaceVariant }}>Complete sentence: </span>
+              <span className="text-sm font-semibold" style={{ color: DS.onSurface }}>{completeSentence}</span>
             </div>
           )}
         </div>
       )}
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain the correct order (Markdown supported)..." />
       </div>
     </div>
   );
@@ -679,24 +813,24 @@ function ReadingForm({ passage, setPassage, subQuestions, setSubQuestions, expla
   { passage: string; setPassage: (v: string) => void; subQuestions: SubQuestion[];
     setSubQuestions: (v: SubQuestion[]) => void; explanation: string; setExplanation: (v: string) => void }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đoạn văn *</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Passage *</Label>
         <Textarea value={passage} onChange={e => setPassage(e.target.value)}
-          placeholder="Dán đoạn văn đọc hiểu vào đây..." rows={6} className="text-sm leading-relaxed" />
-        {passage && <p className="text-xs text-gray-400 mt-1">{passage.split(/\s+/).length} từ</p>}
+          placeholder="Paste the reading comprehension passage here..." rows={6} className="text-sm leading-relaxed" />
+        {passage && <p className="text-xs mt-1" style={{ color: DS.onSurfaceVariant }}>{passage.split(/\s+/).length} words</p>}
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-2">
-          Câu hỏi trắc nghiệm ({subQuestions.length})
+        <Label className="text-sm font-semibold block mb-3" style={{ color: DS.onSurface }}>
+          Questions ({subQuestions.length})
         </Label>
-        <SubQuestionBuilder items={subQuestions} onChange={setSubQuestions} />
+        <SubQuestionBuilder items={subQuestions} onChange={setSubQuestions} accentColor="secondary" />
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain the answers (Markdown supported)..." />
       </div>
     </div>
   );
@@ -715,9 +849,9 @@ function ListeningForm({ audioUrl, setAudioUrl, passage, setPassage, subQuestion
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">URL Audio *</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Audio URL *</Label>
         <div className="flex gap-2">
           <Input value={audioUrl} onChange={e => { setAudioUrl(e.target.value); setPlaying(false); }}
             placeholder="https://example.com/audio.mp3" className="flex-1 text-sm" />
@@ -725,43 +859,48 @@ function ListeningForm({ audioUrl, setAudioUrl, passage, setPassage, subQuestion
       </div>
 
       {audioUrl && (
-        <div className="rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 p-4 text-white">
+        <div className="rounded-2xl p-5 text-white" style={{ background: `linear-gradient(135deg, ${DS.primary} 0%, ${DS.secondary} 100%)` }}>
           <audio ref={audioRef} src={audioUrl} onEnded={() => setPlaying(false)} />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button type="button" onClick={toggle}
-              className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors">
-              {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              className="w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-md"
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+              {playing ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
             </button>
             <div className="flex-1">
-              <p className="text-sm font-medium mb-1">Preview Audio</p>
-              <div className="flex items-end gap-0.5 h-6">
-                {Array.from({ length: 24 }).map((_, i) => (
-                  <div key={i} className={`w-1 rounded-full bg-white/70 ${playing ? "animate-pulse" : ""}`}
-                    style={{ height: `${30 + Math.sin(i) * 50}%`, animationDelay: `${i * 0.05}s` }} />
+              <p className="text-sm font-medium mb-2">Audio Preview</p>
+              <div className="flex items-end gap-0.5 h-8">
+                {Array.from({ length: 28 }).map((_, i) => (
+                  <div key={i} className={`w-1.5 rounded-full ${playing ? "animate-pulse" : ""}`}
+                    style={{
+                      height: `${30 + Math.sin(i) * 50}%`,
+                      animationDelay: `${i * 0.05}s`,
+                      backgroundColor: 'rgba(255,255,255,0.7)'
+                    }} />
                 ))}
               </div>
             </div>
-            <Volume2 className="w-4 h-4 text-white/70" />
+            <Volume2 className="w-5 h-5 opacity-70" />
           </div>
         </div>
       )}
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Transcript (tuỳ chọn)</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Transcript (optional)</Label>
         <Textarea value={passage} onChange={e => setPassage(e.target.value)}
-          placeholder="Nội dung transcript của file audio..." rows={4} className="text-sm" />
+          placeholder="Transcript content of the audio file..." rows={4} className="text-sm" />
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-2">
-          Câu hỏi trắc nghiệm ({subQuestions.length})
+        <Label className="text-sm font-semibold block mb-3" style={{ color: DS.onSurface }}>
+          Questions ({subQuestions.length})
         </Label>
-        <SubQuestionBuilder items={subQuestions} onChange={setSubQuestions} />
+        <SubQuestionBuilder items={subQuestions} onChange={setSubQuestions} accentColor="primary" />
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain the answers (Markdown supported)..." />
       </div>
     </div>
   );
@@ -917,24 +1056,24 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
 
   function previewText(tq: VideoQuestion) {
     const t = tq.type ?? "question";
-    if (t === "note") return tq.content?.slice(0, 60) || "Chưa có nội dung";
-    return tq.question?.slice(0, 60) || "Chưa có câu hỏi";
+    if (t === "note") return tq.content?.slice(0, 60) || "No content";
+    return tq.question?.slice(0, 60) || "No question";
   }
 
   const sortedIndices = timedQuestions.map((_, i) => i).sort((a, b) => timedQuestions[a].timestamp - timedQuestions[b].timestamp);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">YouTube Video URL</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>YouTube Video URL</Label>
         <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
-          placeholder="https://www.youtube.com/watch?v=... hoặc URL video trực tiếp" className="text-sm" />
+          placeholder="https://www.youtube.com/watch?v=... or direct video URL" className="text-sm" />
       </div>
 
       {videoUrl && (
-        <div className="rounded-xl overflow-hidden border border-gray-200 bg-black">
+        <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${DS.outlineVariant}` }}>
           {isYouTube ? (
-            <div ref={ytContainerRef} className="w-full aspect-video" />
+            <div ref={ytContainerRef} className="w-full aspect-video bg-black" />
           ) : (
             <video ref={videoRef} src={videoUrl} controls className="w-full aspect-video"
               onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration || 0); }}
@@ -944,41 +1083,44 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
       )}
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm" style={{ color: DS.onSurfaceVariant }}>
           <Play className="w-3.5 h-3.5" />
           <span className="font-mono">{fmtMM(currentTime)} / {duration > 0 ? fmtMM(duration) : "--:--"}</span>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={markAtCurrentTime}
-          className="h-8 text-xs gap-1.5 border-orange-300 text-orange-600 hover:bg-orange-50">
-          <Clock className="w-3.5 h-3.5" /> Đánh dấu {fmtMM(currentTime)}
+          className="h-8 text-xs gap-1.5"
+          style={{ borderColor: DS.tertiary, color: DS.tertiary }}>
+          <Clock className="w-3.5 h-3.5" /> Mark {fmtMM(currentTime)}
         </Button>
       </div>
 
       {videoUrl && (
         <div className="space-y-1">
-          <p className="text-xs text-gray-500">Tải video để hiển thị timeline</p>
-          <div ref={timelineRef} className="relative h-3 cursor-pointer rounded-full bg-gray-100 border border-gray-200 overflow-visible"
+          <p className="text-xs" style={{ color: DS.onSurfaceVariant }}>Load video to display timeline</p>
+          <div ref={timelineRef} className="relative h-3 cursor-pointer rounded-full"
+            style={{ backgroundColor: DS.surfaceContainerHigh, border: `1px solid ${DS.outlineVariant}` }}
             onClick={handleTimelineClick}>
             {duration > 0 && (
               <>
-                <div className="absolute top-0 left-0 h-full bg-orange-200 rounded-full transition-all"
-                  style={{ width: `${Math.min(100, (currentTime / duration) * 100)}%` }} />
+                <div className="absolute top-0 left-0 h-full rounded-full transition-all"
+                  style={{ width: `${Math.min(100, (currentTime / duration) * 100)}%`, backgroundColor: DS.tertiaryContainer }} />
                 {timedQuestions.map((tq, qi) => {
                   const pct = Math.max(0, Math.min(100, (tq.timestamp / duration) * 100));
                   const isNote = (tq.type ?? "question") === "note";
                   return (
-                    <div key={qi} className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-white shadow z-10 ${
-                      isNote ? "bg-amber-400" : "bg-blue-500"
-                    }`} style={{ left: `${pct}%` }} title={`${isNote ? "Ghi chú" : "Câu hỏi"} — ${fmtMM(tq.timestamp)}`} />
+                    <div key={qi} className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 border-white shadow z-10`}
+                      style={{ left: `${pct}%`, backgroundColor: isNote ? DS.tertiary : DS.primary }}
+                      title={`${isNote ? "Note" : "Question"} — ${fmtMM(tq.timestamp)}`} />
                   );
                 })}
               </>
             )}
           </div>
           {duration === 0 && (
-            <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1">
+            <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2 mt-1"
+              style={{ backgroundColor: DS.surfaceContainer, color: DS.onSurfaceVariant }}>
               <Info className="w-3.5 h-3.5 flex-shrink-0" />
-              Nhấn Play để tải thời lượng video. Sau đó timeline sẽ hiển thị chính xác.
+              Press Play to load video duration. The timeline will display accurately after.
             </div>
           )}
         </div>
@@ -987,13 +1129,14 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-500" />
-            <Label className="text-sm font-semibold text-gray-700">Timestamps ({timedQuestions.length})</Label>
+            <Clock className="w-4 h-4" style={{ color: DS.onSurfaceVariant }} />
+            <Label className="text-sm font-semibold" style={{ color: DS.onSurface }}>Timestamps ({timedQuestions.length})</Label>
           </div>
           <Button type="button" variant="outline" size="sm"
             onClick={() => { setTimedQuestions([...timedQuestions, newVideoQuestion("question")]); setExpandedIdx(timedQuestions.length); }}
-            className="h-7 text-xs gap-1">
-            <Plus className="w-3 h-3" /> Thêm Timestamp
+            className="h-7 text-xs gap-1"
+            style={{ borderColor: DS.outlineVariant, color: DS.primary }}>
+            <Plus className="w-3 h-3" /> Add Timestamp
           </Button>
         </div>
 
@@ -1005,67 +1148,76 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
             const isNote = tsType === "note";
 
             return (
-              <div key={qi} className="border border-gray-200 rounded-xl bg-white overflow-hidden">
-                <div className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => toggleExpand(qi)}>
+              <div key={qi} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${DS.outlineVariant}`, backgroundColor: DS.surfaceContainerLowest }}>
+                <div className="flex items-center gap-2 px-3 py-2.5 cursor-pointer transition-colors"
+                  onClick={() => toggleExpand(qi)}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.surfaceContainerLow}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                   <button type="button" onClick={(e) => { e.stopPropagation(); seekToTimestamp(qi); }}
                     className="text-gray-400 hover:text-blue-500 transition-colors flex-shrink-0">
                     <Play className="w-3.5 h-3.5" />
                   </button>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold text-white flex-shrink-0 ${
-                    isNote ? "bg-amber-500" : "bg-blue-500"
-                  }`}>
-                    D {fmtMM(tq.timestamp)}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold text-white flex-shrink-0"
+                    style={{ backgroundColor: isNote ? DS.tertiary : DS.primary }}>
+                    {fmtMM(tq.timestamp)}
                   </span>
-                  <span className={`text-xs font-semibold flex-shrink-0 ${isNote ? "text-amber-700" : "text-blue-700"}`}>
-                    {isNote ? "Ghi Chú" : "Câu Hỏi"}
+                  <span className="text-xs font-semibold flex-shrink-0"
+                    style={{ color: isNote ? DS.onTertiaryContainer : DS.onPrimaryContainer }}>
+                    {isNote ? "Note" : "Question"}
                   </span>
-                  <span className="text-xs text-gray-500 truncate flex-1 min-w-0">{previewText(tq)}</span>
+                  <span className="text-xs truncate flex-1 min-w-0" style={{ color: DS.onSurfaceVariant }}>{previewText(tq)}</span>
                   <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
                     <button type="button" onClick={(e) => { e.stopPropagation(); seekToTimestamp(qi); }}
-                      className="p-1 text-gray-400 hover:text-blue-500 rounded transition-colors" title="Nhảy đến mốc">
+                      className="p-1 rounded transition-colors"
+                      style={{ color: DS.onSurfaceVariant }}
+                      title="Jump to timestamp">
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
                     <button type="button" onClick={(e) => { e.stopPropagation(); deleteTimestamp(qi); }}
-                      className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors">
+                      className="p-1 rounded transition-colors"
+                      style={{ color: DS.error }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                    {isExpanded ? <ChevronUp className="w-4 h-4" style={{ color: DS.onSurfaceVariant }} /> : <ChevronDown className="w-4 h-4" style={{ color: DS.onSurfaceVariant }} />}
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-gray-100 px-4 py-4 space-y-4 bg-gray-50/50">
+                  <div className="border-t px-4 py-4 space-y-4" style={{ borderColor: DS.outlineVariant, backgroundColor: DS.surfaceContainerLow }}>
                     <div className="grid grid-cols-[1fr_auto] gap-4">
                       <div>
-                        <Label className="text-xs font-medium text-gray-500 block mb-1">Thời điểm (MM:SS)</Label>
+                        <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Timestamp (MM:SS)</Label>
                         <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1.5 border border-gray-200 rounded-lg bg-white px-3 py-1.5">
-                            <Clock className="w-3.5 h-3.5 text-gray-400" />
+                          <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5"
+                            style={{ border: `1px solid ${DS.outlineVariant}`, backgroundColor: DS.surfaceContainerLowest }}>
+                            <Clock className="w-3.5 h-3.5" style={{ color: DS.onSurfaceVariant }} />
                             <Input value={fmtMM(tq.timestamp)}
                               onChange={e => updateQ(qi, { timestamp: parseMM(e.target.value) })}
-                              className="w-20 h-6 border-0 shadow-none p-0 text-sm font-mono focus-visible:ring-0" />
+                              className="w-20 h-6 border-0 shadow-none p-0 text-sm font-mono focus-visible:ring-0"
+                              style={{ backgroundColor: 'transparent' }} />
                           </div>
-                          <button type="button" onClick={() => { updateQ(qi, { timestamp: Math.round(currentTime) }); }}
-                            className="p-1.5 border border-gray-200 rounded-lg text-gray-400 hover:text-blue-500 hover:border-blue-300 transition-colors bg-white"
-                            title="Đặt thời điểm hiện tại">
-                            <RotateCcw className="w-3.5 h-3.5" />
+                          <button type="button"
+                            className="p-1.5 rounded-lg transition-colors"
+                            style={{ border: `1px solid ${DS.outlineVariant}`, backgroundColor: DS.surfaceContainerLowest }}
+                            onClick={() => { updateQ(qi, { timestamp: Math.round(currentTime) }); }}
+                            title="Set to current time">
+                            <RotateCcw className="w-3.5 h-3.5" style={{ color: DS.onSurfaceVariant }} />
                           </button>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">Hiện tại: <span className="font-mono text-gray-500">{fmtMM(currentTime)}</span></p>
+                        <p className="text-xs mt-1" style={{ color: DS.onSurfaceVariant }}>Current: <span className="font-mono" style={{ color: DS.onSurface }}>{fmtMM(currentTime)}</span></p>
                       </div>
                       <div>
-                        <Label className="text-xs font-medium text-gray-500 block mb-1">Loại</Label>
+                        <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Type</Label>
                         <Select value={tsType} onValueChange={(v: "note" | "question") => updateQ(qi, { type: v })}>
-                          <SelectTrigger className="w-[140px] h-9 text-sm bg-white">
+                          <SelectTrigger className="w-[140px] h-9 text-sm" style={{ backgroundColor: DS.surfaceContainerLowest }}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="note">
-                              <span className="flex items-center gap-2"><StickyNote className="w-3.5 h-3.5 text-amber-500" /> Ghi chú</span>
+                              <span className="flex items-center gap-2"><StickyNote className="w-3.5 h-3.5" style={{ color: DS.tertiary }} /> Note</span>
                             </SelectItem>
                             <SelectItem value="question">
-                              <span className="flex items-center gap-2"><HelpCircle className="w-3.5 h-3.5 text-blue-500" /> Câu hỏi</span>
+                              <span className="flex items-center gap-2"><HelpCircle className="w-3.5 h-3.5" style={{ color: DS.primary }} /> Question</span>
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -1074,52 +1226,58 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
 
                     {isNote ? (
                       <div>
-                        <Label className="text-xs font-medium text-gray-500 block mb-1">Nội dung ghi chú</Label>
+                        <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Note Content</Label>
                         <Textarea value={tq.content ?? ""} onChange={e => updateQ(qi, { content: e.target.value })}
-                          placeholder="Nhập ghi chú hoặc tip cho học sinh tại mốc thời gian này..."
-                          rows={3} className="text-sm bg-white" />
+                          placeholder="Enter note or tip for students at this timestamp..."
+                          rows={3} className="text-sm"
+                          style={{ backgroundColor: DS.surfaceContainerLowest }} />
                       </div>
                     ) : (
                       <>
                         <div>
-                          <Label className="text-xs font-medium text-gray-500 block mb-1">Câu hỏi</Label>
+                          <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Question</Label>
                           <Input value={tq.question} onChange={e => updateQ(qi, { question: e.target.value })}
-                            placeholder="Nhập câu hỏi tại mốc thời gian này..."
-                            className="text-sm bg-white" />
+                            placeholder="Enter question at this timestamp..."
+                            className="text-sm"
+                            style={{ backgroundColor: DS.surfaceContainerLowest }} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label className="text-xs font-medium text-gray-500 block mb-1">Loại câu hỏi</Label>
+                            <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Question Type</Label>
                             <Select value="mcq">
-                              <SelectTrigger className="h-9 text-sm bg-white">
+                              <SelectTrigger className="h-9 text-sm" style={{ backgroundColor: DS.surfaceContainerLowest }}>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="mcq">Trắc nghiệm</SelectItem>
+                                <SelectItem value="mcq">Multiple Choice</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-xs font-medium text-gray-500 block mb-1">Điểm</Label>
+                            <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Points</Label>
                             <Input type="number" min={0} value={tq.points ?? 10}
                               onChange={e => updateQ(qi, { points: parseInt(e.target.value, 10) || 0 })}
-                              className="h-9 text-sm bg-white" />
+                              className="h-9 text-sm"
+                              style={{ backgroundColor: DS.surfaceContainerLowest }} />
                           </div>
                         </div>
                         <div>
-                          <Label className="text-xs font-medium text-gray-500 block mb-1.5">Các lựa chọn</Label>
+                          <Label className="text-xs font-medium block mb-1.5" style={{ color: DS.onSurfaceVariant }}>Choices</Label>
                           <div className="space-y-2">
                             {tq.choices.map((ch, ci) => (
                               <div key={ci} className="flex items-center gap-2">
                                 <button type="button" onClick={() => updateQ(qi, { correctAnswer: ch })}
-                                  className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                                    ch && tq.correctAnswer === ch ? "border-green-500 bg-green-500" : "border-gray-300 hover:border-green-400"
-                                  }`}>
+                                  className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                                  style={{
+                                    borderColor: ch && tq.correctAnswer === ch ? DS.secondary : DS.outlineVariant,
+                                    backgroundColor: ch && tq.correctAnswer === ch ? DS.secondary : 'transparent',
+                                  }}>
                                   {ch && tq.correctAnswer === ch && <div className="w-2 h-2 rounded-full bg-white" />}
                                 </button>
                                 <Input value={ch} onChange={e => updateChoice(qi, ci, e.target.value)}
-                                  placeholder={`Lựa chọn ${ci + 1}`}
-                                  className="flex-1 h-9 text-sm bg-white" />
+                                  placeholder={`Choice ${ci + 1}`}
+                                  className="flex-1 h-9 text-sm"
+                                  style={{ backgroundColor: DS.surfaceContainerLowest }} />
                                 {tq.choices.length > 2 && (
                                   <button type="button" onClick={() => removeChoice(qi, ci)}
                                     className="text-gray-400 hover:text-red-500 transition-colors p-0.5">
@@ -1130,8 +1288,8 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
                             ))}
                           </div>
                           <button type="button" onClick={() => addChoice(qi)}
-                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 mt-2 font-medium">
-                            <Plus className="w-3 h-3" /> Thêm lựa chọn
+                            className="flex items-center gap-1 text-xs font-medium mt-2" style={{ color: DS.primary }}>
+                            <Plus className="w-3 h-3" /> Add choice
                           </button>
                         </div>
                       </>
@@ -1142,18 +1300,19 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
             );
           })}
           {timedQuestions.length === 0 && (
-            <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-400">
+            <div className="text-center py-10 border-2 border-dashed rounded-xl text-sm"
+              style={{ borderColor: DS.outlineVariant, color: DS.onSurfaceVariant }}>
               {videoUrl
-                ? "Nhấn \"Đánh dấu\" hoặc \"+ Thêm Timestamp\" để thêm câu hỏi và ghi chú theo mốc thời gian."
-                : "Nhập URL video trước, sau đó thêm câu hỏi tại các mốc thời gian."}
+                ? 'Press "Mark" or "+ Add Timestamp" to add questions and notes at specific timestamps.'
+                : "Enter video URL first, then add questions at specific timestamps."}
             </div>
           )}
         </div>
       </div>
 
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Giải thích (tuỳ chọn)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Giải thích đáp án (hỗ trợ Markdown)..." />
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
+        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3} placeholder="Explain the answers (Markdown supported)..." />
       </div>
     </div>
   );
@@ -1162,23 +1321,23 @@ function VideoInteractiveForm({ videoUrl, setVideoUrl, timedQuestions, setTimedQ
 function EssayForm({ content, setContent, explanation, setExplanation, autoGrade, setAutoGrade }:
   { content: string; setContent: (v: string) => void; explanation: string; setExplanation: (v: string) => void; autoGrade?: boolean; setAutoGrade?: (v: boolean) => void }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi *</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Prompt / Question *</Label>
         <MarkdownEditor value={content} onChange={setContent} rows={5}
-          placeholder="Nhập đề bài hoặc câu hỏi cho bài luận (hỗ trợ Markdown)..." />
+          placeholder="Enter the essay prompt or question (Markdown supported)..." />
       </div>
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Rubric chấm điểm (tuỳ chọn)</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Rubric / Guidelines (optional)</Label>
         <MarkdownEditor value={explanation} onChange={setExplanation} rows={6}
-          placeholder="Bài mẫu hoặc tiêu chí chấm điểm cho giáo viên (hỗ trợ Markdown)..." />
+          placeholder="Sample answer or grading criteria for teachers (Markdown supported)..." />
       </div>
       {setAutoGrade && (
-        <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+        <div className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ backgroundColor: DS.surfaceContainer, border: `1px solid ${DS.outlineVariant}` }}>
           <input type="checkbox" id="essay-auto-grade-qf" checked={autoGrade ?? false} onChange={e => setAutoGrade(e.target.checked)} className="rounded" />
           <div>
-            <label htmlFor="essay-auto-grade-qf" className="text-sm font-medium text-gray-800 cursor-pointer">Tự động chấm bằng AI</label>
-            <p className="text-xs text-gray-500 mt-0.5">AI sẽ tự chấm điểm bài luận này khi học viên nộp bài</p>
+            <label htmlFor="essay-auto-grade-qf" className="text-sm font-medium cursor-pointer" style={{ color: DS.onSurface }}>Auto-grade with AI</label>
+            <p className="text-xs mt-0.5" style={{ color: DS.onSurfaceVariant }}>AI will automatically grade this essay when students submit</p>
           </div>
         </div>
       )}
@@ -1197,42 +1356,48 @@ function OpenEndForm({ content, setContent, explanation, setExplanation, allowed
     }
   };
   const typeOptions = [
-    { value: "text", label: "Văn bản", icon: "📝" },
-    { value: "audio", label: "Ghi âm", icon: "🎙️" },
-    { value: "image", label: "Hình ảnh", icon: "📷" },
+    { value: "text", label: "Text", icon: AlignLeft, color: DS.primary },
+    { value: "audio", label: "Audio", icon: Mic, color: DS.tertiary },
+    { value: "image", label: "Image", icon: Image, color: DS.secondary },
   ];
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Đề bài / Câu hỏi *</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Prompt / Question *</Label>
         <MarkdownEditor value={content} onChange={setContent} rows={5}
-          placeholder="Nhập câu hỏi mở (hỗ trợ Markdown)..." />
+          placeholder="Enter the open-ended question (Markdown supported)..." />
       </div>
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-2">Hình thức trả lời cho phép *</Label>
-        <div className="flex gap-3">
-          {typeOptions.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => toggleType(opt.value)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
-                allowedTypes.includes(opt.value)
-                  ? "border-violet-400 bg-violet-50 text-violet-700 shadow-sm"
-                  : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
-              }`}
-            >
-              <span className="text-lg">{opt.icon}</span>
-              {opt.label}
-            </button>
-          ))}
+        <Label className="text-sm font-medium block mb-3" style={{ color: DS.onSurface }}>Allowed Response Types *</Label>
+        <div className="flex gap-4">
+          {typeOptions.map(opt => {
+            const Icon = opt.icon;
+            const isActive = allowedTypes.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => toggleType(opt.value)}
+                className="flex items-center gap-3 px-5 py-3.5 rounded-xl border-2 text-sm font-medium transition-all"
+                style={{
+                  borderColor: isActive ? opt.color : DS.outlineVariant,
+                  backgroundColor: isActive ? `${opt.color}15` : DS.surfaceContainerLowest,
+                  color: isActive ? opt.color : DS.onSurfaceVariant,
+                }}
+              >
+                <Icon className="w-5 h-5" />
+                {opt.label}
+                {isActive && <Check className="w-4 h-4 ml-1" />}
+              </button>
+            );
+          })}
         </div>
-        <p className="text-xs text-gray-500 mt-1.5">Chọn ít nhất 1 hình thức. Học sinh sẽ chọn cách trả lời khi làm bài.</p>
+        <p className="text-xs mt-2" style={{ color: DS.onSurfaceVariant }}>Select at least 1 type. Students will choose how to respond when taking the quiz.</p>
       </div>
       <div>
-        <Label className="text-sm font-semibold text-gray-700 block mb-1.5">Gợi ý / Tiêu chí chấm (tuỳ chọn)</Label>
+        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Rubric / Guidelines (optional)</Label>
         <MarkdownEditor value={explanation} onChange={setExplanation} rows={4}
-          placeholder="Tiêu chí chấm điểm cho giáo viên (hỗ trợ Markdown)..." />
+          placeholder="Grading criteria for teachers (Markdown supported)..." />
       </div>
     </div>
   );
@@ -1294,7 +1459,7 @@ export default function QuestionFormPage() {
   // Drag & Drop
   const [ddItems, setDdItems] = useState<string[]>(["", "", ""]);
   const [ddZones, setDdZones] = useState<DragZone[]>([
-    { label: "Vùng 1", accepts: [] }, { label: "Vùng 2", accepts: [] },
+    { label: "Zone 1", accepts: [] }, { label: "Zone 2", accepts: [] },
   ]);
 
   // Sentence Reorder
@@ -1347,7 +1512,6 @@ export default function QuestionFormPage() {
     } else if (draft.type === "true_false") {
       setTfAnswer((draft.correctAnswer ?? "").toLowerCase() === "true" ? "true" : "false");
     } else if (draft.type === "fill_blank") {
-      // Convert ___ markers to __BLANK__ for the existing renderer
       setContent(draft.content.replace(/_{3,}/g, "__BLANK__"));
       const ans = draft.correctAnswer ? safeJson<string[]>(draft.correctAnswer, []) : [];
       setBlanksAnswers(Array.isArray(ans) ? ans : []);
@@ -1374,9 +1538,6 @@ export default function QuestionFormPage() {
         });
         setReadSubQs(subs.length > 0 ? subs : [newSubQuestion()]);
       }
-    } else if (draft.type === "open_end" && draft.correctAnswer) {
-      // Show model answer in explanation field as well for clarity
-      // (open_end doesn't have a dedicated answer field in form)
     }
   };
 
@@ -1513,7 +1674,6 @@ export default function QuestionFormPage() {
     if (qType === "open_end") {
       return { ...base, content, explanation: explanation || undefined, metadata: JSON.stringify({ allowedTypes: openEndAllowedTypes }) };
     }
-    // essay
     return { ...base, content, explanation: explanation || undefined, metadata: JSON.stringify({ autoGrade: essayAutoGrade }) };
   }
 
@@ -1533,268 +1693,387 @@ export default function QuestionFormPage() {
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (isEditing && loadingQ) {
     return (
-      <div className="max-w-5xl mx-auto space-y-4 p-6">
-        <Skeleton className="h-12 w-64" />
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="max-w-6xl mx-auto space-y-4 p-6">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
   const typeCfg = QUESTION_TYPES.find(t => t.value === qType);
+  const typeColors = getColorClasses(typeCfg?.color as ColorKey || "primary");
 
   return (
-    <div className="max-w-5xl mx-auto space-y-0">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shadow-sm">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/questions")} className="gap-2 text-gray-600">
-          <ArrowLeft className="w-4 h-4" />
-          Quay lại
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-base font-bold text-gray-900">
-            {isEditing ? "Chỉnh sửa câu hỏi" : "Tạo câu hỏi mới"}
-          </h1>
-          <p className="text-xs text-gray-500">{typeCfg?.label} · {SKILL_LABELS[skill]} · {level}</p>
-        </div>
-        <Badge variant="outline" className="text-sm">{typeCfg?.icon} {typeCfg?.label}</Badge>
-        <Button onClick={handleSave} disabled={isSaving} className="bg-[#378ADD] hover:bg-[#2a6bb5] gap-2">
-          <Save className="w-4 h-4" />
-          {isSaving ? "Đang lưu..." : isEditing ? "Cập nhật" : "Lưu câu hỏi"}
-        </Button>
-      </div>
-
-      <div className="flex gap-0">
-        {/* Left Sidebar: Type + Basic Info */}
-        <div className="w-72 flex-shrink-0 border-r border-gray-200 bg-gray-50 min-h-screen p-5 space-y-6">
-          {/* Type Selector */}
-          <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Loại câu hỏi</p>
-            <div className="space-y-1">
-              {QUESTION_TYPES.map(t => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setQType(t.value)}
-                  className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                    qType === t.value
-                      ? "bg-[#378ADD] text-white shadow-md"
-                      : "hover:bg-white hover:shadow-sm text-gray-700"
-                  }`}
-                >
-                  <span className="text-lg leading-none flex-shrink-0 mt-0.5">{t.icon}</span>
-                  <div>
-                    <p className={`text-sm font-semibold ${qType === t.value ? "text-white" : "text-gray-800"}`}>{t.label}</p>
-                    <p className={`text-xs mt-0.5 ${qType === t.value ? "text-blue-100" : "text-gray-400"}`}>{t.desc}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Basic Settings */}
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cài đặt</p>
-            <div>
-              <Label className="text-xs font-medium text-gray-600 block mb-1">Kỹ năng</Label>
-              <Select value={skill} onValueChange={setSkill}>
-                <SelectTrigger className="h-8 text-sm bg-white"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {SKILLS.map(s => <SelectItem key={s} value={s}>{SKILL_LABELS[s]}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs font-medium text-gray-600 block mb-1">Cấp độ</Label>
-              <Select value={level} onValueChange={setLevel}>
-                <SelectTrigger className="h-8 text-sm bg-white"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            {(qType === "reading" || qType === "listening") ? (
+    <div className="min-h-screen" style={{ backgroundColor: DS.surface }}>
+      {/* Modern Header - Nature Inspired */}
+      <header className="sticky top-0 z-30 backdrop-blur-xl shadow-sm" style={{ backgroundColor: `${DS.surface}F2`, borderBottom: `1px solid ${DS.outlineVariant}` }}>
+        <div className="max-w-[1400px] mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/questions")}
+                className="gap-2"
+                style={{ color: DS.onSurfaceVariant }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.surfaceContainer}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <div className="h-8 w-px" style={{ backgroundColor: DS.outlineVariant }} />
               <div>
-                <Label className="text-xs font-medium text-gray-600 block mb-1">Điểm số (tự động)</Label>
-                <div className="h-8 flex items-center px-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700 font-medium">
-                  {qType === "reading"
-                    ? readSubQs.reduce((s, sq) => s + (sq.points ?? 1), 0)
-                    : lisSubQs.reduce((s, sq) => s + (sq.points ?? 1), 0)
-                  } điểm
+                <h1 className="text-lg font-semibold" style={{ color: DS.onSurface, fontFamily: 'Lexend, sans-serif' }}>
+                  {isEditing ? "Edit Question" : "Create Question"}
+                </h1>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Badge variant="outline" className="text-xs font-medium"
+                    style={{ borderColor: DS.primaryPaleDim, color: DS.primary, backgroundColor: DS.primaryPale }}>
+                    {SKILL_LABELS[skill]}
+                  </Badge>
+                  <span className="text-xs" style={{ color: DS.onSurfaceVariant }}>Level {level}</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Tổng điểm các câu thành phần</p>
               </div>
-            ) : (
-              <div>
-                <Label className="text-xs font-medium text-gray-600 block mb-1">Điểm số</Label>
-                <Input type="number" min={1} value={points} onChange={e => setPoints(parseInt(e.target.value, 10) || 1)}
-                  className="h-8 text-sm bg-white" />
-              </div>
-            )}
-            <div>
-              <Label className="text-xs font-medium text-gray-600 block mb-1">URL Hình ảnh (tuỳ chọn)</Label>
-              <Input value={imageUrl} onChange={e => setImageUrl(e.target.value)}
-                placeholder="https://..." className="h-8 text-sm bg-white text-xs" />
             </div>
-          </div>
 
-          {/* Tips */}
-          <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
-            <p className="text-xs font-semibold text-blue-700 mb-1 flex items-center gap-1">
-              <AlertCircle className="w-3.5 h-3.5" /> Lưu ý
-            </p>
-            <p className="text-xs text-blue-600 leading-relaxed">
-              {qType === "mcq" && "Click vòng tròn bên cạnh lựa chọn để đánh dấu đáp án đúng."}
-              {qType === "true_false" && "Chọn Đúng hoặc Sai bên phải để xác định đáp án."}
-              {qType === "fill_blank" && "Gõ __BLANK__ vào chỗ cần tạo ô trống trong câu."}
-              {qType === "word_selection" && "Click trực tiếp vào từng từ trong đoạn văn để chọn đáp án đúng."}
-              {qType === "matching" && "Nhập các cặp theo thứ tự. Cột B sẽ tự động bị trộn khi học sinh làm."}
-              {qType === "drag_drop" && "Thêm mục và cấu hình từng vùng chấp nhận mục nào."}
-              {qType === "sentence_reorder" && "Nhập câu theo thứ tự đúng. Học sinh sẽ thấy chúng bị đảo."}
-              {qType === "reading" && "Dán bài đọc và thêm các câu hỏi trắc nghiệm bên dưới."}
-              {qType === "listening" && "Nhập URL audio, thêm transcript và câu hỏi."}
-              {qType === "video_interactive" && "Nhập URL video và thêm câu hỏi xuất hiện tại mốc thời gian cụ thể."}
-              {qType === "essay" && "Nhập đề bài. Học sinh sẽ trả lời tự do, giáo viên chấm tay."}
-              {qType === "open_end" && "Học sinh trả lời bằng text, ghi âm, hoặc chụp/upload ảnh. Giáo viên chấm tay."}
-            </p>
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 p-6 space-y-6">
-          {imageUrl && (
-            <div className="rounded-xl overflow-hidden border border-gray-200 max-h-48">
-              <img src={imageUrl} alt="Hình ảnh câu hỏi" className="w-full h-full object-contain bg-gray-50" />
-            </div>
-          )}
-
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-5 pb-4 border-b border-gray-100">
-              <span className="text-2xl">{typeCfg?.icon}</span>
-              <div className="flex-1">
-                <h2 className="text-base font-bold text-gray-900">Nội dung câu hỏi — {typeCfg?.label}</h2>
-                <p className="text-xs text-gray-500">{typeCfg?.desc}</p>
-              </div>
+            <div className="flex items-center gap-3">
               <Button
                 type="button"
+                variant="outline"
                 size="sm"
                 onClick={() => setAiOpen(true)}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white gap-1.5 shadow-sm"
-              >
-                <Sparkles className="h-4 w-4" />
-                Sinh bằng AI
+                className="gap-2 text-white border-0 shadow-md"
+                style={{ background: `linear-gradient(135deg, ${DS.tertiary} 0%, ${DS.secondary} 100%)` }}>
+                <Sparkles className="w-4 h-4" />
+                AI Generate
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="gap-2 text-white shadow-lg"
+                style={{
+                  backgroundColor: DS.primary,
+                  boxShadow: `0 4px 12px ${DS.primary}40`,
+                }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.secondary}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = DS.primary}>
+                <Save className="w-4 h-4" />
+                {isSaving ? "Saving..." : isEditing ? "Update" : "Save Question"}
               </Button>
             </div>
-
-            {qType === "mcq" && (
-              <McqForm
-                content={content} setContent={setContent}
-                options={mcqOptions} setOptions={setMcqOptions}
-                allowMultiple={allowMultiple} setAllowMultiple={setAllowMultiple}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "true_false" && (
-              <TrueFalseForm
-                content={content} setContent={setContent}
-                correctAnswer={tfAnswer} setCorrectAnswer={setTfAnswer}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "fill_blank" && (
-              <FillBlankForm
-                content={content} setContent={setContent}
-                blanksAnswers={blanksAnswers} setBlanksAnswers={setBlanksAnswers}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "word_selection" && (
-              <WordSelectionForm
-                instruction={wsInstruction} setInstruction={setWsInstruction}
-                passage={wsPassage} setPassage={setWsPassage}
-                selectedWords={wsSelectedWords} setSelectedWords={setWsSelectedWords}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "matching" && (
-              <MatchingForm
-                content={content} setContent={setContent}
-                pairs={matchPairs} setPairs={setMatchPairs}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "drag_drop" && (
-              <DragDropForm
-                content={content} setContent={setContent}
-                items={ddItems} setItems={setDdItems}
-                zones={ddZones} setZones={setDdZones}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "sentence_reorder" && (
-              <SentenceReorderForm
-                content={content} setContent={setContent}
-                sentences={srSentences} setSentences={setSrSentences}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "reading" && (
-              <ReadingForm
-                passage={readPassage} setPassage={setReadPassage}
-                subQuestions={readSubQs} setSubQuestions={setReadSubQs}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "listening" && (
-              <ListeningForm
-                audioUrl={lisAudioUrl} setAudioUrl={setLisAudioUrl}
-                passage={lisTranscript} setPassage={setLisTranscript}
-                subQuestions={lisSubQs} setSubQuestions={setLisSubQs}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "video_interactive" && (
-              <VideoInteractiveForm
-                videoUrl={videoUrl} setVideoUrl={setVideoUrl}
-                timedQuestions={videoTimedQs} setTimedQuestions={setVideoTimedQs}
-                explanation={explanation} setExplanation={setExplanation}
-              />
-            )}
-            {qType === "essay" && (
-              <EssayForm
-                content={content} setContent={setContent}
-                explanation={explanation} setExplanation={setExplanation}
-                autoGrade={essayAutoGrade} setAutoGrade={setEssayAutoGrade}
-              />
-            )}
-            {qType === "open_end" && (
-              <OpenEndForm
-                content={content} setContent={setContent}
-                explanation={explanation} setExplanation={setExplanation}
-                allowedTypes={openEndAllowedTypes} setAllowedTypes={setOpenEndAllowedTypes}
-              />
-            )}
-          </div>
-
-          <AIQuestionGeneratorDialog
-            open={aiOpen}
-            onOpenChange={setAiOpen}
-            defaultType={qType}
-            defaultSkill={skill}
-            defaultLevel={level}
-            onApply={applyAIDraft}
-          />
-
-          {/* Bottom save */}
-          <div className="flex justify-end gap-3 pb-8">
-            <Button variant="outline" onClick={() => navigate("/questions")}>Hủy</Button>
-            <Button onClick={handleSave} disabled={isSaving} className="bg-[#378ADD] hover:bg-[#2a6bb5] gap-2 px-8">
-              <Save className="w-4 h-4" />
-              {isSaving ? "Đang lưu..." : isEditing ? "Cập nhật câu hỏi" : "Lưu câu hỏi"}
-            </Button>
           </div>
         </div>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <div className="flex gap-6">
+          {/* Left Sidebar - Question Types */}
+          <aside className="w-80 flex-shrink-0">
+            <div className="rounded-2xl overflow-hidden shadow-sm sticky top-28"
+              style={{ backgroundColor: DS.surfaceContainerLowest, border: `1px solid ${DS.outlineVariant}` }}>
+              {/* Header */}
+              <div className="px-4 py-3"
+                style={{ background: `linear-gradient(135deg, ${DS.primary} 0%, ${DS.secondary} 100%)` }}>
+                <h2 className="text-sm font-semibold flex items-center gap-2 text-white" style={{ fontFamily: 'Lexend, sans-serif' }}>
+                  <FileQuestion className="w-4 h-4" />
+                  Question Type
+                </h2>
+              </div>
+
+              {/* Question Categories */}
+              <div className="p-3">
+                {QUESTION_CATEGORIES.map((category) => (
+                  <div key={category.title} className="mb-4 last:mb-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider px-2 mb-2"
+                      style={{ color: DS.onSurfaceVariant, fontFamily: 'Lexend, sans-serif' }}>
+                      {category.title}
+                    </p>
+                    <div className="space-y-1">
+                      {category.types.map((typeValue) => {
+                        const t = QUESTION_TYPES.find(qt => qt.value === typeValue);
+                        if (!t) return null;
+                        const isActive = qType === t.value;
+                        const tc = getColorClasses(t.color as ColorKey);
+
+                        return (
+                          <button
+                            key={t.value}
+                            type="button"
+                            onClick={() => setQType(t.value)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
+                            style={{
+                              backgroundColor: isActive ? tc.bg : 'transparent',
+                              color: isActive ? DS.onPrimary : DS.onSurface,
+                              boxShadow: isActive ? `0 2px 8px ${tc.bg}30` : 'none',
+                            }}
+                            onMouseEnter={e => {
+                              if (!isActive) e.currentTarget.style.backgroundColor = DS.surfaceContainer;
+                            }}
+                            onMouseLeave={e => {
+                              if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                            }}>
+                            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+                              style={{
+                                backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : tc.light,
+                                color: isActive ? DS.onPrimary : tc.bg,
+                              }}>
+                              {t.icon}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate" style={{ fontFamily: 'Lexend, sans-serif' }}>
+                                {t.label}
+                              </p>
+                            </div>
+                            {isActive && <ChevronRight className="w-4 h-4 opacity-70" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Settings Section */}
+              <div className="border-t px-4 py-4" style={{ borderColor: DS.outlineVariant }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider mb-3"
+                  style={{ color: DS.onSurfaceVariant, fontFamily: 'Lexend, sans-serif' }}>
+                  Settings
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Skill</Label>
+                    <Select value={skill} onValueChange={setSkill}>
+                      <SelectTrigger className="h-9 text-sm" style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SKILLS.map(s => (
+                          <SelectItem key={s} value={s}>{SKILL_LABELS[s]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Level</Label>
+                    <Select value={level} onValueChange={setLevel}>
+                      <SelectTrigger className="h-9 text-sm" style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LEVELS.map(l => (
+                          <SelectItem key={l} value={l}>{l}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {(qType === "reading" || qType === "listening") ? (
+                    <div>
+                      <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Points (auto)</Label>
+                      <div className="h-9 flex items-center px-3 rounded-lg text-sm font-medium"
+                        style={{ backgroundColor: DS.primaryPale, color: DS.onPrimaryContainer }}>
+                        {qType === "reading"
+                          ? readSubQs.reduce((s, sq) => s + (sq.points ?? 1), 0)
+                          : lisSubQs.reduce((s, sq) => s + (sq.points ?? 1), 0)
+                        } points
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Points</Label>
+                      <Input type="number" min={1} value={points} onChange={e => setPoints(parseInt(e.target.value, 10) || 1)}
+                        className="h-9 text-sm"
+                        style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }} />
+                    </div>
+                  )}
+
+                  <div>
+                    <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Image URL (optional)</Label>
+                    <Input value={imageUrl} onChange={e => setImageUrl(e.target.value)}
+                      placeholder="https://..." className="h-9 text-xs"
+                      style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
+            {/* Question Type Header */}
+            <div className="mb-6 p-5 rounded-2xl"
+              style={{
+                background: `linear-gradient(135deg, ${DS.surfaceContainerLowest} 0%, ${typeColors.light}30 100%)`,
+                border: `2px solid ${typeColors.light}`,
+              }}>
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-lg"
+                  style={{ backgroundColor: typeColors.bg }}>
+                  {typeCfg?.icon}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold" style={{ color: DS.onSurface, fontFamily: 'Lexend, sans-serif' }}>{typeCfg?.label}</h2>
+                  <p className="text-sm mt-0.5" style={{ color: DS.onSurfaceVariant }}>
+                    {qType === "mcq" && "Create multiple choice questions with one or more correct answers"}
+                    {qType === "true_false" && "Students determine if a statement is true or false"}
+                    {qType === "fill_blank" && "Fill in missing words in a sentence or paragraph"}
+                    {qType === "word_selection" && "Students click on correct words in a passage"}
+                    {qType === "matching" && "Match items from two columns correctly"}
+                    {qType === "drag_drop" && "Drag items and drop them into correct zones"}
+                    {qType === "sentence_reorder" && "Arrange words into the correct sentence order"}
+                    {qType === "reading" && "Reading comprehension with multiple questions"}
+                    {qType === "listening" && "Audio-based comprehension questions"}
+                    {qType === "video_interactive" && "Interactive video with timestamped questions"}
+                    {qType === "essay" && "Open-ended writing prompts for detailed responses"}
+                    {qType === "open_end" && "Flexible responses: text, audio, or images"}
+                  </p>
+                </div>
+                <Badge className="px-3 py-1.5 text-sm font-medium"
+                  style={{ backgroundColor: typeColors.bg, color: DS.onPrimary, fontFamily: 'Lexend, sans-serif' }}>
+                  {typeCfg?.icon} {typeCfg?.label}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Form Content */}
+            <div className="rounded-2xl overflow-hidden shadow-sm"
+              style={{ backgroundColor: DS.surfaceContainerLowest, border: `1px solid ${DS.outlineVariant}` }}>
+              {/* Image Preview */}
+              {imageUrl && (
+                <div className="border-b px-4 py-4" style={{ borderColor: DS.outlineVariant }}>
+                  <div className="rounded-xl overflow-hidden max-h-48" style={{ border: `1px solid ${DS.outlineVariant}` }}>
+                    <img src={imageUrl} alt="Question image" className="w-full h-full object-contain" style={{ backgroundColor: DS.surfaceContainer }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Form Sections */}
+              <div className="p-6">
+                {qType === "mcq" && (
+                  <McqForm
+                    content={content} setContent={setContent}
+                    options={mcqOptions} setOptions={setMcqOptions}
+                    allowMultiple={allowMultiple} setAllowMultiple={setAllowMultiple}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "true_false" && (
+                  <TrueFalseForm
+                    content={content} setContent={setContent}
+                    correctAnswer={tfAnswer} setCorrectAnswer={setTfAnswer}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "fill_blank" && (
+                  <FillBlankForm
+                    content={content} setContent={setContent}
+                    blanksAnswers={blanksAnswers} setBlanksAnswers={setBlanksAnswers}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "word_selection" && (
+                  <WordSelectionForm
+                    instruction={wsInstruction} setInstruction={setWsInstruction}
+                    passage={wsPassage} setPassage={setWsPassage}
+                    selectedWords={wsSelectedWords} setSelectedWords={setWsSelectedWords}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "matching" && (
+                  <MatchingForm
+                    content={content} setContent={setContent}
+                    pairs={matchPairs} setPairs={setMatchPairs}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "drag_drop" && (
+                  <DragDropForm
+                    content={content} setContent={setContent}
+                    items={ddItems} setItems={setDdItems}
+                    zones={ddZones} setZones={setDdZones}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "sentence_reorder" && (
+                  <SentenceReorderForm
+                    content={content} setContent={setContent}
+                    sentences={srSentences} setSentences={setSrSentences}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "reading" && (
+                  <ReadingForm
+                    passage={readPassage} setPassage={setReadPassage}
+                    subQuestions={readSubQs} setSubQuestions={setReadSubQs}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "listening" && (
+                  <ListeningForm
+                    audioUrl={lisAudioUrl} setAudioUrl={setLisAudioUrl}
+                    passage={lisTranscript} setPassage={setLisTranscript}
+                    subQuestions={lisSubQs} setSubQuestions={setLisSubQs}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "video_interactive" && (
+                  <VideoInteractiveForm
+                    videoUrl={videoUrl} setVideoUrl={setVideoUrl}
+                    timedQuestions={videoTimedQs} setTimedQuestions={setVideoTimedQs}
+                    explanation={explanation} setExplanation={setExplanation}
+                  />
+                )}
+                {qType === "essay" && (
+                  <EssayForm
+                    content={content} setContent={setContent}
+                    explanation={explanation} setExplanation={setExplanation}
+                    autoGrade={essayAutoGrade} setAutoGrade={setEssayAutoGrade}
+                  />
+                )}
+                {qType === "open_end" && (
+                  <OpenEndForm
+                    content={content} setContent={setContent}
+                    explanation={explanation} setExplanation={setExplanation}
+                    allowedTypes={openEndAllowedTypes} setAllowedTypes={setOpenEndAllowedTypes}
+                  />
+                )}
+              </div>
+
+              {/* Bottom Actions */}
+              <div className="border-t px-6 py-4 flex items-center justify-between"
+                style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }}>
+                <Button variant="ghost" onClick={() => navigate("/questions")}
+                  style={{ color: DS.onSurfaceVariant }}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="gap-2 text-white shadow-lg px-8"
+                  style={{
+                    backgroundColor: DS.primary,
+                    boxShadow: `0 4px 12px ${DS.primary}40`,
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.secondary}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = DS.primary}>
+                  <Save className="w-4 h-4" />
+                  {isSaving ? "Saving..." : isEditing ? "Update Question" : "Save Question"}
+                </Button>
+              </div>
+            </div>
+
+            {/* AI Generator Dialog */}
+            <AIQuestionGeneratorDialog
+              open={aiOpen}
+              onOpenChange={setAiOpen}
+              defaultType={qType}
+              defaultSkill={skill}
+              defaultLevel={level}
+              onApply={applyAIDraft}
+            />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

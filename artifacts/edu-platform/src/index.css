@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
+@import url('ttps://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -60,6 +61,46 @@
   --color-sidebar-accent-border: var(--sidebar-accent-border);
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
+  --color-surface: hsl(var(--surface));
+  --color-surface-dim: hsl(var(--surface-dim));
+  --color-surface-bright: hsl(var(--surface-bright));
+  --color-surface-container-lowest: hsl(var(--surface-container-lowest));
+  --color-surface-container-low: hsl(var(--surface-container-low));
+  --color-surface-container: hsl(var(--surface-container));
+  --color-surface-container-high: hsl(var(--surface-container-high));
+  --color-surface-container-highest: hsl(var(--surface-container-highest));
+  --color-on-surface: hsl(var(--on-surface));
+  --color-on-surface-variant: hsl(var(--on-surface-variant));
+  --color-inverse-surface: hsl(var(--inverse-surface));
+  --color-inverse-on-surface: hsl(var(--inverse-on-surface));
+  --color-outline: hsl(var(--outline));
+  --color-outline-variant: hsl(var(--outline-variant));
+  --color-surface-tint: hsl(var(--surface-tint));
+
+  --color-primary-container: hsl(var(--primary-container));
+  --color-on-primary-container: hsl(var(--on-primary-container));
+  --color-inverse-primary: hsl(var(--inverse-primary));
+  --color-secondary-container: hsl(var(--secondary-container));
+  --color-on-secondary-container: hsl(var(--on-secondary-container));
+  --color-tertiary: hsl(var(--tertiary));
+  --color-on-tertiary: hsl(var(--on-tertiary));
+  --color-tertiary-container: hsl(var(--tertiary-container));
+  --color-on-tertiary-container: hsl(var(--on-tertiary-container));
+  --color-error-container: hsl(var(--error-container));
+  --color-on-error-container: hsl(var(--on-error-container));
+  --color-primary-fixed: hsl(var(--primary-fixed));
+  --color-primary-fixed-dim: hsl(var(--primary-fixed-dim));
+  --color-on-primary-fixed: hsl(var(--on-primary-fixed));
+  --color-on-primary-fixed-variant: hsl(var(--on-primary-fixed-variant));
+  --color-secondary-fixed: hsl(var(--secondary-fixed));
+  --color-secondary-fixed-dim: hsl(var(--secondary-fixed-dim));
+  --color-on-secondary-fixed: hsl(var(--on-secondary-fixed));
+  --color-on-secondary-fixed-variant: hsl(var(--on-secondary-fixed-variant));
+  --color-tertiary-fixed: hsl(var(--tertiary-fixed));
+  --color-tertiary-fixed-dim: hsl(var(--tertiary-fixed-dim));
+  --color-on-tertiary-fixed: hsl(var(--on-tertiary-fixed));
+  --color-on-tertiary-fixed-variant: hsl(var(--on-tertiary-fixed-variant));
+
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
@@ -70,158 +111,324 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ============================================
+   NATURE-INSPIRED IELTS PLATFORM THEME
+   Grounded, nurturing, and academically supportive
+   ============================================ */
+
 /* LIGHT MODE */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  /* Elevation & Effects */
+  --button-outline: rgba(75, 100, 81, 0.10);
+  --badge-outline: rgba(75, 100, 81, 0.05);
+  --opaque-button-border-intensity: -8;
 
-  --opaque-button-border-intensity: -8; 
+  /* Ambient shadows with subtle green tint for organic feel */
+  --elevate-1: rgba(75, 100, 81, 0.04);
+  --elevate-2: rgba(75, 100, 81, 0.08);
 
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  /* ============================================
+     MATERIAL 3 SURFACE TOKENS (Nature-Inspired)
+     ============================================ */
+  --surface: 40 18% 97%;
+  --surface-dim: 40 12% 86%;
+  --surface-bright: 40 18% 97%;
+  --surface-container-lowest: 0 0% 100%;
+  --surface-container-low: 40 18% 96%;
+  --surface-container: 40 16% 94%;
+  --surface-container-high: 40 14% 92%;
+  --surface-container-highest: 40 12% 90%;
+  --on-surface: 90 6% 11%;
+  --on-surface-variant: 140 6% 26%;
+  --inverse-surface: 90 6% 18%;
+  --inverse-on-surface: 40 18% 97%;
+  --outline: 140 4% 45%;
+  --outline-variant: 100 8% 76%;
+  --surface-tint: 140 24% 32%;
 
-  --background: 210 40% 98%;
-  --foreground: 210 40% 10%;
-  --border: 210 20% 90%;
-  --input: 210 20% 90%;
-  --ring: 210 71% 54%;
+  /* ============================================
+     BACKGROUND & FOREGROUND (Cream-based)
+     ============================================ */
+  --background: 40 18% 97%; /* Cream #fbf9f4 */
+  --foreground: 90 6% 11%; /* Charcoal-Green #1b1c19 */
 
+  /* ============================================
+     BORDERS & INPUTS
+     ============================================ */
+  --border: 40 12% 86%;
+  --input: 40 12% 86%;
+  --ring: 140 24% 32%;
+
+  /* ============================================
+     CARD
+     ============================================ */
   --card: 0 0% 100%;
-  --card-foreground: 210 40% 10%;
-  --card-border: 210 20% 90%;
+  --card-foreground: 90 6% 11%;
+  --card-border: 40 12% 90%;
 
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 210 40% 15%;
-  --sidebar-border: 210 20% 90%;
-  --sidebar-primary: 210 71% 54%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 210 20% 96%;
-  --sidebar-accent-foreground: 210 40% 15%;
-  --sidebar-ring: 210 71% 54%;
-
-  --popover: 0 0% 100%;
-  --popover-foreground: 210 40% 10%;
-  --popover-border: 210 20% 90%;
-
-  --primary: 210 71% 54%; /* #378ADD */
+  /* ============================================
+     PRIMARY (Sage Green)
+     ============================================ */
+  --primary: 140 24% 32%; /* #4b6451 Sage Green */
   --primary-foreground: 0 0% 100%;
+  --primary-container: 130 16% 60%; /* #7e9983 */
+  --on-primary-container: 140 56% 13%; /* #183020 */
+  --inverse-primary: 140 30% 72%; /* #b1ceb6 */
 
-  --secondary: 210 20% 96%;
-  --secondary-foreground: 210 40% 10%;
+  /* ============================================
+     SECONDARY (Forest Green)
+     ============================================ */
+  --secondary: 140 32% 28%; /* #45664b */
+  --secondary-foreground: 0 0% 100%;
+  --secondary-container: 130 40% 85%; /* #c4e9c7 */
+  --on-secondary-container: 140 30% 28%; /* #4a6a4f */
 
-  --muted: 210 20% 96%;
-  --muted-foreground: 210 20% 40%;
+  /* ============================================
+     TERTIARY (Wood Tones)
+     ============================================ */
+  --tertiary: 35 35% 36%; /* #725a38 */
+  --on-tertiary: 0 0% 100%;
+  --tertiary-container: 35 28% 58%; /* #aa8e68 */
+  --on-tertiary-container: 35 60% 12%; /* #3b280a */
 
-  --accent: 210 20% 96%;
-  --accent-foreground: 210 40% 10%;
+  /* ============================================
+     MUTED
+     ============================================ */
+  --muted: 40 14% 92%;
+  --muted-foreground: 140 6% 40%;
 
+  /* ============================================
+     ACCENT
+     ============================================ */
+  --accent: 40 14% 92%;
+  --accent-foreground: 90 6% 11%;
+
+  /* ============================================
+     SIDEBAR
+     ============================================ */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 90 6% 11%;
+  --sidebar-border: 40 12% 90%;
+  --sidebar-primary: 140 24% 32%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 40 18% 96%;
+  --sidebar-accent-foreground: 90 6% 11%;
+  --sidebar-ring: 140 24% 32%;
+
+  /* ============================================
+     POPOVER
+     ============================================ */
+  --popover: 0 0% 100%;
+  --popover-foreground: 90 6% 11%;
+  --popover-border: 40 12% 90%;
+
+  /* ============================================
+     DESTRUCTIVE / ERROR
+     ============================================ */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
+  --destructive-border: 0 84% 60%;
+  --error-container: 4 100% 95%;
+  --on-error-container: 0 62% 29%;
 
-  --success: 161 69% 37%; /* #1D9E75 */
-  --warning: 34 78% 41%; /* #BA7517 */
+  /* ============================================
+     SEMANTIC
+     ============================================ */
+  --success: 140 50% 32%; /* #1D9E75 equivalent in nature */
+  --warning: 35 65% 42%;
 
-  --chart-1: 210 71% 54%;
-  --chart-2: 161 69% 37%;
-  --chart-3: 34 78% 41%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 65% 60%;
+  /* ============================================
+     CHARTS (Nature palette)
+     ============================================ */
+  --chart-1: 140 24% 32%; /* Sage Green */
+  --chart-2: 140 32% 28%; /* Forest Green */
+  --chart-3: 35 35% 36%; /* Wood Tone */
+  --chart-4: 195 45% 45%; /* Teal/Sky */
+  --chart-5: 35 55% 50%; /* Golden/Wheat */
 
-  --app-font-sans: 'Be Vietnam Pro', 'Inter', sans-serif;
-  --app-font-serif: Georgia, serif;
-  --app-font-mono: Menlo, monospace;
-  --radius: .5rem; 
-  --shadow-2xs: 0px 2px 0px 0px hsl(210 20% 90% / 0.5);
-  --shadow-xs: 0px 2px 0px 0px hsl(210 20% 90% / 0.5);
-  --shadow-sm: 0px 2px 0px 0px hsl(210 20% 90% / 0.5), 0px 1px 2px -1px hsl(210 20% 90% / 0.5);
-  --shadow: 0px 2px 0px 0px hsl(210 20% 90% / 0.5), 0px 1px 2px -1px hsl(210 20% 90% / 0.5);
-  --shadow-md: 0px 2px 0px 0px hsl(210 20% 90% / 0.5), 0px 2px 4px -1px hsl(210 20% 90% / 0.5);
-  --shadow-lg: 0px 2px 0px 0px hsl(210 20% 90% / 0.5), 0px 4px 6px -1px hsl(210 20% 90% / 0.5);
-  --shadow-xl: 0px 2px 0px 0px hsl(210 20% 90% / 0.5), 0px 8px 10px -1px hsl(210 20% 90% / 0.5);
-  --shadow-2xl: 0px 2px 0px 0px hsl(210 20% 90% / 0.5);
+  /* ============================================
+     TYPOGRAPHY
+     ============================================ */
+  --app-font-sans: 'Lexend', 'Inter', system-ui, sans-serif;
+  --app-font-serif: Georgia, 'Times New Roman', serif;
+  --app-font-mono: 'SF Mono', 'Fira Code', Menlo, monospace;
   --tracking-normal: 0em;
+
+  /* ============================================
+     BORDER RADIUS (Rounded - Nature theme)
+     ============================================ */
+  --radius: .75rem; /* 12px - more rounded for organic feel */
+
+  /* ============================================
+     SHADOWS (Ambient, green-tinted)
+     ============================================ */
+  /* Soft, diffused shadows with subtle green tint - mimics light through leaves */
+  --shadow-2xs: 0px 1px 2px 0px rgba(58, 90, 64, 0.06);
+  --shadow-xs: 0px 1px 3px 0px rgba(58, 90, 64, 0.08);
+  --shadow-sm: 0px 2px 4px 0px rgba(58, 90, 64, 0.08), 0px 1px 2px -1px rgba(58, 90, 64, 0.06);
+  --shadow: 0px 4px 6px 0px rgba(58, 90, 64, 0.08), 0px 2px 4px -2px rgba(58, 90, 64, 0.06);
+  --shadow-md: 0px 6px 8px 0px rgba(58, 90, 64, 0.08), 0px 3px 4px -2px rgba(58, 90, 64, 0.06);
+  --shadow-lg: 0px 10px 12px 0px rgba(58, 90, 64, 0.08), 0px 4px 6px -4px rgba(58, 90, 64, 0.06);
+  --shadow-xl: 0px 16px 20px 0px rgba(58, 90, 64, 0.10), 0px 6px 8px -6px rgba(58, 90, 64, 0.08);
+  --shadow-2xl: 0px 24px 28px 0px rgba(58, 90, 64, 0.12), 0px 8px 12px -8px rgba(58, 90, 64, 0.10);
+
   --spacing: 0.25rem;
 
-  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  /* ============================================
+     BORDER VARIANTS (Tonal layering)
+     ============================================ */
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-accent-border: hsl(var(--sidebar-accent));
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --primary-border: hsl(var(--primary));
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --secondary-border: hsl(var(--secondary));
   --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --muted-border: hsl(var(--muted));
   --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --accent-border: hsl(var(--accent));
   --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --destructive-border: hsl(var(--destructive));
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
+/* ============================================
+   DARK MODE (Nature-Inspired Dark)
+   ============================================ */
 .dark {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
+  /* Elevation & Effects */
+  --button-outline: rgba(177, 206, 182, 0.10);
+  --badge-outline: rgba(177, 206, 182, 0.05);
+  --opaque-button-border-intensity: 9;
 
-  --opaque-button-border-intensity: 9;  
+  /* Dark mode elevation with subtle green tint */
+  --elevate-1: rgba(177, 206, 182, 0.04);
+  --elevate-2: rgba(177, 206, 182, 0.08);
 
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  /* ============================================
+     MATERIAL 3 SURFACE TOKENS (Dark)
+     ============================================ */
+  --surface: 90 6% 10%;
+  --surface-dim: 90 6% 8%;
+  --surface-bright: 90 6% 14%;
+  --surface-container-lowest: 90 6% 6%;
+  --surface-container-low: 90 6% 8%;
+  --surface-container: 90 6% 10%;
+  --surface-container-high: 90 6% 12%;
+  --surface-container-highest: 90 6% 16%;
+  --on-surface: 90 6% 93%;
+  --on-surface-variant: 140 6% 65%;
+  --inverse-surface: 90 6% 93%;
+  --inverse-on-surface: 90 6% 10%;
+  --outline: 140 6% 55%;
+  --outline-variant: 140 6% 20%;
+  --surface-tint: 140 30% 72%;
 
-  --background: 210 40% 10%;
-  --foreground: 210 40% 98%;
-  --border: 210 20% 20%;
-  --input: 210 20% 20%;
-  --ring: 210 71% 54%;
+  /* ============================================
+     BACKGROUND & FOREGROUND
+     ============================================ */
+  --background: 90 6% 10%;
+  --foreground: 90 6% 93%;
 
-  --card: 210 40% 12%;
-  --card-foreground: 210 40% 98%;
-  --card-border: 210 20% 20%;
+  /* ============================================
+     BORDERS & INPUTS
+     ============================================ */
+  --border: 140 6% 20%;
+  --input: 140 6% 20%;
+  --ring: 140 30% 72%;
 
-  --sidebar: 210 40% 12%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 210 20% 20%;
-  --sidebar-primary: 210 71% 54%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 210 20% 20%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-ring: 210 71% 54%;
+  /* ============================================
+     CARD
+     ============================================ */
+  --card: 90 6% 10%;
+  --card-foreground: 90 6% 93%;
+  --card-border: 140 6% 20%;
 
-  --popover: 210 40% 12%;
-  --popover-foreground: 210 40% 98%;
-  --popover-border: 210 20% 20%;
+  /* ============================================
+     PRIMARY (Light Sage for dark mode)
+     ============================================ */
+  --primary: 140 30% 72%;
+  --primary-foreground: 140 56% 8%;
+  --primary-container: 140 24% 32%;
+  --on-primary-container: 130 40% 85%;
+  --inverse-primary: 140 24% 32%;
 
-  --primary: 210 71% 54%;
-  --primary-foreground: 0 0% 100%;
+  /* ============================================
+     SECONDARY
+     ============================================ */
+  --secondary: 130 40% 50%;
+  --secondary-foreground: 140 56% 8%;
+  --secondary-container: 140 24% 28%;
+  --on-secondary-container: 130 40% 85%;
 
-  --secondary: 210 20% 20%;
-  --secondary-foreground: 210 40% 98%;
+  /* ============================================
+     TERTIARY
+     ============================================ */
+  --tertiary: 35 28% 58%;
+  --on-tertiary: 35 60% 8%;
+  --tertiary-container: 35 35% 32%;
+  --on-tertiary-container: 35 55% 80%;
 
-  --muted: 210 20% 20%;
-  --muted-foreground: 210 20% 60%;
+  /* ============================================
+     MUTED
+     ============================================ */
+  --muted: 140 6% 15%;
+  --muted-foreground: 140 6% 55%;
 
-  --accent: 210 20% 20%;
-  --accent-foreground: 210 40% 98%;
+  /* ============================================
+     ACCENT
+     ============================================ */
+  --accent: 140 6% 15%;
+  --accent-foreground: 90 6% 93%;
 
-  --destructive: 0 84% 60%;
+  /* ============================================
+     SIDEBAR
+     ============================================ */
+  --sidebar: 90 6% 10%;
+  --sidebar-foreground: 90 6% 93%;
+  --sidebar-border: 140 6% 20%;
+  --sidebar-primary: 140 30% 72%;
+  --sidebar-primary-foreground: 140 56% 8%;
+  --sidebar-accent: 90 6% 14%;
+  --sidebar-accent-foreground: 90 6% 93%;
+  --sidebar-ring: 140 30% 72%;
+
+  /* ============================================
+     POPOVER
+     ============================================ */
+  --popover: 90 6% 12%;
+  --popover-foreground: 90 6% 93%;
+  --popover-border: 140 6% 20%;
+
+  /* ============================================
+     DESTRUCTIVE / ERROR
+     ============================================ */
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
+  --destructive-border: 0 72% 51%;
+  --error-container: 0 50% 20%;
+  --on-error-container: 4 100% 90%;
 
-  --success: 161 69% 37%;
-  --warning: 34 78% 41%;
+  /* ============================================
+     SEMANTIC
+     ============================================ */
+  --success: 140 50% 50%;
+  --warning: 35 65% 55%;
 
-  --chart-1: 210 71% 54%;
-  --chart-2: 161 69% 37%;
-  --chart-3: 34 78% 41%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 65% 60%;
+  /* ============================================
+     CHARTS
+     ============================================ */
+  --chart-1: 140 30% 72%;
+  --chart-2: 130 40% 50%;
+  --chart-3: 35 28% 58%;
+  --chart-4: 195 45% 60%;
+  --chart-5: 35 55% 65%;
 
-  --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.5);
-  --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.5);
-  --shadow-sm: 0px 2px 0px 0px hsl(0 0% 0% / 0.5), 0px 1px 2px -1px hsl(0 0% 0% / 0.5);
-  --shadow: 0px 2px 0px 0px hsl(0 0% 0% / 0.5), 0px 1px 2px -1px hsl(0 0% 0% / 0.5);
-  --shadow-md: 0px 2px 0px 0px hsl(0 0% 0% / 0.5), 0px 2px 4px -1px hsl(0 0% 0% / 0.5);
-  --shadow-lg: 0px 2px 0px 0px hsl(0 0% 0% / 0.5), 0px 4px 6px -1px hsl(0 0% 0% / 0.5);
-  --shadow-xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.5), 0px 8px 10px -1px hsl(0 0% 0% / 0.5);
-  --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.5);
+  /* ============================================
+     SHADOWS (Darker for dark mode)
+     ============================================ */
+  --shadow-2xs: 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0px 2px 4px 0px rgba(0, 0, 0, 0.35), 0px 1px 2px -1px rgba(0, 0, 0, 0.3);
+  --shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.35), 0px 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0px 6px 8px 0px rgba(0, 0, 0, 0.35), 0px 3px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0px 10px 12px 0px rgba(0, 0, 0, 0.4), 0px 4px 6px -4px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0px 16px 20px 0px rgba(0, 0, 0, 0.45), 0px 6px 8px -6px rgba(0, 0, 0, 0.4);
+  --shadow-2xl: 0px 24px 28px 0px rgba(0, 0, 0, 0.5), 0px 8px 12px -8px rgba(0, 0, 0, 0.45);
 }
 
 @layer base {
@@ -232,31 +439,100 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /* ============================================
+     NATURE-INSPIRED TYPOGRAPHY SCALE
+     ============================================ */
+  h1 {
+    font-family: var(--app-font-sans);
+    font-size: 3rem; /* 48px */
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-family: var(--app-font-sans);
+    font-size: 2rem; /* 32px */
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-family: var(--app-font-sans);
+    font-size: 1.5rem; /* 24px */
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  h4 {
+    font-family: var(--app-font-sans);
+    font-size: 1.25rem; /* 20px */
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  p {
+    font-family: var(--app-font-sans);
+    font-size: 1rem; /* 16px */
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* ============================================
+     CUSTOM SELECTION COLORS
+     ============================================ */
+  ::selection {
+    background-color: hsl(140 24% 32% / 0.2);
+    color: hsl(90 6% 11%);
+  }
+
+  .dark ::selection {
+    background-color: hsl(140 30% 72% / 0.3);
+    color: hsl(90 6% 93%);
+  }
+
+  /* ============================================
+     SCROLLBAR STYLING (Nature-themed)
+     ============================================ */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(40 14% 92%);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(140 6% 60%);
+    border-radius: 5px;
+    border: 2px solid hsl(40 14% 92%);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(140 24% 45%);
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: hsl(90 6% 10%);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: hsl(140 6% 25%);
+    border-color: hsl(90 6% 10%);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: hsl(140 30% 45%);
+  }
 }
 
-/**
- * Using the elevate system.
- * Automatic contrast adjustment.
- *
- * <element className="hover-elevate" />
- * <element className="active-elevate-2" />
- *
- * // Using the tailwind utility when a data attribute is "on"
- * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
- * // Or manually controlling the toggle state
- * <element className="toggle-elevate toggle-elevated" />
- *
- * Elevation systems have to handle many states.
- * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
- * - toggled or not
- * - focused or not (this is not handled with these utilities)
- *
- * Even without handling focused or not, this is six possible combinations that
- * need to be distinguished from eachother visually.
- */
 @layer utilities {
 
-  /* Hide ugly search cancel button in Chrome until we can style it properly */
+  /* Hide ugly search cancel button in Chrome */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
@@ -268,42 +544,31 @@
     pointer-events: none;
   }
 
-  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
-   * buttons/badges can remove the automatic brightness adjustment on interactions
-   * and program their own. */
+  /* ============================================
+     ELEVATION UTILITIES (Nature-themed)
+     ============================================ */
   .no-default-hover-elevate {}
 
   .no-default-active-elevate {}
 
-
-  /**
-   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
-   * This way they can stack/compound. Both will overlap the parent's borders!
-   * So borders will be automatically adjusted both on toggle, and hover/active,
-   * and they will be compounded.
-   */
   .toggle-elevate::before,
   .toggle-elevate-2::before {
     content: "";
     pointer-events: none;
     position: absolute;
     inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
     z-index: -1;
-    /* sits behind content but above backdrop */
   }
 
   .toggle-elevate.toggle-elevated::before {
     background-color: var(--elevate-2);
   }
 
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
   .border.toggle-elevate::before {
     inset: -1px;
   }
 
-  /* Does not work on elements with overflow:hidden! */
   .hover-elevate:not(.no-default-hover-elevate),
   .active-elevate:not(.no-default-active-elevate),
   .hover-elevate-2:not(.no-default-hover-elevate),
@@ -320,10 +585,8 @@
     pointer-events: none;
     position: absolute;
     inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
     z-index: 999;
-    /* sits in front of content */
   }
 
   .hover-elevate:hover:not(.no-default-hover-elevate)::after,
@@ -336,24 +599,101 @@
     background-color: var(--elevate-2);
   }
 
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
   .border.active-elevate:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after {
     inset: -1px;
+  }
+
+  /* ============================================
+     NATURE-INSPIRED SPECIAL UTILITIES
+     ============================================ */
+
+  /* Focus ring with sage green tint */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+    --tw-ring-color: hsl(var(--primary));
+    --tw-ring-offset-color: hsl(var(--background));
+  }
+
+  /* Pill shape for nature-inspired buttons */
+  .pill {
+    border-radius: 9999px;
+  }
+
+  /* Card hover effect - subtle lift like a leaf */
+  .card-lift {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .card-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Progress bar gradient - sage to forest */
+  .progress-natural {
+    background: linear-gradient(
+      90deg,
+      hsl(140 24% 32%) 0%,
+      hsl(140 32% 28%) 100%
+    );
+  }
+
+  /* Focus timer gradient */
+  .timer-gradient {
+    background: conic-gradient(
+      from 0deg,
+      hsl(140 24% 32%) 0%,
+      hsl(35 35% 36%) 50%,
+      hsl(140 24% 32%) 100%
+    );
+  }
+
+  /* Topic chip / tag style */
+  .chip {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium;
+    background-color: hsl(140 16% 85%);
+    color: hsl(140 56% 13%);
+  }
+
+  .chip-environment {
+    background-color: hsl(140 40% 85%);
+    color: hsl(140 56% 13%);
+  }
+
+  .chip-technology {
+    background-color: hsl(210 40% 85%);
+    color: hsl(210 56% 20%);
+  }
+
+  .chip-culture {
+    background-color: hsl(35 35% 85%);
+    color: hsl(35 56% 20%);
+  }
+
+  /* Organic blob shape */
+  .blob {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
   }
 }
 
+/* ============================================
+   BLANK TOKEN (for tokenization display)
+   ============================================ */
 .blank-token {
   display: inline-block;
   padding: 0.5px 6px;
-  background-color: #f3e8ff;
-  color: #7c3aed;
+  background-color: hsl(140 40% 85%);
+  color: hsl(140 56% 13%);
   border-radius: 4px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
   font-weight: 600;
-  border-bottom: 2px solid #a855f7;
+  border-bottom: 2px solid hsl(140 24% 32%);
 }

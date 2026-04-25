@@ -299,15 +299,40 @@ paths:
           in: query
           schema:
             type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
       responses:
         "200":
-          description: List of questions
+          description: Paginated list of questions
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Question"
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Question"
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      totalPages:
+                        type: integer
     post:
       operationId: createQuestion
       tags: [questions]
