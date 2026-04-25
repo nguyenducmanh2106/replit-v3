@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./dist/index.js",
-    "./image": "./dist/image/index.js"
+    ".": "./src/index.ts",
+    "./image": "./src/image/index.ts"
   },
   "dependencies": {
     "@google/genai": "^1.3.0",

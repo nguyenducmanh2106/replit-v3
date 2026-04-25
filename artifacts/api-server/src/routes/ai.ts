@@ -338,7 +338,7 @@ Generate encouraging, personalized feedback in Vietnamese. Return ONLY this JSON
 }`;
 
       const rawContent = await chat([{ role: "user", content: prompt }], {
-        model: "gemma-4-31b-it",
+        model: "gemini-3.1-flash-lite-preview",
         // maxTokens: 1024,
       });
 
