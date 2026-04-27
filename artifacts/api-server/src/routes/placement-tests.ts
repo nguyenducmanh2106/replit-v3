@@ -37,15 +37,104 @@ function safeJson<T>(str: unknown, fallback: T): T {
 
 type QLike = { type: string; options: unknown; correctAnswer: string | null; metadata: unknown; points: number };
 
+function normalizeAnswerText(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function matchingPairsToMap(input: unknown): Record<string, string> {
+  const parsed = safeJson<unknown>(input, input);
+  const out: Record<string, string> = {};
+
+  if (Array.isArray(parsed)) {
+    for (const item of parsed) {
+      if (typeof item === "string") {
+        const sepIdx = item.indexOf("|");
+        if (sepIdx >= 0) {
+          const left = item.slice(0, sepIdx).trim();
+          const right = item.slice(sepIdx + 1).trim();
+          if (left) out[left] = right;
+        }
+      } else if (item && typeof item === "object") {
+        const left = (item as Record<string, unknown>).left;
+        const right = (item as Record<string, unknown>).right;
+        if (left != null && String(left).trim()) out[String(left).trim()] = String(right ?? "").trim();
+      }
+    }
+    return out;
+  }
+
+  if (typeof parsed === "string") {
+    const sepIdx = parsed.indexOf("|");
+    if (sepIdx >= 0) {
+      const left = parsed.slice(0, sepIdx).trim();
+      const right = parsed.slice(sepIdx + 1).trim();
+      if (left) out[left] = right;
+    }
+    return out;
+  }
+
+  if (parsed && typeof parsed === "object") {
+    for (const key of ["pairs", "matches", "options"]) {
+      const maybePairs = (parsed as Record<string, unknown>)[key];
+      if (Array.isArray(maybePairs)) return matchingPairsToMap(maybePairs);
+    }
+
+    for (const [left, right] of Object.entries(parsed as Record<string, unknown>)) {
+      if (left.trim()) out[left.trim()] = String(right ?? "").trim();
+    }
+  }
+
+  return out;
+}
+
+function normalizedMatchingMap(input: unknown): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const [left, right] of Object.entries(matchingPairsToMap(input))) {
+    const normalizedLeft = normalizeAnswerText(left);
+    const normalizedRight = normalizeAnswerText(right);
+    if (normalizedLeft && normalizedRight) {
+      map.set(normalizedLeft, normalizedRight);
+    }
+  }
+  return map;
+}
+
+function isManualOnlyType(type: string): boolean {
+  return type === "essay" || type === "open_end" || type === "long_answer";
+}
+
+function computePlacementScores(
+  questions: Array<typeof placementTestQuestionsTable.$inferSelect>,
+  answers: Array<typeof placementAnswersTable.$inferSelect>
+) {
+  const qMap = new Map(questions.map(q => [q.id, q]));
+  const scoredAnswers = answers.map(answer => {
+    const q = qMap.get(answer.questionId);
+    if (!q) return answer;
+    const grade = gradePlacementAnswer(q, answer.studentAnswer);
+    return {
+      ...answer,
+      isCorrect: grade.isCorrect,
+      autoScore: grade.autoScore,
+    };
+  });
+
+  const autoScore = scoredAnswers.reduce((sum, answer) => sum + (answer.autoScore ?? 0), 0);
+  const manualScore = scoredAnswers.reduce((sum, answer) => sum + (answer.manualScore ?? 0), 0);
+  const totalScore = scoredAnswers.reduce((sum, answer) => sum + (answer.manualScore ?? answer.autoScore ?? 0), 0);
+
+  return { answers: scoredAnswers, autoScore, manualScore, totalScore };
+}
+
 function gradePlacementAnswer(q: QLike, studentAnswer: string | null): { isCorrect: boolean | null; autoScore: number } {
   if (studentAnswer == null || studentAnswer.trim() === "") return { isCorrect: null, autoScore: 0 };
 
   const ca = q.correctAnswer;
   const opts = q.options;
-  const norm = (s: string | undefined | null) => (s ?? "").trim().toLowerCase();
+  const norm = normalizeAnswerText;
 
   // Manual-only types (unless essay has autoGrade — we still treat as manual here)
-  if (q.type === "essay" || q.type === "open_end" || q.type === "long_answer") {
+  if (isManualOnlyType(q.type)) {
     return { isCorrect: null, autoScore: 0 };
   }
 
@@ -100,25 +189,13 @@ function gradePlacementAnswer(q: QLike, studentAnswer: string | null): { isCorre
   }
 
   if (q.type === "matching") {
-    let correctDict = safeJson<Record<string, string>>(ca, {} as Record<string, string>);
-    if (!correctDict || typeof correctDict !== "object" || Array.isArray(correctDict) || Object.keys(correctDict).length === 0) {
-      const arr = safeJson<unknown>(opts, null);
-      correctDict = {};
-      if (Array.isArray(arr)) {
-        for (const item of arr) {
-          if (typeof item === "string" && item.includes("|")) {
-            const [l, ...rest] = item.split("|");
-            correctDict[l!.trim()] = rest.join("|").trim();
-          } else if (item && typeof item === "object" && "left" in (item as any) && "right" in (item as any)) {
-            correctDict[(item as any).left] = (item as any).right;
-          }
-        }
-      }
-    }
-    const entries = Object.entries(correctDict);
-    if (entries.length === 0) return { isCorrect: null, autoScore: 0 };
-    const studentMatches = safeJson<Record<string, string>>(studentAnswer, {} as Record<string, string>);
-    const ok = entries.every(([l, r]) => norm(studentMatches[l]) === norm(r));
+    const correctMatches = normalizedMatchingMap(opts);
+    if (correctMatches.size === 0) return { isCorrect: null, autoScore: 0 };
+
+    const studentMatches = normalizedMatchingMap(studentAnswer);
+    const ok = studentMatches.size === correctMatches.size
+      && [...studentMatches.keys()].every(left => correctMatches.has(left))
+      && [...correctMatches.entries()].every(([left, right]) => studentMatches.get(left) === right);
     return { isCorrect: ok, autoScore: ok ? q.points : 0 };
   }
 
@@ -210,8 +287,8 @@ router.get("/placement-tests", requireAuth, async (req, res): Promise<void> => {
       timeLimitMinutes: placementTestsTable.timeLimitMinutes,
       createdAt: placementTestsTable.createdAt,
       updatedAt: placementTestsTable.updatedAt,
-      submissionCount: sql<number>`(SELECT COUNT(*)::int FROM ${placementSubmissionsTable} WHERE ${placementSubmissionsTable.testId} = ${placementTestsTable.id} AND ${placementSubmissionsTable.submittedAt} IS NOT NULL)`,
-      pendingCount: sql<number>`(SELECT COUNT(*)::int FROM ${placementSubmissionsTable} WHERE ${placementSubmissionsTable.testId} = ${placementTestsTable.id} AND ${placementSubmissionsTable.gradingStatus} = 'pending' AND ${placementSubmissionsTable.submittedAt} IS NOT NULL)`,
+      submissionCount: sql<number>`(SELECT COUNT(*)::int FROM placement_submissions WHERE test_id = placement_tests.id AND submitted_at IS NOT NULL)`,
+      pendingCount: sql<number>`(SELECT COUNT(*)::int FROM placement_submissions WHERE test_id = placement_tests.id AND grading_status = 'pending' AND submitted_at IS NOT NULL)`,
     })
     .from(placementTestsTable)
     .orderBy(desc(placementTestsTable.updatedAt));
@@ -591,7 +668,18 @@ router.get("/placement-submissions/:sid", requireAuth, async (req, res): Promise
     .select()
     .from(placementAnswersTable)
     .where(eq(placementAnswersTable.submissionId, sid));
-  res.json({ submission: sub, test, questions, answers });
+  const computed = computePlacementScores(questions, answers);
+  res.json({
+    submission: {
+      ...sub,
+      autoScore: computed.autoScore,
+      manualScore: computed.manualScore,
+      totalScore: computed.totalScore,
+    },
+    test,
+    questions,
+    answers: computed.answers,
+  });
 });
 
 // PATCH /placement-submissions/:sid/grade (teacher grading)
@@ -621,19 +709,34 @@ router.patch("/placement-submissions/:sid/grade", requireAuth, async (req, res):
     });
   }
 
-  // recompute totalScore = sum(coalesce(manualScore, autoScore)) across all answers of this submission
+  const questions = await db
+    .select()
+    .from(placementTestQuestionsTable)
+    .where(eq(placementTestQuestionsTable.testId, sub.testId));
   const answers = await db.select().from(placementAnswersTable).where(eq(placementAnswersTable.submissionId, sid));
-  const manualScore = answers.reduce((s, a) => s + (a.manualScore ?? 0), 0);
-  const autoScore = answers.reduce((s, a) => s + (a.autoScore ?? 0), 0);
-  const totalScore = answers.reduce((s, a) => s + (a.manualScore ?? a.autoScore ?? 0), 0);
+  const computed = computePlacementScores(questions, answers);
+
+  if (computed.answers.length > 0) {
+    await db.transaction(async (tx) => {
+      for (const answer of computed.answers) {
+        await tx
+          .update(placementAnswersTable)
+          .set({
+            isCorrect: answer.isCorrect,
+            autoScore: answer.autoScore,
+          })
+          .where(eq(placementAnswersTable.id, answer.id));
+      }
+    });
+  }
 
   const [updated] = await db
     .update(placementSubmissionsTable)
     .set({
       teacherComment: body.teacherComment ?? sub.teacherComment,
-      autoScore,
-      manualScore,
-      totalScore,
+      autoScore: computed.autoScore,
+      manualScore: computed.manualScore,
+      totalScore: computed.totalScore,
       gradingStatus: "graded",
       gradedAt: new Date(),
       gradedBy: user.id,
@@ -653,13 +756,27 @@ router.post("/placement-submissions/:sid/send-result", requireAuth, async (req, 
   if (sub.gradingStatus !== "graded") { res.status(400).json({ error: "Submission chưa được chấm" }); return; }
   const [test] = await db.select().from(placementTestsTable).where(eq(placementTestsTable.id, sub.testId)).limit(1);
   if (!test) { res.status(404).json({ error: "Test not found" }); return; }
+  const questions = await db
+    .select()
+    .from(placementTestQuestionsTable)
+    .where(eq(placementTestQuestionsTable.testId, sub.testId));
+  const answers = await db.select().from(placementAnswersTable).where(eq(placementAnswersTable.submissionId, sid));
+  const computed = computePlacementScores(questions, answers);
+  await db
+    .update(placementSubmissionsTable)
+    .set({
+      autoScore: computed.autoScore,
+      manualScore: computed.manualScore,
+      totalScore: computed.totalScore,
+    })
+    .where(eq(placementSubmissionsTable.id, sid));
 
   try {
     await sendPlacementResultEmail({
       to: sub.studentEmail,
       studentName: sub.studentName,
       testTitle: test.title,
-      totalScore: sub.totalScore ?? 0,
+      totalScore: computed.totalScore,
       maxScore: test.maxScore ?? 0,
       passScore: test.passScore,
       teacherComment: sub.teacherComment,
@@ -821,7 +938,7 @@ router.post("/public/placement-submissions/:sid/submit", async (req, res): Promi
   }
 
   const now = new Date();
-  const hasManual = questions.some(q => q.type === "long_answer" || q.type === "short_answer");
+  const hasManual = questions.some(q => isManualOnlyType(q.type));
   const gradingStatus = hasManual ? "pending" : "graded";
   const totalScore = hasManual ? autoScore : autoScore; // manual will be added later
 

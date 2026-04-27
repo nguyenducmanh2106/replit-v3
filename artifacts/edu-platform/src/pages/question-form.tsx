@@ -22,6 +22,7 @@ import {
   BookOpen, Headphones, Clock, Info, AlertCircle, X, RotateCcw,
   MessageSquare, HelpCircle, StickyNote, Sparkles, Check, ChevronRight,
   FileQuestion, Type, Image, Mic, AlignLeft, ListOrdered, Layers,
+  Eye,
 } from "lucide-react";
 
 // ─── Design System: Nature-Inspired IELTS Platform ─────────────────────────────
@@ -77,36 +78,32 @@ const SKILL_LABELS: Record<string, string> = { reading: "Reading", writing: "Wri
 const SKILL_COLORS: Record<string, string> = { reading: "emerald", writing: "amber", listening: "blue", speaking: "rose" };
 
 const QUESTION_TYPES = [
-  { value: "mcq", label: "Multiple Choice", icon: "A", color: "primary" },
-  { value: "true_false", label: "True / False", icon: "T/F", color: "secondary" },
-  { value: "fill_blank", label: "Fill in the Blank", icon: "_", color: "tertiary" },
-  { value: "word_selection", label: "Word Selection", icon: "W", color: "primary" },
-  { value: "matching", label: "Matching", icon: "M", color: "secondary" },
-  { value: "drag_drop", label: "Drag & Drop", icon: "D", color: "tertiary" },
-  { value: "sentence_reorder", label: "Sentence Reorder", icon: "S", color: "primary" },
-  { value: "reading", label: "Reading Comprehension", icon: "R", color: "secondary" },
-  { value: "listening", label: "Listening Comprehension", icon: "L", color: "primary" },
-  { value: "video_interactive", label: "Video Interactive", icon: "V", color: "tertiary" },
-  { value: "essay", label: "Essay", icon: "E", color: "secondary" },
-  { value: "open_end", label: "Open Ended", icon: "O", color: "tertiary" },
+  { value: "mcq", label: "MCQ (Trắc nghiệm)", icon: "A", color: "primary" },
+  { value: "true_false", label: "True/False (Đúng/Sai)", icon: "T/F", color: "secondary" },
+  { value: "fill_blank", label: "Fill in the blank (Điền)", icon: "_", color: "tertiary" },
+  { value: "word_selection", label: "Word selection (Chọn từ)", icon: "W", color: "primary" },
+  { value: "matching", label: "Matching (Nối cặp)", icon: "M", color: "secondary" },
+  { value: "drag_drop", label: "Drag & Drop (Kéo thả)", icon: "D", color: "tertiary" },
+  { value: "sentence_reorder", label: "Sentence reorder", icon: "S", color: "primary" },
+  { value: "reading", label: "Reading (Đọc hiểu)", icon: "R", color: "secondary" },
+  { value: "listening", label: "Listening (Nghe hiểu)", icon: "L", color: "primary" },
+  { value: "video_interactive", label: "Video interactive", icon: "V", color: "tertiary" },
+  { value: "essay", label: "Essay (Bài luận)", icon: "E", color: "secondary" },
+  { value: "open_end", label: "Open ended", icon: "O", color: "tertiary" },
 ] as const;
 
 const QUESTION_CATEGORIES = [
   {
-    title: "Basic",
+    title: "Standard Types",
     types: ["mcq", "true_false", "fill_blank", "word_selection"],
   },
   {
-    title: "Interactive",
+    title: "Interactive Types",
     types: ["matching", "drag_drop", "sentence_reorder"],
   },
   {
-    title: "Comprehension",
-    types: ["reading", "listening", "video_interactive"],
-  },
-  {
-    title: "Writing",
-    types: ["essay", "open_end"],
+    title: "Core Skills",
+    types: ["reading", "listening", "video_interactive", "essay", "open_end"],
   },
 ];
 
@@ -159,6 +156,40 @@ function getColorClasses(color: ColorKey) {
     },
   };
   return map[color];
+}
+
+function getQuestionTypeTitle(type: string) {
+  const map: Record<string, string> = {
+    mcq: "Multiple Choice Question (MCQ)",
+    true_false: "True / False Question",
+    fill_blank: "Fill in the Blank",
+    word_selection: "Word Selection",
+    matching: "Matching",
+    drag_drop: "Drag & Drop",
+    sentence_reorder: "Sentence Reorder",
+    reading: "Reading Comprehension",
+    listening: "Listening Comprehension",
+    video_interactive: "Video Interactive",
+    essay: "Essay Prompt",
+    open_end: "Open Ended Response",
+  };
+  return map[type] ?? "Question";
+}
+
+function QuestionTypeIcon({ type, className = "w-5 h-5" }: { type: string; className?: string }) {
+  const props = { className, strokeWidth: 2.2 };
+  if (type === "mcq") return <CheckCircle2 {...props} />;
+  if (type === "true_false") return <X {...props} />;
+  if (type === "fill_blank") return <Type {...props} />;
+  if (type === "word_selection") return <AlignLeft {...props} />;
+  if (type === "matching") return <Layers {...props} />;
+  if (type === "drag_drop") return <GripVertical {...props} />;
+  if (type === "sentence_reorder") return <ListOrdered {...props} />;
+  if (type === "reading") return <BookOpen {...props} />;
+  if (type === "listening") return <Headphones {...props} />;
+  if (type === "video_interactive") return <VideoIcon {...props} />;
+  if (type === "essay") return <MessageSquare {...props} />;
+  return <HelpCircle {...props} />;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -276,76 +307,104 @@ function McqForm({ content, setContent, options, setOptions, allowMultiple, setA
   const letters = "ABCDEFGHIJ";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Question Content *</Label>
-        <MarkdownEditor value={content} onChange={setContent} rows={4}
-          placeholder="Enter question content (Markdown supported)..." />
-      </div>
-
-      <div className="flex items-center gap-3 p-4 rounded-xl" style={{ backgroundColor: DS.primaryPale, border: `1px solid ${DS.primaryPaleDim}` }}>
-        <Switch checked={allowMultiple} onCheckedChange={setAllowMultiple} id="allow-multiple" />
-        <Label htmlFor="allow-multiple" className="text-sm font-medium cursor-pointer" style={{ color: DS.onPrimaryContainer }}>
-          Allow multiple correct answers
+        <Label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: DS.onSurface }}>
+          Content / Prompt
         </Label>
-        <span className="text-xs ml-auto px-2 py-1 rounded-full" style={{ backgroundColor: DS.secondaryContainer, color: DS.onSecondaryContainer }}>
-          {allowMultiple ? "Multiple answers" : "Single answer"}
-        </span>
+        <MarkdownEditor
+          value={content}
+          onChange={setContent}
+          rows={5}
+          className="question-creator-editor"
+          placeholder="Type your question or scenario here..."
+        />
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <Label className="text-sm font-medium" style={{ color: DS.onSurface }}>Answer Choices</Label>
-          <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ backgroundColor: DS.secondaryContainer, color: DS.onSecondaryContainer }}>
-            {options.filter(o => o.isCorrect).length} correct
-          </span>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <Label className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: DS.onSurface }}>
+            Answer Options
+          </Label>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-xs font-medium text-[#1f5c2f] sm:inline">
+              Select the correct answer{allowMultiple ? "s" : ""}
+            </span>
+            <label className="flex cursor-pointer items-center gap-2 rounded-full border border-[#c4cabe] bg-[#f4f2ec] px-3 py-1 text-xs font-medium text-[#3e5142]">
+              <Switch checked={allowMultiple} onCheckedChange={setAllowMultiple} id="allow-multiple" />
+              Multiple
+            </label>
+          </div>
         </div>
         <div className="space-y-3">
           {options.map((opt, i) => (
-            <div key={i} className="flex items-center gap-3 p-4 rounded-xl transition-all"
-              style={{
-                backgroundColor: opt.isCorrect ? DS.secondaryContainer : DS.surfaceContainerLowest,
-                border: `2px solid ${opt.isCorrect ? DS.secondary : DS.outlineVariant}`,
-              }}>
-              <button type="button" onClick={() => toggleCorrect(i)}
-                className="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all"
+            <div key={i} className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => toggleCorrect(i)}
+                className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border transition-all"
                 style={{
-                  borderColor: opt.isCorrect ? DS.secondary : DS.outlineVariant,
-                  backgroundColor: opt.isCorrect ? DS.secondary : 'transparent',
-                }}>
-                {opt.isCorrect
-                  ? allowMultiple ? <CheckCircle2 className="w-4 h-4 text-white" /> : <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                  : <Circle className="w-4 h-4" style={{ color: DS.outline }} />}
+                  borderColor: opt.isCorrect ? DS.primary : DS.outlineVariant,
+                  backgroundColor: opt.isCorrect ? DS.primary : "transparent",
+                }}
+                aria-label={`Mark option ${letters[i]} as correct`}
+              >
+                {opt.isCorrect && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
               </button>
-              <span className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+              <div
+                className="flex min-h-[58px] flex-1 items-center gap-4 rounded-[10px] border px-4 transition-all"
                 style={{
-                  backgroundColor: opt.isCorrect ? DS.secondary : DS.surfaceContainer,
-                  color: opt.isCorrect ? DS.onSecondary : DS.onSurfaceVariant,
-                }}>
-                {letters[i]}
-              </span>
-              <Input value={opt.text} onChange={e => updateOption(i, { text: e.target.value })}
-                placeholder={`Choice ${letters[i]}`}
-                className="flex-1 border-0 shadow-none p-0 h-auto text-sm focus-visible:ring-0 bg-transparent"
-                style={{ backgroundColor: 'transparent' }} />
-              <button type="button" onClick={() => removeOption(i)} disabled={options.length <= 2}
-                className="text-gray-400 hover:text-red-400 disabled:opacity-30 transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
+                  backgroundColor: "#fffefa",
+                  borderColor: opt.isCorrect ? DS.primary : "#cfd4ca",
+                  boxShadow: opt.isCorrect ? `0 0 0 1px ${DS.primary}` : "none",
+                }}
+              >
+                <span className="w-5 flex-shrink-0 text-sm font-bold" style={{ color: DS.primary }}>
+                  {letters[i]}
+                </span>
+                <Input
+                  value={opt.text}
+                  onChange={e => updateOption(i, { text: e.target.value })}
+                  placeholder={`Choice ${letters[i]}`}
+                  className="h-auto flex-1 border-0 bg-transparent p-0 text-[15px] shadow-none focus-visible:ring-0"
+                  style={{ backgroundColor: "transparent", color: DS.onSurface }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeOption(i)}
+                  disabled={options.length <= 2}
+                  className="rounded-md p-1 text-[#8a8f86] transition-colors hover:bg-[#f1e8e4] hover:text-[#a33a27] disabled:opacity-30"
+                  aria-label={`Remove option ${letters[i]}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={addOption}
-          className="mt-3 w-full border-2 border-dashed"
-          style={{ borderColor: DS.outlineVariant, color: DS.primary, backgroundColor: DS.surfaceContainerLow }}>
-          <Plus className="w-4 h-4 mr-1" /> Add choice
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addOption}
+          className="mt-3 h-12 w-full rounded-[10px] border border-dashed bg-transparent text-[15px] font-medium"
+          style={{ borderColor: DS.outlineVariant, color: DS.onSurface }}
+        >
+          <Plus className="mr-2 h-4 w-4 rounded-full bg-[#405f49] p-0.5 text-white" /> Add Option
         </Button>
       </div>
 
       <div>
-        <Label className="text-sm font-medium block mb-2" style={{ color: DS.onSurface }}>Explanation (optional)</Label>
-        <MarkdownEditor value={explanation} onChange={setExplanation} rows={3}
-          placeholder="Explain why this is the correct answer (Markdown supported)..." />
+        <Label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: DS.onSurface }}>
+          Answer Explanation (Optional)
+        </Label>
+        <Textarea
+          value={explanation}
+          onChange={e => setExplanation(e.target.value)}
+          rows={3}
+          placeholder="Explain why the correct answer is right..."
+          className="resize-y rounded-[10px] border-[#cfd4ca] bg-[#fffefa] text-sm italic"
+        />
       </div>
     </div>
   );
@@ -1700,254 +1759,130 @@ export default function QuestionFormPage() {
     );
   }
 
-  const typeCfg = QUESTION_TYPES.find(t => t.value === qType);
-  const typeColors = getColorClasses(typeCfg?.color as ColorKey || "primary");
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: DS.surface }}>
-      {/* Modern Header - Nature Inspired */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl shadow-sm" style={{ backgroundColor: `${DS.surface}F2`, borderBottom: `1px solid ${DS.outlineVariant}` }}>
-        <div className="max-w-[1400px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/questions")}
-                className="gap-2"
-                style={{ color: DS.onSurfaceVariant }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.surfaceContainer}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-              <div className="h-8 w-px" style={{ backgroundColor: DS.outlineVariant }} />
-              <div>
-                <h1 className="text-lg font-semibold" style={{ color: DS.onSurface, fontFamily: 'Lexend, sans-serif' }}>
-                  {isEditing ? "Edit Question" : "Create Question"}
-                </h1>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Badge variant="outline" className="text-xs font-medium"
-                    style={{ borderColor: DS.primaryPaleDim, color: DS.primary, backgroundColor: DS.primaryPale }}>
-                    {SKILL_LABELS[skill]}
-                  </Badge>
-                  <span className="text-xs" style={{ color: DS.onSurfaceVariant }}>Level {level}</span>
-                </div>
-              </div>
-            </div>
+    <div className="question-creator-page -m-6 min-h-screen bg-[#fbfaf4] px-5 py-6 text-[#1b1c19] sm:px-8">
+      <div className="mx-auto max-w-[1200px]">
+        <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/questions")}
+              className="-ml-3 mb-2 h-8 gap-2 rounded-full px-3 text-[#576058] hover:bg-[#e9eddf]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to bank
+            </Button>
+            <h1 className="text-[clamp(2.25rem,5vw,4rem)] font-semibold leading-none text-[#41664d]">
+              Question Creator
+            </h1>
+            <p className="mt-3 max-w-xl text-[15px] leading-6 text-[#20251f]">
+              Craft engaging academic challenges. Choose a question type to begin your garden of knowledge.
+            </p>
+          </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAiOpen(true)}
-                className="gap-2 text-white border-0 shadow-md"
-                style={{ background: `linear-gradient(135deg, ${DS.tertiary} 0%, ${DS.secondary} 100%)` }}>
-                <Sparkles className="w-4 h-4" />
-                AI Generate
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="gap-2 text-white shadow-lg"
-                style={{
-                  backgroundColor: DS.primary,
-                  boxShadow: `0 4px 12px ${DS.primary}40`,
-                }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.secondary}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = DS.primary}>
-                <Save className="w-4 h-4" />
-                {isSaving ? "Saving..." : isEditing ? "Update" : "Save Question"}
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAiOpen(true)}
+              className="h-[72px] min-w-[136px] gap-2 rounded-[12px] border-[#c9c8c2] bg-[#ebeae4] text-[15px] text-[#161914] hover:bg-[#e3e2dc]"
+            >
+              <Sparkles className="h-5 w-5" />
+              AI Generate
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-[72px] min-w-[136px] gap-2 rounded-[12px] border-[#c9c8c2] bg-[#ebeae4] text-[15px] text-[#161914] hover:bg-[#e3e2dc]"
+            >
+              <Eye className="h-5 w-5" />
+              Preview
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="h-[72px] min-w-[160px] gap-3 rounded-[12px] bg-[#41644b] px-7 text-[15px] font-semibold text-white shadow-sm hover:bg-[#36563f]"
+            >
+              <Save className="h-5 w-5" />
+              {isSaving ? "Saving..." : isEditing ? "Update" : "Save to Bank"}
+            </Button>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar - Question Types */}
-          <aside className="w-80 flex-shrink-0">
-            <div className="rounded-2xl overflow-hidden shadow-sm sticky top-28"
-              style={{ backgroundColor: DS.surfaceContainerLowest, border: `1px solid ${DS.outlineVariant}` }}>
-              {/* Header */}
-              <div className="px-4 py-3"
-                style={{ background: `linear-gradient(135deg, ${DS.primary} 0%, ${DS.secondary} 100%)` }}>
-                <h2 className="text-sm font-semibold flex items-center gap-2 text-white" style={{ fontFamily: 'Lexend, sans-serif' }}>
-                  <FileQuestion className="w-4 h-4" />
-                  Question Type
-                </h2>
-              </div>
-
-              {/* Question Categories */}
-              <div className="p-3">
-                {QUESTION_CATEGORIES.map((category) => (
-                  <div key={category.title} className="mb-4 last:mb-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider px-2 mb-2"
-                      style={{ color: DS.onSurfaceVariant, fontFamily: 'Lexend, sans-serif' }}>
-                      {category.title}
-                    </p>
-                    <div className="space-y-1">
-                      {category.types.map((typeValue) => {
-                        const t = QUESTION_TYPES.find(qt => qt.value === typeValue);
-                        if (!t) return null;
-                        const isActive = qType === t.value;
-                        const tc = getColorClasses(t.color as ColorKey);
-
-                        return (
-                          <button
-                            key={t.value}
-                            type="button"
-                            onClick={() => setQType(t.value)}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
-                            style={{
-                              backgroundColor: isActive ? tc.bg : 'transparent',
-                              color: isActive ? DS.onPrimary : DS.onSurface,
-                              boxShadow: isActive ? `0 2px 8px ${tc.bg}30` : 'none',
-                            }}
-                            onMouseEnter={e => {
-                              if (!isActive) e.currentTarget.style.backgroundColor = DS.surfaceContainer;
-                            }}
-                            onMouseLeave={e => {
-                              if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-                            }}>
-                            <span className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
-                              style={{
-                                backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : tc.light,
-                                color: isActive ? DS.onPrimary : tc.bg,
-                              }}>
-                              {t.icon}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate" style={{ fontFamily: 'Lexend, sans-serif' }}>
-                                {t.label}
-                              </p>
-                            </div>
-                            {isActive && <ChevronRight className="w-4 h-4 opacity-70" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Settings Section */}
-              <div className="border-t px-4 py-4" style={{ borderColor: DS.outlineVariant }}>
-                <p className="text-[10px] font-semibold uppercase tracking-wider mb-3"
-                  style={{ color: DS.onSurfaceVariant, fontFamily: 'Lexend, sans-serif' }}>
-                  Settings
+        <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+            {QUESTION_CATEGORIES.map((category) => (
+              <div key={category.title} className="rounded-[12px] border border-[#dedbd2] bg-[#f4f3ee] p-5">
+                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#242a24]">
+                  {category.title}
                 </p>
-
                 <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Skill</Label>
-                    <Select value={skill} onValueChange={setSkill}>
-                      <SelectTrigger className="h-9 text-sm" style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SKILLS.map(s => (
-                          <SelectItem key={s} value={s}>{SKILL_LABELS[s]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Level</Label>
-                    <Select value={level} onValueChange={setLevel}>
-                      <SelectTrigger className="h-9 text-sm" style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LEVELS.map(l => (
-                          <SelectItem key={l} value={l}>{l}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {(qType === "reading" || qType === "listening") ? (
-                    <div>
-                      <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Points (auto)</Label>
-                      <div className="h-9 flex items-center px-3 rounded-lg text-sm font-medium"
-                        style={{ backgroundColor: DS.primaryPale, color: DS.onPrimaryContainer }}>
-                        {qType === "reading"
-                          ? readSubQs.reduce((s, sq) => s + (sq.points ?? 1), 0)
-                          : lisSubQs.reduce((s, sq) => s + (sq.points ?? 1), 0)
-                        } points
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Points</Label>
-                      <Input type="number" min={1} value={points} onChange={e => setPoints(parseInt(e.target.value, 10) || 1)}
-                        className="h-9 text-sm"
-                        style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }} />
-                    </div>
-                  )}
-
-                  <div>
-                    <Label className="text-xs font-medium block mb-1" style={{ color: DS.onSurfaceVariant }}>Image URL (optional)</Label>
-                    <Input value={imageUrl} onChange={e => setImageUrl(e.target.value)}
-                      placeholder="https://..." className="h-9 text-xs"
-                      style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }} />
-                  </div>
+                  {category.types.map((typeValue) => {
+                    const t = QUESTION_TYPES.find(qt => qt.value === typeValue);
+                    if (!t) return null;
+                    const isActive = qType === t.value;
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => setQType(t.value)}
+                        className="flex min-h-[72px] w-full items-center gap-3 rounded-[10px] border bg-[#fffefa] px-4 py-3 text-left text-[15px] font-medium leading-5 transition-all hover:border-[#41644b]"
+                        style={{
+                          borderColor: isActive ? DS.primary : "#cfd4ca",
+                          boxShadow: isActive ? `0 0 0 1px ${DS.primary}` : "none",
+                          color: isActive ? DS.primary : DS.onSurface,
+                        }}
+                      >
+                        <QuestionTypeIcon type={t.value} className="h-5 w-5 flex-shrink-0" />
+                        <span className="flex-1">{t.label}</span>
+                        {isActive && <ChevronRight className="h-4 w-4 flex-shrink-0" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
+            ))}
           </aside>
 
-          {/* Main Content Area */}
-          <div className="flex-1 min-w-0">
-            {/* Question Type Header */}
-            <div className="mb-6 p-5 rounded-2xl"
-              style={{
-                background: `linear-gradient(135deg, ${DS.surfaceContainerLowest} 0%, ${typeColors.light}30 100%)`,
-                border: `2px solid ${typeColors.light}`,
-              }}>
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-lg"
-                  style={{ backgroundColor: typeColors.bg }}>
-                  {typeCfg?.icon}
+          <section className="min-w-0">
+            <div className="overflow-hidden rounded-[12px] border border-[#d8ded3] bg-[#fffefa] shadow-sm">
+              <div className="flex flex-col gap-3 border-b border-[#dce5dc] bg-[#edf8ee] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <QuestionTypeIcon type={qType} className="h-5 w-5 text-[#41644b]" />
+                  <h2 className="text-base font-semibold text-[#41644b]">
+                    {getQuestionTypeTitle(qType)}
+                  </h2>
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold" style={{ color: DS.onSurface, fontFamily: 'Lexend, sans-serif' }}>{typeCfg?.label}</h2>
-                  <p className="text-sm mt-0.5" style={{ color: DS.onSurfaceVariant }}>
-                    {qType === "mcq" && "Create multiple choice questions with one or more correct answers"}
-                    {qType === "true_false" && "Students determine if a statement is true or false"}
-                    {qType === "fill_blank" && "Fill in missing words in a sentence or paragraph"}
-                    {qType === "word_selection" && "Students click on correct words in a passage"}
-                    {qType === "matching" && "Match items from two columns correctly"}
-                    {qType === "drag_drop" && "Drag items and drop them into correct zones"}
-                    {qType === "sentence_reorder" && "Arrange words into the correct sentence order"}
-                    {qType === "reading" && "Reading comprehension with multiple questions"}
-                    {qType === "listening" && "Audio-based comprehension questions"}
-                    {qType === "video_interactive" && "Interactive video with timestamped questions"}
-                    {qType === "essay" && "Open-ended writing prompts for detailed responses"}
-                    {qType === "open_end" && "Flexible responses: text, audio, or images"}
-                  </p>
+                <div className="flex items-center gap-2 text-sm text-[#1b1c19]">
+                  <CheckCircle2 className="h-4 w-4 text-[#3f5946]" />
+                  <span>Marks:</span>
+                  {(qType === "reading" || qType === "listening") ? (
+                    <span className="inline-flex h-8 min-w-12 items-center justify-center rounded-[8px] border border-[#c9c8c2] bg-[#f6f3ec] px-3 font-semibold">
+                      {qType === "reading"
+                        ? readSubQs.reduce((s, sq) => s + (sq.points ?? 1), 0)
+                        : lisSubQs.reduce((s, sq) => s + (sq.points ?? 1), 0)}
+                    </span>
+                  ) : (
+                    <Input
+                      type="number"
+                      min={1}
+                      value={points}
+                      onChange={e => setPoints(parseInt(e.target.value, 10) || 1)}
+                      className="h-8 w-12 rounded-[8px] border-[#c9c8c2] bg-[#f6f3ec] text-center font-semibold"
+                    />
+                  )}
                 </div>
-                <Badge className="px-3 py-1.5 text-sm font-medium"
-                  style={{ backgroundColor: typeColors.bg, color: DS.onPrimary, fontFamily: 'Lexend, sans-serif' }}>
-                  {typeCfg?.icon} {typeCfg?.label}
-                </Badge>
               </div>
-            </div>
 
-            {/* Form Content */}
-            <div className="rounded-2xl overflow-hidden shadow-sm"
-              style={{ backgroundColor: DS.surfaceContainerLowest, border: `1px solid ${DS.outlineVariant}` }}>
-              {/* Image Preview */}
               {imageUrl && (
-                <div className="border-b px-4 py-4" style={{ borderColor: DS.outlineVariant }}>
-                  <div className="rounded-xl overflow-hidden max-h-48" style={{ border: `1px solid ${DS.outlineVariant}` }}>
-                    <img src={imageUrl} alt="Question image" className="w-full h-full object-contain" style={{ backgroundColor: DS.surfaceContainer }} />
+                <div className="border-b border-[#dedbd2] px-6 py-4">
+                  <div className="max-h-52 overflow-hidden rounded-[10px] border border-[#cfd4ca] bg-[#f4f2ec]">
+                    <img src={imageUrl} alt="Question image" className="h-full w-full object-contain" />
                   </div>
                 </div>
               )}
 
-              {/* Form Sections */}
               <div className="p-6">
                 {qType === "mcq" && (
                   <McqForm
@@ -2038,42 +1973,102 @@ export default function QuestionFormPage() {
                   />
                 )}
               </div>
-
-              {/* Bottom Actions */}
-              <div className="border-t px-6 py-4 flex items-center justify-between"
-                style={{ backgroundColor: DS.surfaceContainerLow, borderColor: DS.outlineVariant }}>
-                <Button variant="ghost" onClick={() => navigate("/questions")}
-                  style={{ color: DS.onSurfaceVariant }}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="gap-2 text-white shadow-lg px-8"
-                  style={{
-                    backgroundColor: DS.primary,
-                    boxShadow: `0 4px 12px ${DS.primary}40`,
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = DS.secondary}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = DS.primary}>
-                  <Save className="w-4 h-4" />
-                  {isSaving ? "Saving..." : isEditing ? "Update Question" : "Save Question"}
-                </Button>
-              </div>
             </div>
 
-            {/* AI Generator Dialog */}
-            <AIQuestionGeneratorDialog
-              open={aiOpen}
-              onOpenChange={setAiOpen}
-              defaultType={qType}
-              defaultSkill={skill}
-              defaultLevel={level}
-              onApply={applyAIDraft}
-            />
-          </div>
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              <div className="rounded-[12px] border border-[#dedbd2] bg-[#eceae5] p-6">
+                <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#242a24]">
+                  Categorization
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="mb-2 block text-xs text-[#2b312b]">Level</Label>
+                    <Select value={level} onValueChange={setLevel}>
+                      <SelectTrigger className="h-10 rounded-[8px] border-[#c6cbc2] bg-[#fffefa]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LEVELS.map(l => (
+                          <SelectItem key={l} value={l}>{l}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="mb-2 block text-xs text-[#2b312b]">Skill</Label>
+                    <Select value={skill} onValueChange={setSkill}>
+                      <SelectTrigger className="h-10 rounded-[8px] border-[#c6cbc2] bg-[#fffefa]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SKILLS.map(s => (
+                          <SelectItem key={s} value={s}>{SKILL_LABELS[s]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="mb-2 block text-xs text-[#2b312b]">Image URL</Label>
+                    <Input
+                      value={imageUrl}
+                      onChange={e => setImageUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="h-10 rounded-[8px] border-[#c6cbc2] bg-[#fffefa] text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className="rounded-full bg-[#ccefcf] px-3 py-1 text-[#244d2e] hover:bg-[#ccefcf]">{SKILL_LABELS[skill]}</Badge>
+                    <Badge className="rounded-full bg-[#ccefcf] px-3 py-1 text-[#244d2e] hover:bg-[#ccefcf]">Level {level}</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex min-h-[228px] flex-col items-center justify-center rounded-[12px] border border-[#dedbd2] bg-[#eceae5] p-6 text-center">
+                <div className="relative mb-5 h-[86px] w-[86px] rounded-full border-[10px] border-[#dcebd7]">
+                  <div className="absolute inset-[-10px] rounded-full border-[10px] border-transparent border-r-[#41644b] border-t-[#41644b]" />
+                  <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-[#41644b]">0:45</div>
+                </div>
+                <p className="text-xs text-[#2b312b]">Recommended time for this task</p>
+              </div>
+            </div>
+          </section>
         </div>
-      </main>
+      </div>
+
+      <AIQuestionGeneratorDialog
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        defaultType={qType}
+        defaultSkill={skill}
+        defaultLevel={level}
+        onApply={applyAIDraft}
+      />
+
+      <style>{`
+        .question-creator-page .question-creator-editor.mde-root {
+          border-color: #e5e1d8 !important;
+          border-radius: 10px !important;
+          box-shadow: none !important;
+          background: #f4f2ec !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        .question-creator-page .question-creator-editor.mde-root > div:first-child {
+          background: #f4f2ec !important;
+          border-top: 1px solid #e5e1d8 !important;
+          border-bottom: 0 !important;
+          border-radius: 0 0 10px 10px !important;
+          order: 2;
+        }
+        .question-creator-page .question-creator-editor.mde-root > div[contenteditable] {
+          min-height: 142px !important;
+          background: #f4f2ec !important;
+          color: #4f5e6f !important;
+        }
+        .question-creator-page .question-creator-editor.mde-root > div:last-of-type {
+          display: none !important;
+        }
+      `}</style>
     </div>
   );
 }

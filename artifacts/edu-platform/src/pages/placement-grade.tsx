@@ -81,7 +81,7 @@ export default function PlacementGradePage() {
       const g: Record<number, Grade> = {};
       for (const a of d.answers) {
         g[a.id] = {
-          manualScore: a.manualScore != null ? String(a.manualScore) : (a.autoScore != null ? String(a.autoScore) : ""),
+          manualScore: a.manualScore != null ? String(a.manualScore) : "",
           comment: a.teacherComment ?? "",
         };
       }
@@ -149,14 +149,22 @@ export default function PlacementGradePage() {
 
   const { submission: sub, test, questions, answers } = data;
   const ansMap = new Map<number, PlacementAnswer>(answers.map(a => [a.questionId, a]));
-  const currentTotal = answers.reduce((s, a) => {
+  const isManualType = (type: string) => type === "essay" || type === "open_end" || type === "long_answer";
+  const scoreForAnswer = (a: PlacementAnswer | undefined) => {
+    if (!a) return 0;
     const g = grades[a.id];
-    const pts = g?.manualScore.trim() ? Number(g.manualScore) : (a.autoScore ?? 0);
-    return s + (isNaN(pts) ? 0 : pts);
+    const manual = g?.manualScore.trim();
+    if (manual) {
+      const parsed = Number(manual);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return a.autoScore ?? 0;
+  };
+  const currentTotal = answers.reduce((s, a) => {
+    return s + scoreForAnswer(a);
   }, 0);
   const percentage = test.maxScore > 0 ? Math.round((currentTotal / test.maxScore) * 100) : 0;
   const isGraded = sub.gradingStatus === "graded";
-  const isEssayType = (type: string) => type === "essay" || type === "open_end";
 
   return (
     <div className="space-y-6">
@@ -263,7 +271,7 @@ export default function PlacementGradePage() {
                 {questions.map((q, idx) => {
                   const a = ansMap.get(q.id);
                   const g = a ? grades[a.id] : undefined;
-                  const isEssay = isEssayType(q.type);
+                  const isEssay = isManualType(q.type);
                   const isCorrect = a?.isCorrect ?? null;
                   const isGradedCorrect = isCorrect === true;
                   const isGradedWrong = isCorrect === false;
@@ -312,7 +320,7 @@ export default function PlacementGradePage() {
                         <div className="flex items-center gap-1">
                           <Star className="w-3.5 h-3.5 text-amber-400" />
                           <span className="text-sm font-semibold text-gray-700">
-                            {g?.manualScore.trim() ? `${g.manualScore}` : (a?.autoScore ?? "—")}
+                            {a ? scoreForAnswer(a) : "—"}
                           </span>
                           <span className="text-xs text-gray-400">/ {q.points}</span>
                         </div>
@@ -392,7 +400,7 @@ export default function PlacementGradePage() {
               {questions.map((q, idx) => {
                 const a = ansMap.get(q.id);
                 const g = a ? grades[a.id] : undefined;
-                const isEssay = isEssayType(q.type);
+                const isEssay = isManualType(q.type);
                 const qg = g ?? { manualScore: "", comment: "" };
 
                 return (
