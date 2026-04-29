@@ -48,6 +48,7 @@ import { Route as AuthPlacementTestsIdSubmissionsRouteImport } from './routes/_a
 import { Route as AuthCoursesIdLearnRouteImport } from './routes/_auth/courses/$id_.learn'
 import { Route as AuthCoursesIdCurriculumRouteImport } from './routes/_auth/courses/$id_.curriculum'
 import { Route as AuthAssignmentsIdTakeRouteImport } from './routes/_auth/assignments/$id_.take'
+import { Route as AuthCoursesIdLessonsLessonIdEditRouteImport } from './routes/_auth/courses/$id_.lessons.$lessonId.edit'
 
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
@@ -245,6 +246,12 @@ const AuthAssignmentsIdTakeRoute = AuthAssignmentsIdTakeRouteImport.update({
   path: '/assignments/$id/take',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthCoursesIdLessonsLessonIdEditRoute =
+  AuthCoursesIdLessonsLessonIdEditRouteImport.update({
+    id: '/courses/$id_/lessons/$lessonId/edit',
+    path: '/courses/$id/lessons/$lessonId/edit',
+    getParentRoute: () => AuthRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -285,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/placement-tests/$id/submissions': typeof AuthPlacementTestsIdSubmissionsRoute
   '/placement-tests/submissions/$sid': typeof AuthPlacementTestsSubmissionsSidRoute
   '/questions/$id/edit': typeof AuthQuestionsIdEditRoute
+  '/courses/$id/lessons/$lessonId/edit': typeof AuthCoursesIdLessonsLessonIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -325,6 +333,7 @@ export interface FileRoutesByTo {
   '/placement-tests/$id/submissions': typeof AuthPlacementTestsIdSubmissionsRoute
   '/placement-tests/submissions/$sid': typeof AuthPlacementTestsSubmissionsSidRoute
   '/questions/$id/edit': typeof AuthQuestionsIdEditRoute
+  '/courses/$id/lessons/$lessonId/edit': typeof AuthCoursesIdLessonsLessonIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -367,6 +376,7 @@ export interface FileRoutesById {
   '/_auth/placement-tests/$id_/submissions': typeof AuthPlacementTestsIdSubmissionsRoute
   '/_auth/placement-tests/submissions/$sid': typeof AuthPlacementTestsSubmissionsSidRoute
   '/_auth/questions/$id_/edit': typeof AuthQuestionsIdEditRoute
+  '/_auth/courses/$id_/lessons/$lessonId/edit': typeof AuthCoursesIdLessonsLessonIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/placement-tests/$id/submissions'
     | '/placement-tests/submissions/$sid'
     | '/questions/$id/edit'
+    | '/courses/$id/lessons/$lessonId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -449,6 +460,7 @@ export interface FileRouteTypes {
     | '/placement-tests/$id/submissions'
     | '/placement-tests/submissions/$sid'
     | '/questions/$id/edit'
+    | '/courses/$id/lessons/$lessonId/edit'
   id:
     | '__root__'
     | '/'
@@ -490,6 +502,7 @@ export interface FileRouteTypes {
     | '/_auth/placement-tests/$id_/submissions'
     | '/_auth/placement-tests/submissions/$sid'
     | '/_auth/questions/$id_/edit'
+    | '/_auth/courses/$id_/lessons/$lessonId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -779,6 +792,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAssignmentsIdTakeRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/courses/$id_/lessons/$lessonId/edit': {
+      id: '/_auth/courses/$id_/lessons/$lessonId/edit'
+      path: '/courses/$id/lessons/$lessonId/edit'
+      fullPath: '/courses/$id/lessons/$lessonId/edit'
+      preLoaderRoute: typeof AuthCoursesIdLessonsLessonIdEditRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
@@ -813,6 +833,7 @@ interface AuthRouteChildren {
   AuthPlacementTestsIdSubmissionsRoute: typeof AuthPlacementTestsIdSubmissionsRoute
   AuthPlacementTestsSubmissionsSidRoute: typeof AuthPlacementTestsSubmissionsSidRoute
   AuthQuestionsIdEditRoute: typeof AuthQuestionsIdEditRoute
+  AuthCoursesIdLessonsLessonIdEditRoute: typeof AuthCoursesIdLessonsLessonIdEditRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
@@ -846,6 +867,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthPlacementTestsIdSubmissionsRoute: AuthPlacementTestsIdSubmissionsRoute,
   AuthPlacementTestsSubmissionsSidRoute: AuthPlacementTestsSubmissionsSidRoute,
   AuthQuestionsIdEditRoute: AuthQuestionsIdEditRoute,
+  AuthCoursesIdLessonsLessonIdEditRoute: AuthCoursesIdLessonsLessonIdEditRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

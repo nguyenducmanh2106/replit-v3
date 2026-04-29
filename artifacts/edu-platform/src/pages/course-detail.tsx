@@ -23,6 +23,7 @@ import { Users, PenSquare, Calendar, Plus, Trash2, FileText, Upload, Clock, Play
 import { format, parseISO } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { CourseSettingsTab } from "@/components/course-settings-tab";
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -717,6 +718,7 @@ export default function CourseDetailPage() {
           <TabsTrigger value="assignments">Bài tập ({assignments?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="schedule">Lịch học</TabsTrigger>
           <TabsTrigger value="documents">Tài liệu</TabsTrigger>
+          {canManage && <TabsTrigger value="settings">Settings</TabsTrigger>}
           {canManage && <TabsTrigger value="import">Nhập danh sách</TabsTrigger>}
         </TabsList>
 
@@ -757,6 +759,12 @@ export default function CourseDetailPage() {
         <TabsContent value="documents" className="mt-4">
           <DocumentsTab courseId={courseId} canManage={canManage} />
         </TabsContent>
+
+        {canManage && (
+          <TabsContent value="settings" className="mt-4">
+            <CourseSettingsTab course={course} />
+          </TabsContent>
+        )}
 
         {canManage && (
           <TabsContent value="import" className="mt-4">

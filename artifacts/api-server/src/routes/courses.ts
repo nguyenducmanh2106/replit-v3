@@ -169,7 +169,13 @@ router.patch("/courses/:id", requireAuth, requireTeacherRole(), async (req, res)
   const updates: Record<string, unknown> = {};
   if (parsed.data.name != null) updates.name = parsed.data.name;
   if (parsed.data.description != null) updates.description = parsed.data.description;
+  if (parsed.data.shortDescription != null) updates.shortDescription = parsed.data.shortDescription;
   if (parsed.data.level != null) updates.level = parsed.data.level;
+  if (parsed.data.category != null) updates.category = parsed.data.category;
+  if (parsed.data.tags != null) updates.tags = parsed.data.tags;
+  if (parsed.data.coverImage != null) updates.coverImage = parsed.data.coverImage;
+  if (parsed.data.slug != null) updates.slug = parsed.data.slug;
+  if (parsed.data.published != null) updates.published = parsed.data.published;
   if (parsed.data.teacherId != null) updates.teacherId = parsed.data.teacherId;
   if (parsed.data.status != null) updates.status = parsed.data.status;
 

@@ -167,7 +167,7 @@ export function EditorContentArea() {
       }}
     >
       <DragContextMenu />
-      <AiMenu />
+      {/* <AiMenu /> */}
       <EmojiDropdownMenu />
       <MentionDropdownMenu />
       <SlashDropdownMenu />
