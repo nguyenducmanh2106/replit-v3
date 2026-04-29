@@ -1,5 +1,5 @@
-import { useContext, useEffect } from "react"
-import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
+import { useContext, useEffect, useRef } from "react"
+import { EditorContent, EditorContext, useEditor, type JSONContent } from "@tiptap/react"
 import type { Doc as YDoc } from "yjs"
 import type { TiptapCollabProvider } from "@tiptap-pro/provider"
 import { createPortal } from "react-dom"
@@ -94,6 +94,8 @@ import { Indent } from "@/components/tiptap-extension/indent-extension"
 export interface NotionEditorProps {
   room: string
   placeholder?: string
+  initialContent?: JSONContent
+  onChange?: (content: JSONContent) => void
 }
 
 export interface EditorProviderProps {
@@ -101,6 +103,8 @@ export interface EditorProviderProps {
   ydoc: YDoc
   placeholder?: string
   aiToken: string | null
+  initialContent?: JSONContent
+  onChange?: (content: JSONContent) => void
 }
 
 /**
@@ -181,13 +185,14 @@ export function EditorContentArea() {
  * Component that creates and provides the editor instance
  */
 export function EditorProvider(props: EditorProviderProps) {
-  const { provider, ydoc, placeholder = "Start writing...", aiToken } = props
+  const { provider, ydoc, placeholder = "Start writing...", aiToken, initialContent, onChange } = props
 
   const { user } = useUser()
   const { setTocContent } = useToc()
 
   const editor = useEditor({
     immediatelyRender: false,
+    content: initialContent,
     editorProps: {
       attributes: {
         class: "notion-like-editor",
@@ -306,7 +311,24 @@ export function EditorProvider(props: EditorProviderProps) {
         },
       }),
     ],
+    onUpdate({ editor }) {
+      if (onChange) {
+        onChange(editor.getJSON())
+      }
+    },
   })
+
+  // Insert initial content into YDoc once when doc is empty and provider is ready
+  const initialContentSet = useRef(false)
+  useEffect(() => {
+    if (!editor || !provider || initialContentSet.current) return
+    const isEmpty = ydoc.getXmlFragment("default").length === 0
+    if (isEmpty) {
+      const defaultDoc: JSONContent = { type: "doc", content: [{ type: "paragraph" }] }
+      editor.commands.setContent(initialContent ?? defaultDoc, { emitUpdate: false })
+      initialContentSet.current = true
+    }
+  }, [editor, provider, ydoc, initialContent])
 
   if (!editor) {
     return <LoadingSpinner />
@@ -345,13 +367,15 @@ export function EditorProvider(props: EditorProviderProps) {
 export function NotionEditor({
   room,
   placeholder = "Start writing...",
+  initialContent,
+  onChange,
 }: NotionEditorProps) {
   return (
     <UserProvider>
       <CollabProvider room={room}>
         <AiProvider>
           <TocProvider>
-            <NotionEditorContent placeholder={placeholder} />
+            <NotionEditorContent placeholder={placeholder} initialContent={initialContent} onChange={onChange} />
           </TocProvider>
         </AiProvider>
       </CollabProvider>
@@ -362,7 +386,7 @@ export function NotionEditor({
 /**
  * Internal component that handles the editor loading state
  */
-export function NotionEditorContent({ placeholder }: { placeholder?: string }) {
+export function NotionEditorContent({ placeholder, initialContent, onChange }: { placeholder?: string; initialContent?: JSONContent; onChange?: (content: JSONContent) => void }) {
   const { provider, ydoc, setupError: collabSetupError } = useCollab()
   const { aiToken, setupError: aiSetupError } = useAi()
 
@@ -386,6 +410,8 @@ export function NotionEditorContent({ placeholder }: { placeholder?: string }) {
       ydoc={ydoc}
       placeholder={placeholder}
       aiToken={aiToken}
+      initialContent={initialContent}
+      onChange={onChange}
     />
   )
 }
