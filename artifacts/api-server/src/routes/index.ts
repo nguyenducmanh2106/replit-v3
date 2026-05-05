@@ -24,6 +24,7 @@ import curriculumRouter from "./curriculum";
 import catalogRouter from "./catalog";
 import certificatesRouter from "./certificates";
 import placementTestsRouter from "./placement-tests";
+import mediaNodesRouter from "./media-nodes";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(curriculumRouter);
 router.use(catalogRouter);
 router.use(certificatesRouter);
 router.use(placementTestsRouter);
+router.use(mediaNodesRouter);
 
 export default router;

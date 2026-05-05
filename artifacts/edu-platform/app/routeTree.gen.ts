@@ -23,6 +23,7 @@ import { Route as AuthRubricsRouteImport } from './routes/_auth/rubrics'
 import { Route as AuthReportsRouteImport } from './routes/_auth/reports'
 import { Route as AuthProfileRouteImport } from './routes/_auth/profile'
 import { Route as AuthOnboardingRouteImport } from './routes/_auth/onboarding'
+import { Route as AuthMediaRouteImport } from './routes/_auth/media'
 import { Route as AuthLmsRouteImport } from './routes/_auth/lms'
 import { Route as AuthGamificationRouteImport } from './routes/_auth/gamification'
 import { Route as AuthFraudRouteImport } from './routes/_auth/fraud'
@@ -39,6 +40,7 @@ import { Route as AuthSubmissionsIdRouteImport } from './routes/_auth/submission
 import { Route as AuthQuizTemplatesIdRouteImport } from './routes/_auth/quiz-templates/$id'
 import { Route as AuthQuestionsNewRouteImport } from './routes/_auth/questions/new'
 import { Route as AuthPlacementTestsIdRouteImport } from './routes/_auth/placement-tests/$id'
+import { Route as AuthMediaNodeIdRouteImport } from './routes/_auth/media/$nodeId'
 import { Route as AuthCoursesIdRouteImport } from './routes/_auth/courses/$id'
 import { Route as AuthCertificatesCertNoRouteImport } from './routes/_auth/certificates/$certNo'
 import { Route as AuthAssignmentsIdRouteImport } from './routes/_auth/assignments/$id'
@@ -117,6 +119,11 @@ const AuthProfileRoute = AuthProfileRouteImport.update({
 const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthMediaRoute = AuthMediaRouteImport.update({
+  id: '/media',
+  path: '/media',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthLmsRoute = AuthLmsRouteImport.update({
@@ -199,6 +206,11 @@ const AuthPlacementTestsIdRoute = AuthPlacementTestsIdRouteImport.update({
   path: '/placement-tests/$id',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthMediaNodeIdRoute = AuthMediaNodeIdRouteImport.update({
+  id: '/$nodeId',
+  path: '/$nodeId',
+  getParentRoute: () => AuthMediaRoute,
+} as any)
 const AuthCoursesIdRoute = AuthCoursesIdRouteImport.update({
   id: '/courses/$id',
   path: '/courses/$id',
@@ -264,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/fraud': typeof AuthFraudRoute
   '/gamification': typeof AuthGamificationRoute
   '/lms': typeof AuthLmsRoute
+  '/media': typeof AuthMediaRouteWithChildren
   '/onboarding': typeof AuthOnboardingRoute
   '/profile': typeof AuthProfileRoute
   '/reports': typeof AuthReportsRoute
@@ -275,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/assignments/$id': typeof AuthAssignmentsIdRoute
   '/certificates/$certNo': typeof AuthCertificatesCertNoRoute
   '/courses/$id': typeof AuthCoursesIdRoute
+  '/media/$nodeId': typeof AuthMediaNodeIdRoute
   '/placement-tests/$id': typeof AuthPlacementTestsIdRoute
   '/questions/new': typeof AuthQuestionsNewRoute
   '/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
@@ -305,6 +319,7 @@ export interface FileRoutesByTo {
   '/fraud': typeof AuthFraudRoute
   '/gamification': typeof AuthGamificationRoute
   '/lms': typeof AuthLmsRoute
+  '/media': typeof AuthMediaRouteWithChildren
   '/onboarding': typeof AuthOnboardingRoute
   '/profile': typeof AuthProfileRoute
   '/reports': typeof AuthReportsRoute
@@ -316,6 +331,7 @@ export interface FileRoutesByTo {
   '/assignments/$id': typeof AuthAssignmentsIdRoute
   '/certificates/$certNo': typeof AuthCertificatesCertNoRoute
   '/courses/$id': typeof AuthCoursesIdRoute
+  '/media/$nodeId': typeof AuthMediaNodeIdRoute
   '/placement-tests/$id': typeof AuthPlacementTestsIdRoute
   '/questions/new': typeof AuthQuestionsNewRoute
   '/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
@@ -348,6 +364,7 @@ export interface FileRoutesById {
   '/_auth/fraud': typeof AuthFraudRoute
   '/_auth/gamification': typeof AuthGamificationRoute
   '/_auth/lms': typeof AuthLmsRoute
+  '/_auth/media': typeof AuthMediaRouteWithChildren
   '/_auth/onboarding': typeof AuthOnboardingRoute
   '/_auth/profile': typeof AuthProfileRoute
   '/_auth/reports': typeof AuthReportsRoute
@@ -359,6 +376,7 @@ export interface FileRoutesById {
   '/_auth/assignments/$id': typeof AuthAssignmentsIdRoute
   '/_auth/certificates/$certNo': typeof AuthCertificatesCertNoRoute
   '/_auth/courses/$id': typeof AuthCoursesIdRoute
+  '/_auth/media/$nodeId': typeof AuthMediaNodeIdRoute
   '/_auth/placement-tests/$id': typeof AuthPlacementTestsIdRoute
   '/_auth/questions/new': typeof AuthQuestionsNewRoute
   '/_auth/quiz-templates/$id': typeof AuthQuizTemplatesIdRoute
@@ -391,6 +409,7 @@ export interface FileRouteTypes {
     | '/fraud'
     | '/gamification'
     | '/lms'
+    | '/media'
     | '/onboarding'
     | '/profile'
     | '/reports'
@@ -402,6 +421,7 @@ export interface FileRouteTypes {
     | '/assignments/$id'
     | '/certificates/$certNo'
     | '/courses/$id'
+    | '/media/$nodeId'
     | '/placement-tests/$id'
     | '/questions/new'
     | '/quiz-templates/$id'
@@ -432,6 +452,7 @@ export interface FileRouteTypes {
     | '/fraud'
     | '/gamification'
     | '/lms'
+    | '/media'
     | '/onboarding'
     | '/profile'
     | '/reports'
@@ -443,6 +464,7 @@ export interface FileRouteTypes {
     | '/assignments/$id'
     | '/certificates/$certNo'
     | '/courses/$id'
+    | '/media/$nodeId'
     | '/placement-tests/$id'
     | '/questions/new'
     | '/quiz-templates/$id'
@@ -474,6 +496,7 @@ export interface FileRouteTypes {
     | '/_auth/fraud'
     | '/_auth/gamification'
     | '/_auth/lms'
+    | '/_auth/media'
     | '/_auth/onboarding'
     | '/_auth/profile'
     | '/_auth/reports'
@@ -485,6 +508,7 @@ export interface FileRouteTypes {
     | '/_auth/assignments/$id'
     | '/_auth/certificates/$certNo'
     | '/_auth/courses/$id'
+    | '/_auth/media/$nodeId'
     | '/_auth/placement-tests/$id'
     | '/_auth/questions/new'
     | '/_auth/quiz-templates/$id'
@@ -617,6 +641,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthOnboardingRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/media': {
+      id: '/_auth/media'
+      path: '/media'
+      fullPath: '/media'
+      preLoaderRoute: typeof AuthMediaRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/lms': {
       id: '/_auth/lms'
       path: '/lms'
@@ -729,6 +760,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPlacementTestsIdRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/media/$nodeId': {
+      id: '/_auth/media/$nodeId'
+      path: '/$nodeId'
+      fullPath: '/media/$nodeId'
+      preLoaderRoute: typeof AuthMediaNodeIdRouteImport
+      parentRoute: typeof AuthMediaRoute
+    }
     '/_auth/courses/$id': {
       id: '/_auth/courses/$id'
       path: '/courses/$id'
@@ -802,12 +840,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthMediaRouteChildren {
+  AuthMediaNodeIdRoute: typeof AuthMediaNodeIdRoute
+}
+
+const AuthMediaRouteChildren: AuthMediaRouteChildren = {
+  AuthMediaNodeIdRoute: AuthMediaNodeIdRoute,
+}
+
+const AuthMediaRouteWithChildren = AuthMediaRoute._addFileChildren(
+  AuthMediaRouteChildren,
+)
+
 interface AuthRouteChildren {
   AuthDashboardRoute: typeof AuthDashboardRoute
   AuthEnterpriseRoute: typeof AuthEnterpriseRoute
   AuthFraudRoute: typeof AuthFraudRoute
   AuthGamificationRoute: typeof AuthGamificationRoute
   AuthLmsRoute: typeof AuthLmsRoute
+  AuthMediaRoute: typeof AuthMediaRouteWithChildren
   AuthOnboardingRoute: typeof AuthOnboardingRoute
   AuthProfileRoute: typeof AuthProfileRoute
   AuthReportsRoute: typeof AuthReportsRoute
@@ -842,6 +893,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthFraudRoute: AuthFraudRoute,
   AuthGamificationRoute: AuthGamificationRoute,
   AuthLmsRoute: AuthLmsRoute,
+  AuthMediaRoute: AuthMediaRouteWithChildren,
   AuthOnboardingRoute: AuthOnboardingRoute,
   AuthProfileRoute: AuthProfileRoute,
   AuthReportsRoute: AuthReportsRoute,

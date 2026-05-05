@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "@/lib/routing";
-import { LayoutDashboard, BookOpen, Library, PenSquare, FileCheck, UserCircle, LogOut, BarChart2, Target, Settings, Trophy, Building2, Link2, ShieldAlert, FolderOpen, Award, Compass, ClipboardList } from "lucide-react";
+import { LayoutDashboard, BookOpen, Library, PenSquare, FileCheck, UserCircle, LogOut, BarChart2, Target, Settings, Trophy, Building2, Link2, ShieldAlert, FolderOpen, Award, Compass, ClipboardList, HardDrive } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useGetMe } from "@workspace/api-client-react";
 import { useNavigate } from "@tanstack/react-router";
@@ -78,6 +78,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <span>Kho Quiz nguồn</span>
                 </Link>
               )}
+              <Link
+                href="/media"
+                className={location.startsWith("/media")
+                  ? "flex items-center gap-3 bg-[#E9EDC9] text-[#3A5A40] rounded-lg px-4 py-3 font-semibold shadow-inner"
+                  : "flex items-center gap-3 text-stone-500 px-4 py-3 hover:bg-stone-50 hover:text-[#3A5A40] rounded-lg transition-all"
+                }
+              >
+                <HardDrive className="h-4 w-4" />
+                <span>Media Manager</span>
+              </Link>
               <Link
                 href="/assignments"
                 className={location.startsWith("/assignments")

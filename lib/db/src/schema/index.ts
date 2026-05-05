@@ -12,3 +12,4 @@ export * from "./quiz-templates";
 export * from "./quiz-sessions";
 export * from "./learning";
 export * from "./placement";
+export * from "./media-manager";
