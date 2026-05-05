@@ -28,6 +28,7 @@ type EffectiveAccess = {
 
 const router: IRouter = Router();
 let mediaS3: MediaS3Service | null = null;
+const MEDIA_MAX_UPLOAD_BYTES = Number(process.env["MEDIA_MAX_UPLOAD_BYTES"] ?? 5 * 1024 * 1024);
 
 function getMediaS3(): MediaS3Service {
   if (!mediaS3) {
@@ -453,9 +454,19 @@ router.post("/nodes/:id/upload", requireAuth, async (req, res): Promise<void> =>
 
   const rawName = typeof req.body?.name === "string" ? req.body.name.trim() : "";
   const mimeType = typeof req.body?.mimeType === "string" ? req.body.mimeType.trim() : undefined;
+  const sizeBytesRaw = req.body?.sizeBytes;
+  const sizeBytes = sizeBytesRaw == null ? null : Number(sizeBytesRaw);
 
   if (!rawName) {
     res.status(400).json({ error: "File name is required" });
+    return;
+  }
+  if (sizeBytes != null && (!Number.isFinite(sizeBytes) || sizeBytes < 0)) {
+    res.status(400).json({ error: "Invalid sizeBytes" });
+    return;
+  }
+  if (sizeBytes != null && sizeBytes > MEDIA_MAX_UPLOAD_BYTES) {
+    res.status(413).json({ error: `File exceeds maximum upload size of ${Math.floor(MEDIA_MAX_UPLOAD_BYTES / 1024 / 1024)}MB` });
     return;
   }
 
@@ -523,9 +534,14 @@ router.post("/nodes/:id/upload/complete", requireAuth, async (req, res): Promise
     return;
   }
 
-  const exists = await getMediaS3().objectExists(draft.storageKey);
-  if (!exists) {
+  const uploadedSizeBytes = await getMediaS3().getObjectSize(draft.storageKey);
+  if (uploadedSizeBytes == null) {
     res.status(400).json({ error: "Upload not found on storage. Database record was not created." });
+    return;
+  }
+  if (uploadedSizeBytes > MEDIA_MAX_UPLOAD_BYTES) {
+    await getMediaS3().deleteObjects([draft.storageKey]);
+    res.status(413).json({ error: `File exceeds maximum upload size of ${Math.floor(MEDIA_MAX_UPLOAD_BYTES / 1024 / 1024)}MB` });
     return;
   }
 
@@ -533,6 +549,10 @@ router.post("/nodes/:id/upload/complete", requireAuth, async (req, res): Promise
   const sizeBytes = sizeValueRaw == null ? null : Number(sizeValueRaw);
   if (sizeBytes != null && (!Number.isFinite(sizeBytes) || sizeBytes < 0)) {
     res.status(400).json({ error: "Invalid sizeBytes" });
+    return;
+  }
+  if (sizeBytes != null && sizeBytes > MEDIA_MAX_UPLOAD_BYTES) {
+    res.status(413).json({ error: `File exceeds maximum upload size of ${Math.floor(MEDIA_MAX_UPLOAD_BYTES / 1024 / 1024)}MB` });
     return;
   }
   const mimeType = req.body?.mimeType == null ? draft.mimeType : String(req.body.mimeType);
@@ -547,7 +567,7 @@ router.post("/nodes/:id/upload/complete", requireAuth, async (req, res): Promise
       name: safeName,
       storageKey: draft.storageKey,
       mimeType: mimeType ?? null,
-      sizeBytes: sizeBytes == null ? null : Math.floor(sizeBytes),
+      sizeBytes: Math.floor(uploadedSizeBytes),
     }).returning();
 
     res.status(201).json({ node: toNodeResponse(created!) });

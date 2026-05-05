@@ -92,6 +92,22 @@ export class MediaS3Service {
     }
   }
 
+  async getObjectSize(storageKey: string): Promise<number | null> {
+    try {
+      const result = await this.client.send(new HeadObjectCommand({
+        Bucket: this.bucket,
+        Key: storageKey,
+      }));
+      return result.ContentLength ?? null;
+    } catch (error) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err?.$metadata?.httpStatusCode === 404 || err?.name === "NotFound" || err?.name === "NoSuchKey") {
+        return null;
+      }
+      throw error;
+    }
+  }
+
   async deleteObjects(storageKeys: string[]): Promise<void> {
     if (storageKeys.length === 0) return;
     for (let i = 0; i < storageKeys.length; i += 1000) {

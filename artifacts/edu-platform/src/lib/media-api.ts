@@ -58,7 +58,7 @@ export const mediaApi = {
     method: "POST",
     body: JSON.stringify(data),
   }),
-  prepareUpload: (folderId: string, data: { name: string; mimeType?: string }) => req<{
+  prepareUpload: (folderId: string, data: { name: string; mimeType?: string; sizeBytes?: number }) => req<{
     draftToken: string;
     proposedNodeId: string;
     name: string;

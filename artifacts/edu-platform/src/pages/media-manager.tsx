@@ -29,6 +29,8 @@ type MediaManagerPageProps = {
   navigateToNode: (nodeId: "root" | string) => void;
 };
 
+const MEDIA_MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
 async function uploadFileWithProgress(url: string, file: File, onProgress: (value: number) => void): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -212,9 +214,14 @@ export default function MediaManagerPage({ currentNodeId, navigateToNode }: Medi
       setUploadQueue(prev => [...prev, { id: queueId, name: file.name, progress: 0, status: "uploading" }]);
 
       try {
+        if (file.size > MEDIA_MAX_UPLOAD_BYTES) {
+          throw new Error(`File exceeds maximum upload size of ${MEDIA_MAX_UPLOAD_BYTES / 1024 / 1024}MB`);
+        }
+
         const prepared = await mediaApi.prepareUpload(listFolderId, {
           name: file.name,
           mimeType: file.type || undefined,
+          sizeBytes: file.size,
         });
 
         await uploadFileWithProgress(prepared.uploadUrl, file, progress => {
