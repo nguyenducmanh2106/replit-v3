@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import tanstackRouter, { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
 const rawPort = process.env.PORT ?? 3000;
 
@@ -25,7 +25,7 @@ const apiPort = process.env.API_PORT ? parseInt(process.env.API_PORT) : 8080;
 export default defineConfig({
   base: basePath,
   plugins: [
-    TanStackRouterVite({
+    tanstackRouter({
       routesDirectory: path.resolve(import.meta.dirname, "app/routes"),
       generatedRouteTree: path.resolve(import.meta.dirname, "app/routeTree.gen.ts"),
       autoCodeSplitting: true,
