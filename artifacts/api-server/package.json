@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "cross-env NODE_ENV=development pnpm run build && pnpm run start",
+    "dev:debug": "cross-env NODE_ENV=development pnpm run build && pnpm run start:debug",
     "build": "node ./build.mjs",
     "start": "node --env-file-if-exists=../../.env --env-file-if-exists=.env --enable-source-maps ./dist/index.mjs",
+    "start:debug": "node --inspect=0.0.0.0:8080 --env-file-if-exists=../../.env --env-file-if-exists=.env --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

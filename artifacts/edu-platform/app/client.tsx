@@ -1,7 +1,13 @@
 import { StartClient } from "@tanstack/react-start";
-import { createRoot } from "react-dom/client";
+import { hydrateRoot } from "react-dom/client";
 import { createRouter } from "./router";
 
 const router = createRouter();
 
-createRoot(document.getElementById("root")!).render(<StartClient router={router} />);
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Missing #root element in index.html");
+}
+
+hydrateRoot(rootElement, <StartClient router={router} />);
