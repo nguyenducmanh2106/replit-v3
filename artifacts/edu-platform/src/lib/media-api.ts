@@ -17,6 +17,23 @@ export type MediaNode = {
 export type NodeListItem = {
   node: MediaNode;
   shared: boolean;
+  access: { role: "owner" | PermissionRole; source: "owner" | "direct" | "inherited" };
+};
+
+export type MediaPermission = {
+  id: string;
+  granteeId: number;
+  role: PermissionRole;
+  inherited: boolean;
+  grantedAt: string;
+  granteeEmail: string;
+  granteeName: string;
+};
+
+export type MediaUserSearchResult = {
+  id: number;
+  email: string;
+  name: string;
 };
 
 async function req<T = unknown>(path: string, init?: RequestInit): Promise<T> {
@@ -82,21 +99,21 @@ export const mediaApi = {
     }),
   deleteNode: (nodeId: string) => req<void>(`/nodes/${nodeId}`, { method: "DELETE" }),
   getDownloadUrl: (nodeId: string) => req<{ downloadUrl: string; expiresInSeconds: number }>(`/nodes/${nodeId}/download`),
-  searchUsers: (q: string) => req<Array<{ id: number; email: string; name: string }>>(`/nodes/users/search?q=${encodeURIComponent(q)}`),
+  getContentUrl: (nodeId: string) => `/api/nodes/${encodeURIComponent(nodeId)}/content`,
+  getTextContent: async (nodeId: string) => {
+    const res = await fetch(`/api/nodes/${encodeURIComponent(nodeId)}/content`, { credentials: "include" });
+    if (!res.ok) {
+      throw new Error(`Failed to load preview (${res.status})`);
+    }
+    return res.text();
+  },
+  searchUsers: (q: string) => req<MediaUserSearchResult[]>(`/nodes/users/search?q=${encodeURIComponent(q)}`),
   shareNode: (nodeId: string, granteeId: number, role: PermissionRole) => req<{ permission: unknown }>(`/nodes/${nodeId}/share`, {
     method: "POST",
     body: JSON.stringify({ granteeId, role }),
   }),
   revokeShare: (nodeId: string, userId: number) => req<void>(`/nodes/${nodeId}/share/${userId}`, { method: "DELETE" }),
-  getPermissions: (nodeId: string) => req<Array<{
-    id: string;
-    granteeId: number;
-    role: PermissionRole;
-    inherited: boolean;
-    grantedAt: string;
-    granteeEmail: string;
-    granteeName: string;
-  }>>(`/nodes/${nodeId}/permissions`),
+  getPermissions: (nodeId: string) => req<MediaPermission[]>(`/nodes/${nodeId}/permissions`),
   createShareLink: (nodeId: string, role: PermissionRole, expiresAt?: string | null) => req<{
     id: string;
     token: string;

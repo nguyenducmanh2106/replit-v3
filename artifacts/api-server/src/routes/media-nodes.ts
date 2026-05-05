@@ -7,6 +7,7 @@ import {
   ilike,
   inArray,
   isNull,
+  or,
   sql,
 } from "drizzle-orm";
 import {
@@ -35,6 +36,27 @@ function getMediaS3(): MediaS3Service {
     mediaS3 = new MediaS3Service();
   }
   return mediaS3;
+}
+
+function formatUploadLimit(): string {
+  return `${Math.floor(MEDIA_MAX_UPLOAD_BYTES / 1024 / 1024)}MB`;
+}
+
+function inferPreviewContentType(name: string): string | null {
+  const extension = name.split(".").pop()?.toLowerCase();
+  switch (extension) {
+    case "pdf":
+      return "application/pdf";
+    case "txt":
+    case "md":
+    case "log":
+    case "csv":
+      return "text/plain; charset=utf-8";
+    case "json":
+      return "application/json; charset=utf-8";
+    default:
+      return null;
+  }
 }
 
 function parseNodeId(raw: string | undefined): string | null {
@@ -218,7 +240,10 @@ router.get("/nodes/users/search", requireAuth, async (req, res): Promise<void> =
   const users = await db
     .select({ id: usersTable.id, email: usersTable.email, name: usersTable.name })
     .from(usersTable)
-    .where(and(ilike(usersTable.email, `%${q}%`), sql`${usersTable.id} <> ${dbUser.id}`))
+    .where(and(
+      or(ilike(usersTable.email, `%${q}%`), ilike(usersTable.name, `%${q}%`)),
+      sql`${usersTable.id} <> ${dbUser.id}`,
+    ))
     .limit(10);
 
   res.json(users);
@@ -300,18 +325,30 @@ router.get("/nodes/:id/children", requireAuth, async (req, res): Promise<void> =
         sizeBytes: nodesTable.sizeBytes,
         createdAt: nodesTable.createdAt,
         updatedAt: nodesTable.updatedAt,
+        role: nodePermissionsTable.role,
       })
       .from(nodesTable)
       .innerJoin(nodePermissionsTable, eq(nodePermissionsTable.nodeId, nodesTable.id))
       .where(and(eq(nodePermissionsTable.granteeId, dbUser.id), isNull(nodesTable.parentId), sql`${nodesTable.ownerId} <> ${dbUser.id}`))
       .orderBy(asc(nodesTable.type), asc(nodesTable.name));
 
-    const mergedById = new Map<string, { node: Record<string, unknown>; shared: boolean }>();
+    const mergedById = new Map<string, { node: Record<string, unknown>; shared: boolean; access: EffectiveAccess }>();
     for (const node of ownRoots) {
-      mergedById.set(node.id, { node: toNodeResponse(node), shared: false });
+      mergedById.set(node.id, {
+        node: toNodeResponse(node),
+        shared: false,
+        access: { role: "owner", source: "owner" },
+      });
     }
     for (const node of sharedRoots) {
-      mergedById.set(node.id, { node: toNodeResponse(node), shared: true });
+      mergedById.set(node.id, {
+        node: toNodeResponse(node),
+        shared: true,
+        access: {
+          role: isPermissionRole(node.role) ? node.role : "viewer",
+          source: "direct",
+        },
+      });
     }
 
     res.json({
@@ -372,6 +409,9 @@ router.get("/nodes/:id/children", requireAuth, async (req, res): Promise<void> =
     items: children.map((node: typeof nodesTable.$inferSelect) => ({
       node: toNodeResponse(node),
       shared: (permissionCountMap.get(node.id) ?? 0) > 0 || (shareLinkCountMap.get(node.id) ?? 0) > 0,
+      access: node.ownerId === dbUser.id
+        ? { role: "owner", source: "owner" }
+        : accessCtx.access,
     })),
   });
 });
@@ -466,7 +506,7 @@ router.post("/nodes/:id/upload", requireAuth, async (req, res): Promise<void> =>
     return;
   }
   if (sizeBytes != null && sizeBytes > MEDIA_MAX_UPLOAD_BYTES) {
-    res.status(413).json({ error: `File exceeds maximum upload size of ${Math.floor(MEDIA_MAX_UPLOAD_BYTES / 1024 / 1024)}MB` });
+    res.status(413).json({ error: `File exceeds maximum upload size of ${formatUploadLimit()}` });
     return;
   }
 
@@ -534,17 +574,6 @@ router.post("/nodes/:id/upload/complete", requireAuth, async (req, res): Promise
     return;
   }
 
-  const uploadedSizeBytes = await getMediaS3().getObjectSize(draft.storageKey);
-  if (uploadedSizeBytes == null) {
-    res.status(400).json({ error: "Upload not found on storage. Database record was not created." });
-    return;
-  }
-  if (uploadedSizeBytes > MEDIA_MAX_UPLOAD_BYTES) {
-    await getMediaS3().deleteObjects([draft.storageKey]);
-    res.status(413).json({ error: `File exceeds maximum upload size of ${Math.floor(MEDIA_MAX_UPLOAD_BYTES / 1024 / 1024)}MB` });
-    return;
-  }
-
   const sizeValueRaw = req.body?.sizeBytes;
   const sizeBytes = sizeValueRaw == null ? null : Number(sizeValueRaw);
   if (sizeBytes != null && (!Number.isFinite(sizeBytes) || sizeBytes < 0)) {
@@ -552,7 +581,37 @@ router.post("/nodes/:id/upload/complete", requireAuth, async (req, res): Promise
     return;
   }
   if (sizeBytes != null && sizeBytes > MEDIA_MAX_UPLOAD_BYTES) {
-    res.status(413).json({ error: `File exceeds maximum upload size of ${Math.floor(MEDIA_MAX_UPLOAD_BYTES / 1024 / 1024)}MB` });
+    res.status(413).json({ error: `File exceeds maximum upload size of ${formatUploadLimit()}` });
+    return;
+  }
+
+  let uploadedSizeBytes = sizeBytes == null ? null : Math.floor(sizeBytes);
+  try {
+    const probedSizeBytes = await getMediaS3().getObjectSize(draft.storageKey);
+    if (probedSizeBytes == null) {
+      if (uploadedSizeBytes == null) {
+        res.status(400).json({ error: "Upload not found on storage. Database record was not created." });
+        return;
+      }
+      req.log.warn({ storageKey: draft.storageKey }, "Upload object could not be verified on storage; using client-reported size");
+    } else {
+      uploadedSizeBytes = probedSizeBytes;
+    }
+  } catch (error) {
+    if (uploadedSizeBytes == null) {
+      req.log.error({ err: error }, "Failed to verify upload object size");
+      res.status(502).json({ error: "Failed to verify upload on storage" });
+      return;
+    }
+    req.log.warn({ err: error }, "Failed to verify upload object size; using client-reported size");
+  }
+  if (uploadedSizeBytes != null && uploadedSizeBytes > MEDIA_MAX_UPLOAD_BYTES) {
+    try {
+      await getMediaS3().deleteObjects([draft.storageKey]);
+    } catch (error) {
+      req.log.warn({ err: error }, "Failed to delete oversized upload object");
+    }
+    res.status(413).json({ error: `File exceeds maximum upload size of ${formatUploadLimit()}` });
     return;
   }
   const mimeType = req.body?.mimeType == null ? draft.mimeType : String(req.body.mimeType);
@@ -567,7 +626,7 @@ router.post("/nodes/:id/upload/complete", requireAuth, async (req, res): Promise
       name: safeName,
       storageKey: draft.storageKey,
       mimeType: mimeType ?? null,
-      sizeBytes: Math.floor(uploadedSizeBytes),
+      sizeBytes: uploadedSizeBytes,
     }).returning();
 
     res.status(201).json({ node: toNodeResponse(created!) });
@@ -701,9 +760,13 @@ router.delete("/nodes/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const accessCtx = await assertNodeAccess(nodeId, dbUser.id, "edit");
-  if (!accessCtx) {
-    res.status(403).json({ error: "No permission to delete node" });
+  const node = await getNodeById(nodeId);
+  if (!node) {
+    res.status(404).json({ error: "Node not found" });
+    return;
+  }
+  if (node.ownerId !== dbUser.id) {
+    res.status(403).json({ error: "Only owner can delete node" });
     return;
   }
 
@@ -770,6 +833,54 @@ router.get("/nodes/:id/download", requireAuth, async (req, res): Promise<void> =
 
   const downloadUrl = await getMediaS3().createDownloadUrl(accessCtx.node.storageKey);
   res.json({ downloadUrl, expiresInSeconds: 900 });
+});
+
+router.get("/nodes/:id/content", requireAuth, async (req, res): Promise<void> => {
+  const dbUser = req.dbUser;
+  if (!dbUser) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const nodeId = parseNodeId(firstParam(req.params.id));
+  if (!nodeId) {
+    res.status(400).json({ error: "Invalid node id" });
+    return;
+  }
+
+  const accessCtx = await assertNodeAccess(nodeId, dbUser.id, "view");
+  if (!accessCtx) {
+    res.status(404).json({ error: "Node not found" });
+    return;
+  }
+
+  if (accessCtx.node.type !== "file" || !accessCtx.node.storageKey) {
+    res.status(400).json({ error: "Node is not a previewable file" });
+    return;
+  }
+
+  try {
+    const object = await getMediaS3().getObjectBytes(accessCtx.node.storageKey);
+    if (!object) {
+      res.status(404).json({ error: "File not found on storage" });
+      return;
+    }
+
+    const inferredContentType = inferPreviewContentType(accessCtx.node.name);
+    const storedContentType = accessCtx.node.mimeType || object.contentType || "";
+    const contentType = !storedContentType || storedContentType === "application/octet-stream"
+      ? (inferredContentType || "application/octet-stream")
+      : storedContentType;
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(accessCtx.node.name)}"`);
+    if (object.contentLength != null) {
+      res.setHeader("Content-Length", String(object.contentLength));
+    }
+    res.send(Buffer.from(object.bytes));
+  } catch (error) {
+    req.log.error({ err: error }, "Failed to stream media file content");
+    res.status(502).json({ error: "Failed to load file content" });
+  }
 });
 
 router.post("/nodes/:id/share", requireAuth, async (req, res): Promise<void> => {
