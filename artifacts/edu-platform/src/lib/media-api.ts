@@ -36,6 +36,12 @@ export type MediaUserSearchResult = {
   name: string;
 };
 
+export type OnlyOfficeConfigResponse = {
+  documentServerUrl: string;
+  config: Record<string, unknown>;
+  expiresInSeconds: number;
+};
+
 async function req<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     credentials: "include",
@@ -99,6 +105,8 @@ export const mediaApi = {
     }),
   deleteNode: (nodeId: string) => req<void>(`/nodes/${nodeId}`, { method: "DELETE" }),
   getDownloadUrl: (nodeId: string) => req<{ downloadUrl: string; expiresInSeconds: number }>(`/nodes/${nodeId}/download`),
+  getOnlyOfficeConfig: (nodeId: string, mode: "view" | "edit" = "view") =>
+    req<OnlyOfficeConfigResponse>(`/nodes/${nodeId}/onlyoffice-config?mode=${encodeURIComponent(mode)}`),
   getContentUrl: (nodeId: string) => `/api/nodes/${encodeURIComponent(nodeId)}/content`,
   getTextContent: async (nodeId: string) => {
     const res = await fetch(`/api/nodes/${encodeURIComponent(nodeId)}/content`, { credentials: "include" });

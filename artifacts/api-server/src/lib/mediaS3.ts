@@ -10,6 +10,11 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 900;
 
+type DownloadUrlOptions = {
+  contentDisposition?: string;
+  contentType?: string;
+};
+
 export class MediaS3DeleteError extends Error {
   constructor(message: string) {
     super(message);
@@ -68,12 +73,28 @@ export class MediaS3Service {
     return getSignedUrl(this.client, command, { expiresIn: DEFAULT_SIGNED_URL_TTL_SECONDS });
   }
 
-  async createDownloadUrl(storageKey: string): Promise<string> {
+  async putObject(storageKey: string, bytes: Uint8Array, contentType?: string): Promise<void> {
+    await this.client.send(new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: storageKey,
+      Body: bytes,
+      ContentLength: bytes.byteLength,
+      ContentType: contentType,
+    }));
+  }
+
+  async createDownloadUrl(
+    storageKey: string,
+    expiresIn = DEFAULT_SIGNED_URL_TTL_SECONDS,
+    options: DownloadUrlOptions = {},
+  ): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: this.bucket,
       Key: storageKey,
+      ResponseContentDisposition: options.contentDisposition,
+      ResponseContentType: options.contentType,
     });
-    return getSignedUrl(this.client, command, { expiresIn: DEFAULT_SIGNED_URL_TTL_SECONDS });
+    return getSignedUrl(this.client, command, { expiresIn });
   }
 
   async getObjectBytes(storageKey: string): Promise<{

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { format, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { OnlyOfficePreview } from "@/components/onlyoffice-preview";
 import { useToast } from "@/hooks/use-toast";
 import {
   mediaApi,
@@ -29,7 +30,7 @@ type FilePreview =
   | { type: "image"; name: string; url: string }
   | { type: "pdf"; name: string; url: string }
   | { type: "text"; name: string; content: string }
-  | { type: "document"; name: string; officeViewerUrl: string };
+  | { type: "document"; name: string; mode: "view" | "edit"; documentServerUrl: string; config: Record<string, unknown> };
 
 type UploadItem = {
   id: string;
@@ -51,6 +52,16 @@ type MediaManagerPageProps = {
 };
 
 const MEDIA_MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const ONLYOFFICE_PREVIEW_EXTENSIONS = new Set([
+  "csv", "djvu", "doc", "docm", "docx", "dot", "dotm", "dotx", "dps", "dpt", "epub", "et", "ett",
+  "fb2", "fodp", "fods", "fodt", "hml", "htm", "html", "hwp", "hwpx", "key", "md", "mht", "mhtml",
+  "numbers", "odg", "odp", "ods", "odt", "otp", "ots", "ott", "oxps", "pages", "pdf", "pot",
+  "potm", "potx", "pps", "ppsm", "ppsx", "ppt", "pptm", "pptx", "rtf", "stw", "sxc", "sxi",
+  "sxw", "txt", "wps", "wpt", "xls", "xlsb", "xlsm", "xlsx", "xlt", "xltm", "xltx", "xml", "xps",
+]);
+const ONLYOFFICE_EDIT_EXTENSIONS = new Set([
+  "csv", "doc", "docx", "odt", "ods", "odp", "ppt", "pptx", "rtf", "txt", "xls", "xlsx",
+]);
 
 async function uploadFileWithProgress(url: string, file: File, onProgress: (value: number) => void): Promise<void> {
   await new Promise<void>((resolve, reject) => {
@@ -110,7 +121,15 @@ function isImageFile(node: MediaNode): boolean {
 
 function isTextFile(node: MediaNode): boolean {
   const extension = getFileExtension(node.name);
-  return node.mimeType?.startsWith("text/") || ["txt", "md", "csv", "json", "log"].includes(extension);
+  return node.mimeType?.startsWith("text/") || ["txt", "md", "json", "log"].includes(extension);
+}
+
+function isOnlyOfficePreviewFile(node: MediaNode): boolean {
+  return ONLYOFFICE_PREVIEW_EXTENSIONS.has(getFileExtension(node.name));
+}
+
+function isOnlyOfficeEditFile(node: MediaNode): boolean {
+  return ONLYOFFICE_EDIT_EXTENSIONS.has(getFileExtension(node.name));
 }
 
 function renderNodeIcon(node: MediaNode) {
@@ -161,10 +180,25 @@ export default function MediaManagerPage({ currentNodeId, navigateToNode }: Medi
   const canUploadHere = listFolderId !== "root";
   const isViewingFile = activeNode?.type === "file";
 
-  async function openPreview(node: MediaNode) {
+  async function openPreview(node: MediaNode, mode: "view" | "edit" = "view") {
     try {
+      if (mode === "edit" && !isOnlyOfficeEditFile(node)) {
+        throw new Error("File type is not supported for OnlyOffice editing");
+      }
       if (isImageFile(node)) {
+        if (mode === "edit") throw new Error("Images cannot be edited in OnlyOffice");
         setFilePreview({ type: "image", name: node.name, url: mediaApi.getContentUrl(node.id) });
+        return;
+      }
+      if (isOnlyOfficePreviewFile(node)) {
+        const data = await mediaApi.getOnlyOfficeConfig(node.id, mode);
+        setFilePreview({
+          type: "document",
+          name: mode === "edit" ? `${node.name} (editing)` : node.name,
+          mode,
+          documentServerUrl: data.documentServerUrl,
+          config: data.config,
+        });
         return;
       }
       if (isPdfFile(node)) {
@@ -176,12 +210,7 @@ export default function MediaManagerPage({ currentNodeId, navigateToNode }: Medi
         setFilePreview({ type: "text", name: node.name, content });
         return;
       }
-      const data = await mediaApi.getDownloadUrl(node.id);
-      setFilePreview({
-        type: "document",
-        name: node.name,
-        officeViewerUrl: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(data.downloadUrl)}`,
-      });
+      throw new Error("File type is not supported for preview");
     } catch (error) {
       toast({
         title: "Error",
@@ -546,6 +575,7 @@ export default function MediaManagerPage({ currentNodeId, navigateToNode }: Medi
                 const node = item.node;
                 const isActive = currentNodeId === node.id;
                 const canDeleteNode = item.access.role === "owner";
+                const canEditNode = node.type === "file" && item.access.role !== "viewer" && isOnlyOfficeEditFile(node);
                 return (
                   <tr key={node.id} className={`group border-b border-[#efefef] hover:bg-[#fafafa] ${isActive ? "bg-[#f0f7ff]" : ""}`}>
                     <td className="px-3 py-2">
@@ -577,6 +607,9 @@ export default function MediaManagerPage({ currentNodeId, navigateToNode }: Medi
                         <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                           {node.type === "file" ? (
                             <Button variant="ghost" size="sm" onClick={() => openPreview(node)}>Preview</Button>
+                          ) : null}
+                          {canEditNode ? (
+                            <Button variant="ghost" size="sm" onClick={() => openPreview(node, "edit")}>Edit</Button>
                           ) : null}
                           {node.type === "file" ? (
                             <Button
@@ -625,8 +658,14 @@ export default function MediaManagerPage({ currentNodeId, navigateToNode }: Medi
         </div>
       ) : null}
 
-      <Dialog open={!!filePreview} onOpenChange={open => { if (!open) setFilePreview(null); }}>
-        <DialogContent className="max-w-5xl">
+      <Dialog open={!!filePreview} onOpenChange={open => {
+        if (!open) {
+          const shouldReload = filePreview?.type === "document" && filePreview.mode === "edit";
+          setFilePreview(null);
+          if (shouldReload) void reload();
+        }
+      }}>
+        <DialogContent className="max-w-[100vw]">
           <DialogHeader>
             <DialogTitle>{filePreview?.name}</DialogTitle>
           </DialogHeader>
@@ -646,10 +685,10 @@ export default function MediaManagerPage({ currentNodeId, navigateToNode }: Medi
             </pre>
           ) : null}
           {filePreview?.type === "document" ? (
-            <iframe
-              src={filePreview.officeViewerUrl}
+            <OnlyOfficePreview
+              documentServerUrl={filePreview.documentServerUrl}
+              config={filePreview.config}
               title={filePreview.name}
-              className="h-[70vh] w-full rounded border"
             />
           ) : null}
         </DialogContent>

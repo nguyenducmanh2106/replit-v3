@@ -1,5 +1,5 @@
-import { useContext, useEffect, useRef } from "react"
-import { EditorContent, EditorContext, useEditor, type JSONContent } from "@tiptap/react"
+import { useContext, useEffect, useMemo, useRef, useState } from "react"
+import { EditorContent, EditorContext, useEditor, type Editor, type JSONContent } from "@tiptap/react"
 import type { Doc as YDoc } from "yjs"
 import type { TiptapCollabProvider } from "@tiptap-pro/provider"
 import { createPortal } from "react-dom"
@@ -63,6 +63,7 @@ import "@/components/tiptap-node/paragraph-node/paragraph-node.scss"
 import { EmojiDropdownMenu } from "@/components/tiptap-ui/emoji-dropdown-menu"
 import { MentionDropdownMenu } from "@/components/tiptap-ui/mention-dropdown-menu"
 import { SlashDropdownMenu } from "@/components/tiptap-ui/slash-dropdown-menu"
+import type { SlashMenuConfig } from "@/components/tiptap-ui/slash-dropdown-menu/use-slash-dropdown-menu"
 import { DragContextMenu } from "@/components/tiptap-ui/drag-context-menu"
 import { AiMenu } from "@/components/tiptap-ui/ai-menu"
 
@@ -74,6 +75,7 @@ import { AiProvider, useAi } from "@/contexts/ai-context"
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 import { TIPTAP_AI_APP_ID } from "@/lib/tiptap-collab-utils"
+import { mediaApi, type MediaNode } from "@/lib/media-api"
 
 // --- Styles ---
 import "@/components/tiptap-templates/notion-like/notion-like-editor.scss"
@@ -90,12 +92,15 @@ import {
 } from "@/components/tiptap-node/toc-node/context/toc-context"
 import { ListNormalizationExtension } from "@/components/tiptap-extension/list-normalization-extension"
 import { Indent } from "@/components/tiptap-extension/indent-extension"
+import { ImagePlusIcon } from "@/components/tiptap-icons/image-plus-icon"
+import { MediaImagePickerDialog } from "@/components/media-image-picker-dialog"
 
 export interface NotionEditorProps {
   room: string
   placeholder?: string
   initialContent?: JSONContent
   onChange?: (content: JSONContent) => void
+  enableMediaImagePicker?: boolean
 }
 
 export interface EditorProviderProps {
@@ -105,6 +110,7 @@ export interface EditorProviderProps {
   aiToken: string | null
   initialContent?: JSONContent
   onChange?: (content: JSONContent) => void
+  enableMediaImagePicker?: boolean
 }
 
 /**
@@ -127,7 +133,7 @@ export function LoadingSpinner({ text = "Connecting..." }: { text?: string }) {
 /**
  * EditorContent component that renders the actual editor
  */
-export function EditorContentArea() {
+export function EditorContentArea({ slashMenuConfig }: { slashMenuConfig?: SlashMenuConfig }) {
   const { editor } = useContext(EditorContext)!
   const {
     aiGenerationIsLoading,
@@ -174,7 +180,7 @@ export function EditorContentArea() {
       {/* <AiMenu /> */}
       <EmojiDropdownMenu />
       <MentionDropdownMenu />
-      <SlashDropdownMenu />
+      <SlashDropdownMenu config={slashMenuConfig} />
       <NotionToolbarFloating />
       {createPortal(<MobileToolbar />, document.body)}
     </EditorContent>
@@ -185,10 +191,50 @@ export function EditorContentArea() {
  * Component that creates and provides the editor instance
  */
 export function EditorProvider(props: EditorProviderProps) {
-  const { provider, ydoc, placeholder = "Start writing...", aiToken, initialContent, onChange } = props
+  const { provider, ydoc, placeholder = "Start writing...", aiToken, initialContent, onChange, enableMediaImagePicker } = props
 
   const { user } = useUser()
   const { setTocContent } = useToc()
+  const [isMediaImagePickerOpen, setIsMediaImagePickerOpen] = useState(false)
+  const mediaImageEditorRef = useRef<Editor | null>(null)
+
+  const slashMenuConfig = useMemo<SlashMenuConfig | undefined>(() => {
+    if (!enableMediaImagePicker) return undefined
+
+    return {
+      customItems: [
+        {
+          title: "Thêm ảnh",
+          subtext: "Chọn ảnh từ Media Manager",
+          keywords: ["image", "media", "media manager", "anh", "them anh"],
+          badge: ImagePlusIcon,
+          group: "Upload",
+          onSelect: ({ editor }) => {
+            mediaImageEditorRef.current = editor
+            setIsMediaImagePickerOpen(true)
+          },
+        },
+      ],
+    }
+  }, [enableMediaImagePicker])
+
+  function handleSelectMediaImage(node: MediaNode) {
+    const editor = mediaImageEditorRef.current
+    if (!editor) return
+
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "image",
+        attrs: {
+          src: mediaApi.getContentUrl(node.id),
+          alt: node.name,
+          title: node.name,
+        },
+      })
+      .run()
+  }
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -339,7 +385,7 @@ export function EditorProvider(props: EditorProviderProps) {
       <EditorContext.Provider value={{ editor }}>
         <NotionEditorHeader />
         <div className="notion-like-editor-layout">
-          <EditorContentArea />
+          <EditorContentArea slashMenuConfig={slashMenuConfig} />
           <TocSidebar topOffset={48} />
         </div>
 
@@ -356,7 +402,13 @@ export function EditorProvider(props: EditorProviderProps) {
         />
       </EditorContext.Provider>
 
-      
+      {enableMediaImagePicker && (
+        <MediaImagePickerDialog
+          open={isMediaImagePickerOpen}
+          onOpenChange={setIsMediaImagePickerOpen}
+          onSelect={handleSelectMediaImage}
+        />
+      )}
     </div>
   )
 }
@@ -369,13 +421,19 @@ export function NotionEditor({
   placeholder = "Start writing...",
   initialContent,
   onChange,
+  enableMediaImagePicker,
 }: NotionEditorProps) {
   return (
     <UserProvider>
       <CollabProvider room={room}>
         <AiProvider>
           <TocProvider>
-            <NotionEditorContent placeholder={placeholder} initialContent={initialContent} onChange={onChange} />
+            <NotionEditorContent
+              placeholder={placeholder}
+              initialContent={initialContent}
+              onChange={onChange}
+              enableMediaImagePicker={enableMediaImagePicker}
+            />
           </TocProvider>
         </AiProvider>
       </CollabProvider>
@@ -386,7 +444,17 @@ export function NotionEditor({
 /**
  * Internal component that handles the editor loading state
  */
-export function NotionEditorContent({ placeholder, initialContent, onChange }: { placeholder?: string; initialContent?: JSONContent; onChange?: (content: JSONContent) => void }) {
+export function NotionEditorContent({
+  placeholder,
+  initialContent,
+  onChange,
+  enableMediaImagePicker,
+}: {
+  placeholder?: string
+  initialContent?: JSONContent
+  onChange?: (content: JSONContent) => void
+  enableMediaImagePicker?: boolean
+}) {
   const { provider, ydoc, setupError: collabSetupError } = useCollab()
   const { aiToken, setupError: aiSetupError } = useAi()
 
@@ -412,6 +480,7 @@ export function NotionEditorContent({ placeholder, initialContent, onChange }: {
       aiToken={aiToken}
       initialContent={initialContent}
       onChange={onChange}
+      enableMediaImagePicker={enableMediaImagePicker}
     />
   )
 }

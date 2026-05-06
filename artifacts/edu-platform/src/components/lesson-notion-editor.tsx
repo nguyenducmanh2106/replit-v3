@@ -34,6 +34,7 @@ export function LessonNotionEditor({
       placeholder={placeholder}
       initialContent={parseInitialContent(initialContent)}
       onChange={handleChange}
+      enableMediaImagePicker
     />
   );
 }

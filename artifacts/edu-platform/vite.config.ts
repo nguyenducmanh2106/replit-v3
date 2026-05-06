@@ -20,7 +20,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 const basePath = process.env.BASE_PATH ?? "/";
-const apiPort = process.env.API_PORT ? parseInt(process.env.API_PORT) : 8080;
+const apiPort = process.env.API_PORT ? parseInt(process.env.API_PORT) : 8081;
 
 export default defineConfig({
   base: basePath,

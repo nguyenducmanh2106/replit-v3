@@ -1,5 +1,5 @@
-import { createHmac, randomBytes, randomUUID } from "crypto";
-import { Router, type IRouter } from "express";
+import { createHash, createHmac, randomBytes, randomUUID } from "crypto";
+import { Router, type IRouter, type Request } from "express";
 import {
   and,
   asc,
@@ -31,6 +31,27 @@ const router: IRouter = Router();
 let mediaS3: MediaS3Service | null = null;
 const MEDIA_MAX_UPLOAD_BYTES = Number(process.env["MEDIA_MAX_UPLOAD_BYTES"] ?? 5 * 1024 * 1024);
 
+const ONLYOFFICE_WORD_EXTENSIONS = new Set([
+  "doc", "docm", "docx", "dot", "dotm", "dotx", "epub", "fb2", "fodt", "hml", "htm", "html",
+  "hwp", "hwpx", "md", "mht", "mhtml", "odt", "ott", "pages", "rtf", "stw", "sxw", "txt",
+  "wps", "wpt", "xml",
+]);
+const ONLYOFFICE_CELL_EXTENSIONS = new Set([
+  "csv", "et", "ett", "fods", "numbers", "ods", "ots", "sxc", "xls", "xlsb", "xlsm", "xlsx",
+  "xlt", "xltm", "xltx",
+]);
+const ONLYOFFICE_SLIDE_EXTENSIONS = new Set([
+  "dps", "dpt", "fodp", "key", "odg", "odp", "otp", "pot", "potm", "potx", "pps", "ppsm", "ppsx",
+  "ppt", "pptm", "pptx", "sxi",
+]);
+const ONLYOFFICE_PDF_EXTENSIONS = new Set(["djvu", "oxps", "pdf", "xps"]);
+const ONLYOFFICE_EDIT_EXTENSIONS = new Set([
+  "csv", "doc", "docx", "odt", "ods", "odp", "ppt", "pptx", "rtf", "txt", "xls", "xlsx",
+]);
+
+type OnlyOfficeDocumentType = "word" | "cell" | "slide" | "pdf";
+type OnlyOfficeMode = "view" | "edit";
+
 function getMediaS3(): MediaS3Service {
   if (!mediaS3) {
     mediaS3 = new MediaS3Service();
@@ -57,6 +78,163 @@ function inferPreviewContentType(name: string): string | null {
     default:
       return null;
   }
+}
+
+function getFileExtension(name: string): string {
+  const index = name.lastIndexOf(".");
+  return index >= 0 ? name.slice(index + 1).toLowerCase() : "";
+}
+
+function inferOnlyOfficeContentType(name: string, mimeType: string | null): string {
+  if (mimeType && mimeType !== "application/octet-stream") return mimeType;
+
+  switch (getFileExtension(name)) {
+    case "doc":
+      return "application/msword";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case "xls":
+      return "application/vnd.ms-excel";
+    case "xlsx":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    case "ppt":
+      return "application/vnd.ms-powerpoint";
+    case "pptx":
+      return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+    case "pdf":
+      return "application/pdf";
+    case "csv":
+      return "text/csv; charset=utf-8";
+    case "txt":
+    case "md":
+      return "text/plain; charset=utf-8";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+function getOnlyOfficeDocumentType(fileType: string): OnlyOfficeDocumentType | null {
+  if (ONLYOFFICE_WORD_EXTENSIONS.has(fileType)) return "word";
+  if (ONLYOFFICE_CELL_EXTENSIONS.has(fileType)) return "cell";
+  if (ONLYOFFICE_SLIDE_EXTENSIONS.has(fileType)) return "slide";
+  if (ONLYOFFICE_PDF_EXTENSIONS.has(fileType)) return "pdf";
+  return null;
+}
+
+function canEditOnlyOfficeFile(fileType: string): boolean {
+  return ONLYOFFICE_EDIT_EXTENSIONS.has(fileType);
+}
+
+function getOnlyOfficeDocumentServerUrl(): string | null {
+  const raw = (
+    process.env["ONLYOFFICE_DOCUMENT_SERVER_URL"]
+    ?? process.env["ONLYOFFICE_SERVER_URL"]
+    ?? process.env["DOCUMENT_SERVER_URL"]
+  )?.trim();
+  if (!raw) return null;
+  return raw.replace(/\/+$/, "");
+}
+
+function getOnlyOfficePublicFileBaseUrl(): string {
+  const configured = (
+    process.env["ONLYOFFICE_PUBLIC_FILE_BASE_URL"]
+    ?? process.env["S3_PUBLIC_BASE_URL"]
+  )?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+
+  const endpoint = (process.env["S3_ENDPOINT"] ?? "").trim().replace(/\/+$/, "");
+  const bucket = (process.env["S3_BUCKET"] ?? "").trim().replace(/^\/+|\/+$/g, "");
+  if (!endpoint || !bucket) {
+    throw new Error("Missing ONLYOFFICE_PUBLIC_FILE_BASE_URL or S3_ENDPOINT/S3_BUCKET for OnlyOffice public file URL");
+  }
+  return `${endpoint}/${bucket}`;
+}
+
+function encodePublicObjectPath(path: string): string {
+  return path
+    .split("/")
+    .filter(segment => segment.length > 0)
+    .map(segment => encodeURIComponent(segment))
+    .join("/");
+}
+
+function createOnlyOfficePublicFileUrl(node: {
+  id: string;
+  name: string;
+  storageKey: string | null;
+  updatedAt: Date;
+  sizeBytes: number | null;
+}): string {
+  if (!node.storageKey) {
+    throw new Error("Missing storage key for OnlyOffice public file URL");
+  }
+
+  const keyMode = (process.env["ONLYOFFICE_PUBLIC_FILE_KEY_MODE"] ?? "storageKey").trim().toLowerCase();
+  const objectPath = keyMode === "filename" ? node.name : node.storageKey;
+  const version = createHash("md5")
+    .update(`${node.id}:${node.updatedAt.getTime()}:${node.sizeBytes ?? ""}`)
+    .digest("hex");
+
+  return `${getOnlyOfficePublicFileBaseUrl()}/${encodePublicObjectPath(objectPath)}?v=${version}`;
+}
+
+function signOnlyOfficeToken(payload: unknown): string {
+  const secret = process.env["ONLYOFFICE_JWT_SECRET"];
+  if (!secret) return "";
+
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const header = encode({ alg: "HS256", typ: "JWT" });
+  const body = encode(payload);
+  const signature = createHmac("sha256", secret).update(`${header}.${body}`).digest("base64url");
+  return `${header}.${body}.${signature}`;
+}
+
+type OnlyOfficeCallbackPayload = {
+  nodeId: string;
+  userId: number;
+  exp: number;
+};
+
+function getOnlyOfficeCallbackSecret(): string {
+  return process.env["ONLYOFFICE_CALLBACK_SECRET"]
+    ?? process.env["ONLYOFFICE_JWT_SECRET"]
+    ?? process.env["MEDIA_UPLOAD_DRAFT_SECRET"]
+    ?? process.env["S3_SECRET_KEY"]
+    ?? "dev-onlyoffice-callback-secret";
+}
+
+function signOnlyOfficeCallback(payload: OnlyOfficeCallbackPayload): string {
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = createHmac("sha256", getOnlyOfficeCallbackSecret()).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+function verifyOnlyOfficeCallback(token: string): OnlyOfficeCallbackPayload | null {
+  const [body, sig] = token.split(".");
+  if (!body || !sig) return null;
+  const expected = createHmac("sha256", getOnlyOfficeCallbackSecret()).update(body).digest("base64url");
+  if (sig !== expected) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as OnlyOfficeCallbackPayload;
+    if (!payload || typeof payload !== "object") return null;
+    if (!parseNodeId(payload.nodeId)) return null;
+    if (!Number.isFinite(payload.userId)) return null;
+    if (!Number.isFinite(payload.exp) || payload.exp <= Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function getRequestOrigin(req: Request): string {
+  const configured = process.env["API_PUBLIC_URL"] ?? process.env["APP_URL"];
+  if (configured) return configured.replace(/\/+$/, "");
+
+  const forwardedProto = typeof req.headers["x-forwarded-proto"] === "string"
+    ? req.headers["x-forwarded-proto"].split(",")[0]?.trim()
+    : "";
+  const proto = forwardedProto || req.protocol || "http";
+  return `${proto}://${req.get("host") ?? ""}`;
 }
 
 function parseNodeId(raw: string | undefined): string | null {
@@ -833,6 +1011,190 @@ router.get("/nodes/:id/download", requireAuth, async (req, res): Promise<void> =
 
   const downloadUrl = await getMediaS3().createDownloadUrl(accessCtx.node.storageKey);
   res.json({ downloadUrl, expiresInSeconds: 900 });
+});
+
+router.get("/nodes/:id/onlyoffice-config", requireAuth, async (req, res): Promise<void> => {
+  const dbUser = req.dbUser;
+  if (!dbUser) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const documentServerUrl = getOnlyOfficeDocumentServerUrl();
+  if (!documentServerUrl) {
+    res.status(503).json({
+      error: "OnlyOffice document server is not configured. Set ONLYOFFICE_DOCUMENT_SERVER_URL in artifacts/api-server/.env or the process environment.",
+    });
+    return;
+  }
+
+  const nodeId = parseNodeId(firstParam(req.params.id));
+  if (!nodeId) {
+    res.status(400).json({ error: "Invalid node id" });
+    return;
+  }
+
+  const requestedMode: OnlyOfficeMode = req.query.mode === "edit" ? "edit" : "view";
+  const accessCtx = await assertNodeAccess(nodeId, dbUser.id, requestedMode === "edit" ? "edit" : "view");
+  if (!accessCtx) {
+    res.status(requestedMode === "edit" ? 403 : 404).json({
+      error: requestedMode === "edit" ? "No permission to edit this file" : "Node not found",
+    });
+    return;
+  }
+
+  if (accessCtx.node.type !== "file" || !accessCtx.node.storageKey) {
+    res.status(400).json({ error: "Node is not a previewable file" });
+    return;
+  }
+
+  const fileType = getFileExtension(accessCtx.node.name);
+  const documentType = getOnlyOfficeDocumentType(fileType);
+  if (!fileType || !documentType) {
+    res.status(400).json({ error: "File type is not supported by OnlyOffice preview" });
+    return;
+  }
+  if (requestedMode === "edit" && !canEditOnlyOfficeFile(fileType)) {
+    res.status(400).json({ error: "File type is not supported by OnlyOffice editing" });
+    return;
+  }
+
+  try {
+    const downloadUrl = createOnlyOfficePublicFileUrl(accessCtx.node);
+    const key = `${accessCtx.node.id}-${accessCtx.node.updatedAt.getTime()}`.replace(/[^0-9a-zA-Z._=-]/g, "").slice(0, 128);
+    const config = {
+      documentType,
+      document: {
+        fileType,
+        key,
+        title: accessCtx.node.name,
+        url: downloadUrl,
+        permissions: {
+          comment: requestedMode === "edit",
+          download: true,
+          edit: requestedMode === "edit",
+          print: true,
+          review: requestedMode === "edit",
+        },
+      },
+      editorConfig: {
+        callbackUrl: requestedMode === "edit"
+          ? `${getRequestOrigin(req)}/api/nodes/${accessCtx.node.id}/onlyoffice-callback?token=${encodeURIComponent(signOnlyOfficeCallback({
+            nodeId: accessCtx.node.id,
+            userId: dbUser.id,
+            exp: Date.now() + (24 * 60 * 60 * 1000),
+          }))}`
+          : undefined,
+        customization: {
+          compactHeader: false,
+          compactToolbar: false,
+          forcesave: requestedMode === "edit",
+          hideRightMenu: false,
+          hideRulers: false,
+          toolbarHideFileName: false,
+        },
+        lang: "vi",
+        mode: requestedMode,
+        user: {
+          id: String(dbUser.id),
+          name: dbUser.name || dbUser.email,
+        },
+      },
+      height: "100%",
+      width: "100%",
+    };
+    const token = signOnlyOfficeToken(config);
+
+    res.json({
+      documentServerUrl,
+      config: token ? { ...config, token } : config,
+      expiresInSeconds: 0,
+    });
+  } catch (error) {
+    req.log.error({ err: error }, "Failed to build OnlyOffice preview config");
+    res.status(502).json({ error: "Failed to prepare OnlyOffice preview" });
+  }
+});
+
+router.post("/nodes/:id/onlyoffice-callback", async (req, res): Promise<void> => {
+  const nodeId = parseNodeId(firstParam(req.params.id));
+  if (!nodeId) {
+    res.status(400).json({ error: 1, message: "Invalid node id" });
+    return;
+  }
+
+  const token = typeof req.query.token === "string" ? req.query.token : "";
+  const payload = verifyOnlyOfficeCallback(token);
+  if (!payload || payload.nodeId !== nodeId) {
+    res.status(403).json({ error: 1, message: "Invalid OnlyOffice callback token" });
+    return;
+  }
+
+  const body = req.body as {
+    status?: number;
+    url?: string;
+    key?: string;
+    users?: string[];
+    userdata?: string;
+  };
+  const status = Number(body?.status);
+
+  if (status !== 2 && status !== 6) {
+    res.json({ error: 0 });
+    return;
+  }
+
+  try {
+    const accessCtx = await assertNodeAccess(nodeId, payload.userId, "edit");
+    if (!accessCtx || accessCtx.node.type !== "file" || !accessCtx.node.storageKey) {
+      res.json({ error: 1, message: "No permission to edit this file" });
+      return;
+    }
+
+    const fileType = getFileExtension(accessCtx.node.name);
+    if (!canEditOnlyOfficeFile(fileType)) {
+      res.json({ error: 1, message: "File type is not supported by OnlyOffice editing" });
+      return;
+    }
+
+    if (!body.url) {
+      res.json({ error: 1, message: "OnlyOffice callback did not include a file URL" });
+      return;
+    }
+
+    const response = await fetch(body.url);
+    if (!response.ok) {
+      res.json({ error: 1, message: `OnlyOffice returned ${response.status} while downloading edited file` });
+      return;
+    }
+
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const contentType = inferOnlyOfficeContentType(accessCtx.node.name, accessCtx.node.mimeType);
+
+    await getMediaS3().putObject(accessCtx.node.storageKey, bytes, contentType);
+    await db.update(nodesTable)
+      .set({
+        mimeType: contentType,
+        sizeBytes: bytes.byteLength,
+        updatedAt: new Date(),
+      })
+      .where(eq(nodesTable.id, nodeId));
+
+    req.log.info({
+      nodeId,
+      userId: payload.userId,
+      status,
+      sizeBytes: bytes.byteLength,
+    }, "OnlyOffice file saved to media storage");
+
+    res.json({ error: 0 });
+  } catch (error) {
+    req.log.error({ err: error, nodeId, status, key: body?.key }, "Failed to save OnlyOffice callback file");
+    res.json({
+      error: 1,
+      message: error instanceof Error ? error.message : "Failed to save OnlyOffice callback file",
+    });
+  }
 });
 
 router.get("/nodes/:id/content", requireAuth, async (req, res): Promise<void> => {
