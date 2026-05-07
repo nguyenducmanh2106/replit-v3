@@ -126,6 +126,28 @@ export class MediaS3Service {
     }
   }
 
+  async getObjectPrefix(storageKey: string, length: number): Promise<Uint8Array | null> {
+    try {
+      const result = await this.client.send(new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: storageKey,
+        Range: `bytes=0-${Math.max(0, length - 1)}`,
+      }));
+      if (!result.Body) return null;
+      const body = result.Body as { transformToByteArray?: () => Promise<Uint8Array> };
+      if (!body.transformToByteArray) {
+        throw new Error("S3 object body cannot be converted to bytes");
+      }
+      return body.transformToByteArray();
+    } catch (error) {
+      const err = error as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (err?.$metadata?.httpStatusCode === 404 || err?.name === "NotFound" || err?.name === "NoSuchKey") {
+        return null;
+      }
+      throw error;
+    }
+  }
+
   async objectExists(storageKey: string): Promise<boolean> {
     try {
       await this.client.send(new HeadObjectCommand({

@@ -85,6 +85,38 @@ function getFileExtension(name: string): string {
   return index >= 0 ? name.slice(index + 1).toLowerCase() : "";
 }
 
+function looksLikeOleOfficeFile(prefix: Uint8Array | null): boolean {
+  return !!prefix
+    && prefix.length >= 8
+    && prefix[0] === 0xd0
+    && prefix[1] === 0xcf
+    && prefix[2] === 0x11
+    && prefix[3] === 0xe0
+    && prefix[4] === 0xa1
+    && prefix[5] === 0xb1
+    && prefix[6] === 0x1a
+    && prefix[7] === 0xe1;
+}
+
+async function getOnlyOfficeFileType(name: string, storageKey: string): Promise<string> {
+  const fileType = getFileExtension(name);
+  if (!["docx", "xlsx", "pptx"].includes(fileType)) return fileType;
+
+  // const prefix = await getMediaS3().getObjectPrefix(storageKey, 8);
+  // if (!looksLikeOleOfficeFile(prefix)) return fileType;
+
+  switch (fileType) {
+    case "docx":
+      return "doc";
+    case "xlsx":
+      return "xls";
+    case "pptx":
+      return "ppt";
+    default:
+      return fileType;
+  }
+}
+
 function inferOnlyOfficeContentType(name: string, mimeType: string | null): string {
   if (mimeType && mimeType !== "application/octet-stream") return mimeType;
 
@@ -1048,7 +1080,7 @@ router.get("/nodes/:id/onlyoffice-config", requireAuth, async (req, res): Promis
     return;
   }
 
-  const fileType = getFileExtension(accessCtx.node.name);
+  const fileType = await getOnlyOfficeFileType(accessCtx.node.name, accessCtx.node.storageKey);
   const documentType = getOnlyOfficeDocumentType(fileType);
   if (!fileType || !documentType) {
     res.status(400).json({ error: "File type is not supported by OnlyOffice preview" });
@@ -1085,14 +1117,14 @@ router.get("/nodes/:id/onlyoffice-config", requireAuth, async (req, res): Promis
             exp: Date.now() + (24 * 60 * 60 * 1000),
           }))}`
           : undefined,
-        customization: {
-          compactHeader: false,
-          compactToolbar: false,
-          forcesave: requestedMode === "edit",
-          hideRightMenu: false,
-          hideRulers: false,
-          toolbarHideFileName: false,
-        },
+        // customization: {
+        //   compactHeader: false,
+        //   compactToolbar: false,
+        //   forcesave: requestedMode === "edit",
+        //   hideRightMenu: false,
+        //   hideRulers: false,
+        //   toolbarHideFileName: false,
+        // },
         lang: "vi",
         mode: requestedMode,
         user: {
