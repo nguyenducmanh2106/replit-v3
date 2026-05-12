@@ -4,44 +4,44 @@ import MarkdownEditorTest from "./md-test";
 // ─── Design Tokens (Nature-Inspired IELTS Design System) ────────────────────
 const ds = {
   // Colors
-  background:       "#fbf9f4",
+  background:       "#f6f5f4",
   surface:          "#ffffff",
-  surfaceLow:       "#f5f3ee",
-  surfaceContainer: "#f0eee9",
-  surfaceHigh:      "#eae8e3",
-  surfaceHighest:   "#e4e2dd",
-  outlineVariant:   "#c2c8c0",
-  outline:          "#737972",
+  surfaceLow:       "#fcf8f5",
+  surfaceContainer: "#f6f5f4",
+  surfaceHigh:      "#e0d9d0",
+  surfaceHighest:   "#d0c9c0",
+  outlineVariant:   "#e0d9d0",
+  outline:          "#78736f",
 
-  primary:          "#4b6451",   // sage green — main actions
+  primary:          "#0075de",
   onPrimary:        "#ffffff",
-  primaryContainer: "#7e9983",
-  primaryFixed:     "#cdead1",
-  primaryFixedDim:  "#b1ceb6",
+  primaryContainer: "#62aef0",
+  primaryFixed:     "#e3f2fd",
+  primaryFixedDim:  "#cde8fb",
 
-  secondary:        "#45664b",   // forest green — deep emphasis
+  secondary:        "#0f1117",
   onSecondary:      "#ffffff",
-  secondaryContainer: "#c4e9c7",
-  secondaryFixed:   "#c7ecca",
+  secondaryContainer: "#f6f5f4",
+  secondaryFixed:   "#e0d9d0",
 
-  tertiary:         "#725a38",   // wood tone — accents / links
+  tertiary:         "#9849e8",
   onTertiary:       "#ffffff",
-  tertiaryContainer:"#aa8e68",
-  tertiaryFixed:    "#ffddb2",
+  tertiaryContainer:"#f2e8fc",
+  tertiaryFixed:    "#fff5ed",
 
-  onSurface:        "#1b1c19",   // charcoal-green
-  onSurfaceVariant: "#424843",
+  onSurface:        "#000000",
+  onSurfaceVariant: "#78736f",
 
-  error:            "#ba1a1a",
-  errorContainer:   "#ffdad6",
+  error:            "#f64932",
+  errorContainer:   "#fef3f1",
 
   // Shadow
-  shadow: "rgba(58, 90, 64, 0.08)",
-  shadowMd: "rgba(58, 90, 64, 0.12)",
+  shadow: "rgba(0, 0, 0, 0.08)",
+  shadowMd: "rgba(0, 0, 0, 0.12)",
 
   // Font
-  font: "'Lexend', 'DM Sans', sans-serif",
-  fontMono: "'DM Mono', 'Fira Mono', 'Courier New', monospace",
+  font: "'Inter', 'NotionInter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontMono: "'NotionInter', Menlo, Courier, monospace",
 
   // Radii
   radiusSm:   "0.25rem",

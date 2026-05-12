@@ -40,6 +40,14 @@ export function OnlyOfficePreview({ documentServerUrl, config, title }: OnlyOffi
   const reactId = useId();
   const placeholderId = useMemo(() => `onlyoffice-${reactId.replace(/:/g, "")}`, [reactId]);
   const [error, setError] = useState<string | null>(null);
+  const editorConfig = useMemo(
+    () => ({
+      ...config,
+      width: "100%",
+      height: "100%",
+    }),
+    [config],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -53,8 +61,8 @@ export function OnlyOfficePreview({ documentServerUrl, config, title }: OnlyOffi
         if (!window.DocsAPI) {
           throw new Error("OnlyOffice API is not available");
         }
-        console.log(config)
-        editor = new window.DocsAPI.DocEditor(placeholderId, config);
+        editor?.destroyEditor?.();
+        editor = new window.DocsAPI.DocEditor(placeholderId, editorConfig);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Cannot open OnlyOffice preview");
@@ -68,7 +76,7 @@ export function OnlyOfficePreview({ documentServerUrl, config, title }: OnlyOffi
       cancelled = true;
       editor?.destroyEditor?.();
     };
-  }, [config, documentServerUrl, placeholderId]);
+  }, [editorConfig, documentServerUrl, placeholderId]);
 
   if (error) {
     return (
@@ -79,7 +87,7 @@ export function OnlyOfficePreview({ documentServerUrl, config, title }: OnlyOffi
   }
 
   return (
-    <div className="h-[75vh] w-full overflow-hidden rounded border">
+    <div className="relative min-h-[75vh] flex-1 overflow-hidden rounded border bg-white">
       <div id={placeholderId} title={title} className="h-full w-full" />
     </div>
   );

@@ -69,16 +69,14 @@ export const LAST_NAMES = [
 ]
 
 export const USER_COLORS = [
-  "#fb7185",
-  "#fdba74",
-  "#d9f99d",
-  "#a7f3d0",
-  "#a5f3fc",
-  "#a5b4fc",
-  "#f0abfc",
-  "#fda58d",
-  "#f2cc8f",
-  "#9ae6b4",
+  "#FF6D00",
+  "#9849E8",
+  "#27918D",
+  "#9C7054",
+  "#0075DE",
+  "#62AEF0",
+  "#FFB110",
+  "#F64932",
 ]
 
 const uuid = (): string => {
@@ -109,7 +107,7 @@ const generateRandomUsername = (): string => {
 }
 
 const generateRandomColor = (): string => {
-  return getRandomArrayItem(USER_COLORS) ?? "#9ae6b4"
+  return getRandomArrayItem(USER_COLORS) ?? "#27918D"
 }
 
 const getFromLocalStorage = (
